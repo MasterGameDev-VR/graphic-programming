@@ -8,9 +8,13 @@ namespace demo {
 	class BoxDemoApp : public application::DirectxApp
 	{
 	public:
+		struct VertexOut {
+			DirectX::XMFLOAT4 posH;
+			DirectX::XMFLOAT4 color;
+		};
 
 		struct VertexIn {
-			DirectX::XMFLOAT3 pos;
+			DirectX::XMFLOAT3 posL;
 			DirectX::XMFLOAT4 color;
 		};
 
