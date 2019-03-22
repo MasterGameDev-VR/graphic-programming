@@ -6,22 +6,22 @@ using namespace xtest::application;
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
-					 _In_opt_ HINSTANCE hPrevInstance,
-					 _In_ LPWSTR	lpCmdLine,
-					 _In_ int	   nCmdShow)
+	_In_opt_ HINSTANCE hPrevInstance,
+	_In_ LPWSTR	lpCmdLine,
+	_In_ int	   nCmdShow)
 {
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 	UNREFERENCED_PARAMETER(nCmdShow);
 
 	WindowSettings windowSettings;
-	windowSettings.width = 1600;
-	windowSettings.height = 900;
+	windowSettings.width = 1024;
+	windowSettings.height = 768;
 	windowSettings.fullScreen = false;
 
 	DirectxSettings directxSettings;
 	directxSettings.showFrameStats = true;
-	
+
 
 	typedef xtest::demo::BoxDemoApp TestApp;
 

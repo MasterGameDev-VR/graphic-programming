@@ -33,21 +33,43 @@ void DirectxApp::Init()
 
 void DirectxApp::InitDirectX()
 {
-	// TODO: Creare un device e un devicecontext:
 	// 1. crea un ID3D11Device e ID3D11DeviceContext utilizzando la funzione D3D11CreateDevice 
 	// 2. salvali nelle variabili m_d3dDevice e m_d3dContext di classe, attenzione a come si utilizza 
 	//    un ComPtr
 
-	
+	UINT createDeviceFlags = 0;
+#if _DEBUG
+	createDeviceFlags = D3D11_CREATE_DEVICE_DEBUG;
+#endif
+
+	// Questi sono i feature levels che accettiamo
+	D3D_FEATURE_LEVEL featureLevels[] =
+	{
+		D3D_FEATURE_LEVEL_11_1,
+		D3D_FEATURE_LEVEL_11_0,
+	};
+
+	D3D_FEATURE_LEVEL featureLevel;
+
+	// Creazione del device e del device-context
+	HRESULT hr = D3D11CreateDevice(nullptr,
+		D3D_DRIVER_TYPE_HARDWARE,
+		nullptr,
+		createDeviceFlags,
+		featureLevels,
+		_countof(featureLevels),
+		D3D11_SDK_VERSION,
+		&m_d3dDevice,
+		&featureLevel,
+		&m_d3dContext);
+
 	//TODO: Decommenta questo pezzo di codice una volta che m_d3dDevice e m_d3dDeviceContext sono
 	//      stati creati, è stato commentato cosicchè se farai il run del programma senza aver iniziato ad
 	//      implementare i vari "todo" quest'ultimo mostri comunque una finestra vuota senza andare in errore
-	//
-	/* [decommenta da qui -->]
 
 	// select the best supported mode by the primary screen
 	std::vector<DXGI_MODE_DESC> modes = render::BestMatchOutputModes(
-		render::PrimaryOutput(m_d3dDevice), 
+		render::PrimaryOutput(m_d3dDevice),
 		GetCurrentWidth(),
 		GetCurrentHeight(),
 		render::OutputModeOrder::high_refresh_first
@@ -55,21 +77,49 @@ void DirectxApp::InitDirectX()
 
 	XTEST_ASSERT(modes.size() > 0, L"No compatible output modes have been found.");
 
-	[<-- decommenta fino a qui] */
-
-
 
 	// TODO: Creare la swap chain:
 	// 1. riempire la struttura DXGI_SWAP_CHAIN_DESC, per with, height e refresh utilizza
 	//	  modes[0].Width, modes[0].Height e modes[0].RefreshRate calcolati dal codice poco sopra (da riabilitare)
 	//	  utilizza la funzione GetMainWindow() di WindowsApp (questo framework) per settare l'outputWindow
+
+	DXGI_SWAP_CHAIN_DESC swapChainDesc;
+	ZeroMemory(&swapChainDesc, sizeof(DXGI_SWAP_CHAIN_DESC));
+
+	swapChainDesc.BufferDesc.Width = modes[0].Width;
+	swapChainDesc.BufferDesc.Height = modes[0].Height;
+	swapChainDesc.BufferDesc.RefreshRate = modes[0].RefreshRate;
+	swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	swapChainDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+	swapChainDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+	swapChainDesc.SampleDesc.Count = 1;
+	swapChainDesc.SampleDesc.Quality = 0;
+	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	swapChainDesc.BufferCount = static_cast<UINT>(m_directxSettings.buffering);
+	swapChainDesc.OutputWindow = GetMainWindow();
+	swapChainDesc.Windowed = true;
+	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+	swapChainDesc.Flags = 0;
+
 	// 2. crea la swap chain utilizzando il metodo CreateSwapChain di IDXGIFactory, puoi ricevere un'istanza di
 	//	  IDXGIFactory attraverso il metodo GetParent di IDXGIAdapter il quale può essere raggiunto attraverso un IDXGIDevice,
 	//    puoi capire come ricevere un IDXGIAdapter e un IDXGIDevice studiando l'implementazione della funzione render::PrimaryOutput
 	//    di questo framework
 	// 3. salva la swap chain nella variabile m_swapChain di classe
 
-	
+	ComPtr<IDXGIDevice> dxgiDevice;
+	XTEST_D3D_CHECK(m_d3dDevice.As(&dxgiDevice));
+
+	ComPtr<IDXGIAdapter> dxgiAdapter;
+	XTEST_D3D_CHECK(dxgiDevice->GetAdapter(&dxgiAdapter));
+
+	ComPtr<IDXGIFactory> dxgiFactory;
+	XTEST_D3D_CHECK(dxgiAdapter->GetParent(__uuidof(IDXGIFactory), &dxgiFactory));
+
+	XTEST_D3D_CHECK(dxgiFactory->CreateSwapChain(m_d3dDevice.Get(),
+		&swapChainDesc,
+		&m_swapChain));
+
 
 	// TODO: Crea una render target view del back buffer contenuto nella swap chain
 	// 1. richiedi alla swap chain un riferimento al backbuffer tramite il metodo GetBuffer della swap chain
@@ -79,9 +129,14 @@ void DirectxApp::InitDirectX()
 	//
 	// 2. crea la view attraverso il metodo CreateRenderTargetView di ID3D11Device e storicizzala in m_backBufferView
 
-	
+	ComPtr<ID3D11Texture2D> backBuffer;
+	XTEST_D3D_CHECK(m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), &backBuffer));
+	XTEST_D3D_CHECK(m_d3dDevice->CreateRenderTargetView(backBuffer.Get(), 0, &m_backBufferView));
+
+	dxgiFactory->MakeWindowAssociation(GetMainWindow(), DXGI_MWA_NO_ALT_ENTER);
+
 	CreateDepthStencilBuffer();
-	SetViewport(0, 0, GetCurrentWidth(),GetCurrentHeight());
+	SetViewport(0, 0, GetCurrentWidth(), GetCurrentHeight());
 
 }
 
@@ -101,12 +156,28 @@ void DirectxApp::CreateDepthStencilBuffer()
 	// 2. Crea la texture utilizzando CreateTexture2D di ID3D11Device e salvala nel membro m_depthBuffer
 	// 3. Crea la view di tale texture attraverso CreateDepthStencilView di ID3D11Device e salvala in m_depthBufferView
 
+	D3D11_TEXTURE2D_DESC depthStencilBufferDesc;
+	ZeroMemory(&depthStencilBufferDesc, sizeof(D3D11_TEXTURE2D_DESC));
 
+	depthStencilBufferDesc.ArraySize = 1;
+	depthStencilBufferDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	depthStencilBufferDesc.Width = GetCurrentWidth();
+	depthStencilBufferDesc.CPUAccessFlags = 0; // No CPU access required.
+	depthStencilBufferDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthStencilBufferDesc.Height = GetCurrentHeight();
+	depthStencilBufferDesc.MipLevels = 1;
+	depthStencilBufferDesc.SampleDesc.Count = 1;
+	depthStencilBufferDesc.SampleDesc.Quality = 0;
+	depthStencilBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+
+	XTEST_D3D_CHECK(m_d3dDevice->CreateTexture2D(&depthStencilBufferDesc, nullptr, &m_depthBuffer));
+
+	XTEST_D3D_CHECK(m_d3dDevice->CreateDepthStencilView(m_depthBuffer.Get(), nullptr, &m_depthBufferView));
 
 	// TODO:
 	// aggancia la depth buffer view e la back buffer view create in precedenza all'OutputMerger utilizzando la funzione
 	// OMSetRenderTargets di ID3D11DeviceContext
-
+	m_d3dContext->OMSetRenderTargets(1, m_backBufferView.GetAddressOf(), m_depthBufferView.Get());
 }
 
 
@@ -123,7 +194,7 @@ void DirectxApp::SetViewport(uint32 x, uint32 y, uint32 width, uint32 height)
 	// TODO:
 	// setta la viewport del RasterizerStage attraverslo la funzione RSSetViewports di ID3D11DeviceContext
 	// utilizzando la struttura creata poco sopra
-
+	m_d3dContext->RSSetViewports(1, &viewportDesc);
 }
 
 
@@ -179,7 +250,7 @@ void DirectxApp::FixedRenderingLoop()
 	MSG msg = { 0 };
 	while (msg.message != WM_QUIT)
 	{
-		if(PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
 		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
@@ -201,7 +272,7 @@ void DirectxApp::FixedRenderingLoop()
 			{
 				// note that we don't sleep when the remaining time is less than 3ms,
 				// the integer division will round it to zero.
-				Sleep( DWORD((expectedFrameEndTime - currentTime).Millis()) / 3);
+				Sleep(DWORD((expectedFrameEndTime - currentTime).Millis()) / 3);
 				currentTime = time::TimePoint::Now();
 			}
 
