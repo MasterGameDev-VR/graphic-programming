@@ -64,7 +64,7 @@ void BoxDemoApp::InitMatrices()
 	//       dove, ad esempio, hai posizionato l'oggetto come prima prova
 
 	{
-		XMVECTOR cameraPos = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
+		XMVECTOR cameraPos = XMVectorSet(0.0f, 5.0f, -10.0f, 1.0f);
 
 		XMMATRIX V = XMMatrixLookAtLH(cameraPos, XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f));
 		XMStoreFloat4x4(&m_viewMatrix, V);
@@ -289,15 +289,13 @@ void BoxDemoApp::UpdateScene(float deltaSeconds)
 	//    in tipi XMMATRIX e costruisci la matrice finale moltiplicandole tra loro nell'ordine corretto WVP
 
 	XMMATRIX W = XMLoadFloat4x4(&m_worldMatrix);
-	XMMATRIX rotation = XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), math::ToRadians(1.0f));
+	XMMATRIX rotation = XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), math::ToRadians(30.0f) * deltaSeconds);
+	W *= rotation;
 	XMStoreFloat4x4(&m_worldMatrix, W * rotation);
 
-	XMVECTOR cameraPos = XMVectorSet(0.0f, 5.0f, -10.0f, 1.0f);
-
-	XMMATRIX V = XMMatrixLookAtLH(cameraPos, XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f));
-	XMStoreFloat4x4(&m_viewMatrix, V);
-
+	XMMATRIX V = XMLoadFloat4x4(&m_viewMatrix);
 	XMMATRIX P = XMLoadFloat4x4(&m_projectionMatrix);
+
 	XMMATRIX WVP = W * V * P;
 
 	// TODO: aggiorna il costant buffer in modo che al vertex shader arrivi la nuova versione di WVP
