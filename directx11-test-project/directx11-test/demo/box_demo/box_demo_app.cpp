@@ -291,7 +291,7 @@ void BoxDemoApp::UpdateScene(float deltaSeconds)
 	XMMATRIX W = XMLoadFloat4x4(&m_worldMatrix);
 	XMMATRIX rotation = XMMatrixRotationAxis(XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f), math::ToRadians(30.0f) * deltaSeconds);
 	W *= rotation;
-	XMStoreFloat4x4(&m_worldMatrix, W * rotation);
+	XMStoreFloat4x4(&m_worldMatrix, W);
 
 	XMMATRIX V = XMLoadFloat4x4(&m_viewMatrix);
 	XMMATRIX P = XMLoadFloat4x4(&m_projectionMatrix);
