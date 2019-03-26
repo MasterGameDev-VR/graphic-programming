@@ -263,7 +263,8 @@ void BoxDemoApp::OnResized()
 	// TODO:
 	// quando la finestra viene ridimensionata dovresti aggiornare la matrice di proiezione, quindi ricostruiscine
 	// una nuova utilizzando il nuovo aspect ratio e storicizzala sempre in m_projectionMatrix
-
+	XMMATRIX P = XMMatrixPerspectiveFovLH(math::ToRadians(45.f), AspectRatio(), 1.f, 100.0f);
+	XMStoreFloat4x4(&m_projectionMatrix, P);
 }
 
 float polar_angle=0;
@@ -287,7 +288,7 @@ void BoxDemoApp::UpdateScene(float deltaSeconds)
 	XMMATRIX W = XMLoadFloat4x4(&m_worldMatrix);
 	XMStoreFloat4x4(&m_worldMatrix, W);
 
-	radius += cubeSpeed * deltaSeconds;
+	radius += 3 * cubeSpeed * deltaSeconds;
 	polar_angle += cubeSpeed *deltaSeconds;
 	azimut_angle += cubeSpeed * deltaSeconds;
 
