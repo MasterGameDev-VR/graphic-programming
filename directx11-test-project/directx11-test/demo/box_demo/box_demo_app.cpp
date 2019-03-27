@@ -53,6 +53,8 @@ void BoxDemoApp::InitMatrices()
 	//         hai a disposizione funzioni come XMMatrixScaling, XMMatrixRotationY, XMMatrixTranslation
 	//		   e simili per costruire le matrici di cui hai bisogno
 	XMMATRIX worldMatrix{ XMMatrixIdentity() };
+	worldMatrix = XMMatrixScaling(0.5, 1.0f, 0.5f) * worldMatrix;
+	worldMatrix = XMMatrixTranslation(2.5f, 0.0f, 0.0f) * worldMatrix;
 	XMStoreFloat4x4(&m_worldMatrix, worldMatrix);
 
 
@@ -60,7 +62,7 @@ void BoxDemoApp::InitMatrices()
 	// Crea la view matrix utilizzando la funzione XMMatrixLookAtLH e salvala in m_viewMatrix
 	// hint: come prima prova a posizionare la telecamera qualche unità lungo -Z e puntala all'origine del mondo
 	//       dove, ad esempio, hai posizionato l'oggetto come prima prova
-	const XMFLOAT4 eyePosition	{ 0.0f, 0.0f, -5.0f, 1.0f };
+	const XMFLOAT4 eyePosition	{ 0.0f, 2.5f, -5.0f, 1.0f };
 	const XMFLOAT4 focusPosition{ 0.0f, 0.0f, 0.0f, 1.0f };
 	const XMFLOAT4 upDirection	{ 0.0f, 1.0f, 0.0f, 0.0f };
 
@@ -157,10 +159,14 @@ void BoxDemoApp::InitBuffers()
 	// 4. Crea il vertex buffer tramite la funzione CreateBuffer di ID3D11Device specificando la sub resource
 	//    del punto 3 e salvando il buffer creato nel membro m_vertexBuffer
 	VertexIn vertices[] = {
-		{ XMFLOAT3(-1.0f, -1.0f, 0.0f),	XMFLOAT4(DirectX::Colors::Red) },
-		{ XMFLOAT3(+1.0f, -1.0f, 0.0f),	XMFLOAT4(DirectX::Colors::Blue) },
-		{ XMFLOAT3(+1.0f, +1.0f, 0.0f),	XMFLOAT4(DirectX::Colors::Green) },
-		{ XMFLOAT3(-1.0f, +1.0f, 0.0f),	XMFLOAT4(DirectX::Colors::Yellow) }
+		{ XMFLOAT3(-1.0f, -1.0f, -1.0f),	XMFLOAT4(DirectX::Colors::Red) },
+		{ XMFLOAT3(+1.0f, -1.0f, -1.0f),	XMFLOAT4(DirectX::Colors::Green) },
+		{ XMFLOAT3(-1.0f, +1.0f, -1.0f),	XMFLOAT4(DirectX::Colors::Blue) },
+		{ XMFLOAT3(+1.0f, +1.0f, -1.0f),	XMFLOAT4(DirectX::Colors::Yellow) },
+		{ XMFLOAT3(-1.0f, -1.0f, +1.0f),	XMFLOAT4(DirectX::Colors::Purple) },
+		{ XMFLOAT3(+1.0f, -1.0f, +1.0f),	XMFLOAT4(DirectX::Colors::Orange) },
+		{ XMFLOAT3(-1.0f, +1.0f, +1.0f),	XMFLOAT4(DirectX::Colors::White) },
+		{ XMFLOAT3(+1.0f, +1.0f, +1.0f),	XMFLOAT4(DirectX::Colors::Gray) },
 	};
 	
 	D3D11_BUFFER_DESC vertexBufferDesc;
@@ -195,11 +201,29 @@ void BoxDemoApp::InitBuffers()
 	// 4. Crea l'index buffer tramite la funzione CreateBuffer di ID3D11Device specificando la sub resource
 	//    del punto 3 e salvando il buffer creato nel membro m_indexBuffer
 	uint32 indices[] = {
-		// upper triangle
-		0, 3, 2,
+		// front
+		0, 3, 1,
+		0, 2, 3,
 
-		// lower triangle
-		0, 2, 1
+		// back
+		4, 5, 7,
+		4, 7, 6,
+
+		// top
+		3, 6, 7,
+		2, 6, 3,
+
+		// bottom
+		0, 1, 4,
+		1, 5, 4,
+
+		// left
+		0, 4, 6,
+		0, 6, 2,
+
+		// right
+		1, 7, 5,
+		1, 3, 7
 	};
 
 	D3D11_BUFFER_DESC indexBufferDesc;
@@ -284,7 +308,14 @@ void BoxDemoApp::UpdateScene(float deltaSeconds)
 	//
 	// 2. Carica, grazie ai metodi XMLoadFloat4x4, le matrici m_worldMatrix, m_viewMatrix e m_projectionMatrix
 	//    in tipi XMMATRIX e costruisci la matrice finale moltiplicandole tra loro nell'ordine corretto WVP
+	const float speed { 30.0f };
+	float angle = speed * deltaSeconds;
+	XMMATRIX animation = XMMatrixRotationY(math::ToRadians(angle));
+
 	XMMATRIX worldMatrix = XMLoadFloat4x4(&m_worldMatrix);
+	worldMatrix = animation * worldMatrix;
+	XMStoreFloat4x4(&m_worldMatrix, worldMatrix);
+
 	XMMATRIX viewMatrix = XMLoadFloat4x4(&m_viewMatrix);
 	XMMATRIX projectionMatrix = XMLoadFloat4x4(&m_projectionMatrix);
 
@@ -366,7 +397,7 @@ void BoxDemoApp::RenderScene()
 	//    DrawIndexed di ID3D11DeviceContext
 	// 2. chiama la funzione present per mostrare a schermo il contenuto del back buffer tramite questa chiamata:
 	//	  XTEST_D3D_CHECK(m_swapChain->Present(0, 0));
-	const UINT nIndices{ 6 };
+	const UINT nIndices{ 36 };
 	m_d3dContext->DrawIndexed(nIndices, 0, 0);
 	XTEST_D3D_CHECK(m_swapChain->Present(0, 0));
 }
