@@ -52,13 +52,24 @@ void BoxDemoApp::InitMatrices()
 	//		   l'oggetto di qualche unità nello spazio, prova a ruotarlo o a scalarlo. Ricorda che
 	//         hai a disposizione funzioni come XMMatrixScaling, XMMatrixRotationY, XMMatrixTranslation
 	//		   e simili per costruire le matrici di cui hai bisogno
+	XMMATRIX worldMatrix{ XMMatrixIdentity() };
+	XMStoreFloat4x4(&m_worldMatrix, worldMatrix);
 
 
 	// TODO:
 	// Crea la view matrix utilizzando la funzione XMMatrixLookAtLH e salvala in m_viewMatrix
 	// hint: come prima prova a posizionare la telecamera qualche unità lungo -Z e puntala all'origine del mondo
 	//       dove, ad esempio, hai posizionato l'oggetto come prima prova
+	const XMFLOAT4 eyePosition	{ 0.0f, 0.0f, -5.0f, 1.0f };
+	const XMFLOAT4 focusPosition{ 0.0f, 0.0f, 0.0f, 1.0f };
+	const XMFLOAT4 upDirection	{ 0.0f, 1.0f, 0.0f, 0.0f };
 
+	XMMATRIX viewMatrix = XMMatrixLookAtLH(
+		XMLoadFloat4(&eyePosition),
+		XMLoadFloat4(&focusPosition),
+		XMLoadFloat4(&upDirection)
+	);
+	XMStoreFloat4x4(&m_viewMatrix, viewMatrix);
 
 	// TODO:
 	// Crea una matrice di proiezione prospettica utilizzando la funzione XMMatrixPerspectiveFovLH e salvala 
@@ -68,7 +79,22 @@ void BoxDemoApp::InitMatrices()
 	//
 	// hint: una volta che sei riuscito a disegnare a schermo prova a costruire una proiezione ortografica XMMatrixOrthographicLH
 	//       invece di una prospettica
-	
+	BuildProjectionMatrix();
+}
+
+void BoxDemoApp::BuildProjectionMatrix()
+{
+	const float fovAngleY{ 45.0f };
+	const float nearPlane{ 1.0f };
+	const float farPlane{ 1000.0f };
+
+	XMMATRIX projectionMatrix = XMMatrixPerspectiveFovLH(
+		math::ToRadians(fovAngleY),
+		AspectRatio(),
+		nearPlane,
+		farPlane
+	);
+	XMStoreFloat4x4(&m_projectionMatrix, projectionMatrix);
 }
 
 void BoxDemoApp::InitShaders()
@@ -85,7 +111,8 @@ void BoxDemoApp::InitShaders()
 	// Crea il vertex shader e il pixel shader utilizzando le funzioni CreateVertexShader e CreatePixelShader di ID3D11Device
 	// utilizzando le variabili vsByteCode e psByteCode create poco sopra, salva i due shader nei membri m_vertexShader
 	// e m_pixelShader
-	
+	XTEST_D3D_CHECK(m_d3dDevice->CreateVertexShader(vsByteCode.Data(), vsByteCode.ByteSize(), nullptr, &m_vertexShader));
+	XTEST_D3D_CHECK(m_d3dDevice->CreatePixelShader(psByteCode.Data(), psByteCode.ByteSize(), nullptr, &m_pixelShader));
 
 	// TODO: Crea l'input layout per il vertex shader:
 	// 1. Controlla nel file box_demo_VS.hlsl la struttura chiamata VertexIn, questa struttura è l'esatto match di quella lato
@@ -100,7 +127,11 @@ void BoxDemoApp::InitShaders()
 	//    mentre come InstanceDataStepRate utilizza sempre 0
 	// 3. Crea l'input layout tramite la funzione CreateInputLayout di ID3D11Device e salvalo nel membro m_inputLayout, ricorda che hai a disposizione
 	//    il bytecode del vertex shader nella variabile vsByteCode
-
+	D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] = {
+		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(VertexIn, color), D3D11_INPUT_PER_VERTEX_DATA, 0}
+	};
+	XTEST_D3D_CHECK(m_d3dDevice->CreateInputLayout(inputLayoutDesc, ARRAYSIZE(inputLayoutDesc), vsByteCode.Data(), vsByteCode.ByteSize(), &m_inputLayout));
 }
 
 
@@ -125,8 +156,28 @@ void BoxDemoApp::InitBuffers()
 	//    con i dati da te definiti
 	// 4. Crea il vertex buffer tramite la funzione CreateBuffer di ID3D11Device specificando la sub resource
 	//    del punto 3 e salvando il buffer creato nel membro m_vertexBuffer
-
+	VertexIn vertices[] = {
+		{ XMFLOAT3(-1.0f, -1.0f, 0.0f),	XMFLOAT4(DirectX::Colors::Red) },
+		{ XMFLOAT3(+1.0f, -1.0f, 0.0f),	XMFLOAT4(DirectX::Colors::Blue) },
+		{ XMFLOAT3(+1.0f, +1.0f, 0.0f),	XMFLOAT4(DirectX::Colors::Green) },
+		{ XMFLOAT3(-1.0f, +1.0f, 0.0f),	XMFLOAT4(DirectX::Colors::Yellow) }
+	};
 	
+	D3D11_BUFFER_DESC vertexBufferDesc;
+	vertexBufferDesc.ByteWidth = sizeof(vertices);
+	vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	vertexBufferDesc.CPUAccessFlags = 0;
+	vertexBufferDesc.MiscFlags = 0;
+	vertexBufferDesc.StructureByteStride = 0;
+
+	D3D11_SUBRESOURCE_DATA vertexSubData;
+	vertexSubData.pSysMem = vertices;
+	vertexSubData.SysMemPitch = 0;
+	vertexSubData.SysMemSlicePitch = 0;
+
+	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexSubData, &m_vertexBuffer));
+
 	// TODO: Craere un index buffer:
 	// 1. Crea un array di indici di tipo uint32, ogni indice si riferirà ad un preciso vertice nel vertex buffer,
 	//    e verrà utilizzato per specificare come è costruito un triangolo, nel nostro caso i due triangoli (se stai
@@ -143,7 +194,28 @@ void BoxDemoApp::InitBuffers()
 	//    con i dati da te specificati
 	// 4. Crea l'index buffer tramite la funzione CreateBuffer di ID3D11Device specificando la sub resource
 	//    del punto 3 e salvando il buffer creato nel membro m_indexBuffer
+	uint32 indices[] = {
+		// upper triangle
+		0, 3, 2,
 
+		// lower triangle
+		0, 2, 1
+	};
+
+	D3D11_BUFFER_DESC indexBufferDesc;
+	indexBufferDesc.ByteWidth = sizeof(indices);
+	indexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	indexBufferDesc.CPUAccessFlags = 0;
+	indexBufferDesc.MiscFlags = 0;
+	indexBufferDesc.StructureByteStride = 0;
+
+	D3D11_SUBRESOURCE_DATA indexSubData;
+	indexSubData.pSysMem = indices;
+	indexSubData.SysMemPitch = 0;
+	indexSubData.SysMemSlicePitch = 0;
+
+	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexSubData, &m_indexBuffer));
 
 	// TODO: Creare il CostantBuffer PerObjectCB che verrà utilizzato per fornire al vertex shader la matrice composta WVP
 	// 1. controlla il cbuffer PerObjectCB definito nel file box_demo_VS.hlsl e confrontalo con la struttura (chiamata nello 
@@ -154,7 +226,15 @@ void BoxDemoApp::InitBuffers()
 	//    corretto in modo che la CPU possa scrivere. Il nostro buffer non è structured quindi StructureByteStride sarà 0.
 	// 3. Crea il costant buffer tramite la funzione CreateBuffer di ID3D11Device, non avendo dati con cui inizializzarlo e grazie 
 	//    al fatto che sarà possibile modificarne il contenuto più tardi, puoi specificare nullptr
+	D3D11_BUFFER_DESC cBufferDesc;
+	cBufferDesc.ByteWidth = sizeof(PerObjectCB);
+	cBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	cBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	cBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	cBufferDesc.MiscFlags = 0;
+	cBufferDesc.StructureByteStride = 0;
 
+	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&cBufferDesc, nullptr, &m_vsConstantBuffer));
 }
 
 
@@ -165,7 +245,19 @@ void BoxDemoApp::InitRasterizerState()
 	// 1. riempi la struttura D3D11_RASTERIZER_DESC, 
 	// 2. crae un rasterizer state tramite la funzione CreateRasterizerState di ID3D11Device e salvalo nella
 	//    variabile membro m_rasterizerState
+	D3D11_RASTERIZER_DESC rasterizerDesc;
+	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
+	rasterizerDesc.CullMode = D3D11_CULL_BACK;
+	rasterizerDesc.FrontCounterClockwise = false;
+	rasterizerDesc.DepthBias = 0;
+	rasterizerDesc.DepthBiasClamp = 0.0f;
+	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
+	rasterizerDesc.DepthClipEnable = true;
+	rasterizerDesc.ScissorEnable = false;
+	rasterizerDesc.MultisampleEnable = false;
+	rasterizerDesc.AntialiasedLineEnable = false;
 
+	XTEST_D3D_CHECK(m_d3dDevice->CreateRasterizerState(&rasterizerDesc, &m_rasterizerState));
 }
 
 
@@ -176,7 +268,7 @@ void BoxDemoApp::OnResized()
 	// TODO:
 	// quando la finestra viene ridimensionata dovresti aggiornare la matrice di proiezione, quindi ricostruiscine
 	// una nuova utilizzando il nuovo aspect ratio e storicizzala sempre in m_projectionMatrix
-
+	BuildProjectionMatrix();
 }
 
 
@@ -192,7 +284,11 @@ void BoxDemoApp::UpdateScene(float deltaSeconds)
 	//
 	// 2. Carica, grazie ai metodi XMLoadFloat4x4, le matrici m_worldMatrix, m_viewMatrix e m_projectionMatrix
 	//    in tipi XMMATRIX e costruisci la matrice finale moltiplicandole tra loro nell'ordine corretto WVP
+	XMMATRIX worldMatrix = XMLoadFloat4x4(&m_worldMatrix);
+	XMMATRIX viewMatrix = XMLoadFloat4x4(&m_viewMatrix);
+	XMMATRIX projectionMatrix = XMLoadFloat4x4(&m_projectionMatrix);
 
+	XMMATRIX wvp = worldMatrix * viewMatrix * projectionMatrix;
 
 	// TODO: aggiorna il costant buffer in modo che al vertex shader arrivi la nuova versione di WVP
 	// 1. Crea una D3D11_MAPPED_SUBRESOURCE e inizializzala utilizzando ZeroMemory
@@ -205,13 +301,22 @@ void BoxDemoApp::UpdateScene(float deltaSeconds)
 	//    column major)
 	// 5. Utilizza il metodo Unmap di ID3D11DeviceContext per avvertire che la modifica da parte della CPU 
 	//    sul buffer m_vsConstantBuffer è completa
+	D3D11_MAPPED_SUBRESOURCE mappedRes;
+	ZeroMemory(&mappedRes, sizeof(mappedRes));
 
+	XTEST_D3D_CHECK(m_d3dContext->Map(m_vsConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes));
+
+	PerObjectCB* constantBuffer = static_cast<PerObjectCB*>(mappedRes.pData);
+	XMMATRIX wvpT = XMMatrixTranspose(wvp);
+	XMStoreFloat4x4(&(constantBuffer->WVP), wvpT);
+
+	m_d3dContext->Unmap(m_vsConstantBuffer.Get(), 0);
 }
 
 
 void BoxDemoApp::RenderScene()
 {
-	
+
 	// TODO: pulisci il depth/stencil buffer e il back buffer 
 	// 1. utilizza ClearDepthStencilView di ID3D11DeviceContext, specifica nei ClearFlags sia quello per pulire
 	//    il depth buffer che quello per pulire lo stencil buffer mettendoli in or "|", come valore di pulizia per
@@ -222,7 +327,8 @@ void BoxDemoApp::RenderScene()
 	//       in modo da controllare che il colore da te specificato sia presente come sfondo della finestra renderizzata, in quel 
 	//       caso puoi essere sicuro della corretta inizializzazione di DirectX, naturalmente dovrai almeno invocare il metodo 
 	//       present descritto più sotto altrimenti non vedrai nessun cambiamento a schermo
-
+	m_d3dContext->ClearDepthStencilView(m_depthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+	m_d3dContext->ClearRenderTargetView(m_backBufferView.Get(), DirectX::Colors::Aqua);
 
 	// TODO: prepara tutti gli stati per disegnare:
 	// 1. setta il rasterizer state creato in precedenza e salvato all'intero di m_rasterizerState
@@ -244,13 +350,24 @@ void BoxDemoApp::RenderScene()
 	//    tuo array di indici dovrai specificare un formato R a 32 bit con codifica uint
 	// 8. configura il tipo di primitiva che vogliamo disegnare come triangle list tramite la funzione
 	//    IASetPrimitiveTopology di ID3D11DeviceContext
-
+	m_d3dContext->RSSetState(m_rasterizerState.Get());
+	m_d3dContext->IASetInputLayout(m_inputLayout.Get());
+	m_d3dContext->VSSetShader(m_vertexShader.Get(), nullptr, 0);
+	m_d3dContext->PSSetShader(m_pixelShader.Get(), nullptr, 0);
+	m_d3dContext->VSSetConstantBuffers(0, 1, m_vsConstantBuffer.GetAddressOf());
+	const UINT stride{ sizeof(VertexIn) };
+	const UINT offset{ 0 };
+	m_d3dContext->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), &stride, &offset);
+	m_d3dContext->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+	m_d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// TODO: disgna a schermo
 	// 1. visto che stiamo utilizzando sia un vertex buffer che un index buffer devi utilizzare la chiamata
 	//    DrawIndexed di ID3D11DeviceContext
 	// 2. chiama la funzione present per mostrare a schermo il contenuto del back buffer tramite questa chiamata:
 	//	  XTEST_D3D_CHECK(m_swapChain->Present(0, 0));
-
+	const UINT nIndices{ 6 };
+	m_d3dContext->DrawIndexed(nIndices, 0, 0);
+	XTEST_D3D_CHECK(m_swapChain->Present(0, 0));
 }
 

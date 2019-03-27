@@ -41,6 +41,8 @@ namespace demo {
 		void InitBuffers();
 		void InitRasterizerState();
 
+		void BuildProjectionMatrix();
+
 		DirectX::XMFLOAT4X4 m_viewMatrix;
 		DirectX::XMFLOAT4X4 m_worldMatrix;
 		DirectX::XMFLOAT4X4 m_projectionMatrix;
