@@ -45,6 +45,9 @@ namespace demo {
 		DirectX::XMFLOAT4X4 m_worldMatrix;
 		DirectX::XMFLOAT4X4 m_projectionMatrix;
 
+		DirectX::XMVECTOR m_cameraPosition;
+		DirectX::XMVECTOR m_camFocusPosition;
+		DirectX::XMVECTOR m_cameraViewDirection;
 
 		Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBuffer;
 		Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBuffer;
@@ -53,6 +56,8 @@ namespace demo {
 		Microsoft::WRL::ComPtr<ID3D11PixelShader> m_pixelShader;
 		Microsoft::WRL::ComPtr<ID3D11InputLayout> m_inputLayout;
 		Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_rasterizerState;
+
+		float elapsedTime=0.f;
 
 	};
 

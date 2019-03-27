@@ -14,7 +14,7 @@
     <ProjectGuid>{DC72186E-CDFF-463C-BAAC-976EBDAFDBF6}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>directx11test</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -71,6 +71,7 @@
     <FxCompile>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ShaderModel>5.0</ShaderModel>
+      <ShaderType>Vertex</ShaderType>
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
