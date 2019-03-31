@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "keyboard.h"
 #include <algorithm>
+#include <application/windows_app.h>
+
 
 using xtest::input::Keyboard;
 using xtest::input::KeyboardListener;
@@ -118,12 +120,6 @@ std::unordered_map<uint32, Key> Keyboard::s_windowsVKToKey =
 	{ VK_OEM_102, Key::angle_bracket }
 };
 
-
-Keyboard& Keyboard::GetKeyboard()
-{
-	static Keyboard s_instance;
-	return s_instance;
-}
 
 
 Keyboard::Keyboard()

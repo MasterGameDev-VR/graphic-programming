@@ -27,11 +27,16 @@ namespace camera {
 
 		void RotateBy(float deltaPolarAngle, float deltaAzimuthAngle);
 		void IncreaseRadiusBy(float deltaRadiusLength);
+		void TranslatePivotBy(const DirectX::XMFLOAT3& translation);
 		void SetRotation(float polarAngle, float azimuthAngle);
 		void SetRadius(float radiusLength);
+		void SetPivot(const DirectX::XMFLOAT3& pivot);
 
 		DirectX::XMFLOAT3 GetPosition() const;
 		DirectX::XMMATRIX GetViewMatrix() const;
+		DirectX::XMFLOAT3 GetXAxis() const;
+ 		DirectX::XMFLOAT3 GetYAxis() const;
+ 		DirectX::XMFLOAT3 GetZAxis() const;
 		float GetPolarAngle() const;
 		float GetAzimuthAngle() const;
 		float GetRadius() const;

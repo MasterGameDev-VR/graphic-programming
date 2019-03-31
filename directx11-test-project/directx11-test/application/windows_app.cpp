@@ -2,7 +2,8 @@
 #include "windows_app.h"
 #include <application/resources/Resource.h>
 #include <input/keyboard.h>
-#include <input/mouse.h>
+#include <service/locator.h>
+
 
 using xtest::application::WindowsApp;
 using xtest::application::WindowSettings;
@@ -12,14 +13,8 @@ using xtest::input::Mouse;
 
 const DWORD WindowsApp::s_WindowedStyle = WS_VISIBLE | WS_OVERLAPPEDWINDOW;
 const DWORD WindowsApp::s_FullscreenStyle = WS_VISIBLE | WS_POPUP; // we use  borderless fullscreen
-WindowsApp* WindowsApp::s_currentApp = nullptr;
 
 
-WindowsApp* WindowsApp::CurrentApp()
-{
-	XTEST_ASSERT(s_currentApp, L"Instance of WindowsApp not found. Have you crete one?");
-	return s_currentApp;
-}
 
 WindowsApp::WindowsApp(HINSTANCE instance, const WindowSettings& windowSettings)
 	: m_instance(instance)
@@ -29,14 +24,14 @@ WindowsApp::WindowsApp(HINSTANCE instance, const WindowSettings& windowSettings)
 	, m_isWindowRectChanging(false)
 	, m_hasBeenShown(false)
 	, m_isFullscreen(m_windowSettings.fullScreen)
+	, m_mouse(this)
+	, m_keyboard()
 {
 	std::unique_ptr<wchar_t[]> buffer(new wchar_t[MAX_PATH]);
 	GetModuleFileNameW(nullptr, buffer.get(), MAX_PATH);
 	
 	std::wstring completePath(buffer.get());
 	m_rootDir = completePath.erase(completePath.find_last_of(L"\\/"));
-
-	s_currentApp = this;
 }
 
 
@@ -118,6 +113,9 @@ void WindowsApp::Init()
 	rawInputDevices[1].hwndTarget = 0;
 
 	XTEST_VERIFY(RegisterRawInputDevices(&rawInputDevices[0], sizeof(rawInputDevices)/sizeof(RAWINPUTDEVICE), sizeof(RAWINPUTDEVICE)) != FALSE);
+
+	service::Locator::ProvideService(&m_mouse);
+	service::Locator::ProvideService(&m_keyboard);
 }
 
 void WindowsApp::Show()
@@ -208,7 +206,7 @@ HWND WindowsApp::GetMainWindow() const
 	return m_mainWindow;
 }
 
-const std::wstring& WindowsApp::GetRootDir() const
+std::wstring WindowsApp::GetRootDir() const
 {
 	return m_rootDir;
 }
@@ -219,7 +217,7 @@ LRESULT WindowsApp::OnWmSizeCallback(WPARAM wParam)
 	if (wParam == SIZE_MINIMIZED)
 	{
 		OnMinimized();
-		Mouse::GetMouse().ClearDownButtons();
+		m_mouse.ClearDownButtons();
 	}
 	else if (wParam == SIZE_MAXIMIZED)
 	{
@@ -281,11 +279,11 @@ LRESULT WindowsApp::OnWmInput(LPARAM lParam)
 
 	if (rawInput.header.dwType == RIM_TYPEKEYBOARD)
 	{
-		Keyboard::GetKeyboard().OnWmKeyboardRawInput(rawInput.header, rawInput.data.keyboard);
+		m_keyboard.OnWmKeyboardRawInput(rawInput.header, rawInput.data.keyboard);
 	}
 	else if (rawInput.header.dwType == RIM_TYPEMOUSE)
 	{
-		Mouse::GetMouse().OnWmMouseRawInput(rawInput.header, rawInput.data.mouse);
+		m_mouse.OnWmMouseRawInput(rawInput.header, rawInput.data.mouse);
 	}
 
 	return 0;
@@ -340,14 +338,14 @@ LRESULT WindowsApp::HandleWindowMessage(HWND hwnd, UINT message, WPARAM wParam, 
 		return OnWmAltEnterCallback(hwnd, message, wParam, lParam);
 
 	case WM_CHAR:
-		Keyboard::GetKeyboard().OnWmChar(wParam, lParam);
+		m_keyboard.OnWmChar(wParam, lParam);
 		return 0;
 
 	case WM_MENUCHAR:
 		return MAKELRESULT(0, MNC_CLOSE); // don't beep when alt+enter is pressed
 
 	case WM_KILLFOCUS:
-		Keyboard::GetKeyboard().ClearDownKeys();
+		m_keyboard.ClearDownKeys();
 		return 0;
 
 	default:

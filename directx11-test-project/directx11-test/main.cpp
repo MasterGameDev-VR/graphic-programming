@@ -15,8 +15,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(nCmdShow);
 
 	WindowSettings windowSettings;
-	windowSettings.width = 1600;
-	windowSettings.height = 900;
+	windowSettings.width = 1280;
+	windowSettings.height = 720;
 	windowSettings.fullScreen = false;
 
 	DirectxSettings directxSettings;
