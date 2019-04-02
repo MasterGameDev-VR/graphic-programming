@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include <demo/box_demo/box_demo_app.h>
+#include <demo/lights_demo/lights_demo_app.h>
 
 
 using namespace xtest::application;
@@ -23,7 +23,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	directxSettings.showFrameStats = true;
 	
 
-	typedef xtest::demo::BoxDemoApp TestApp;
+	typedef xtest::demo::LightDemoApp TestApp;
 
 	TestApp app(hInstance, windowSettings, directxSettings);
 	app.Init();
