@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "box_demo_app.h"
+#include <mesh/mesh_generator.h>
 #include <file/file_utils.h>
 #include <math/math_utils.h>
 #include <service/locator.h>
@@ -93,7 +94,8 @@ void BoxDemoApp::InitShaders()
 void BoxDemoApp::InitBuffers()
 {
 	// vertex buffer composed by the cube's vertices
-	VertexIn vertices[] =
+	mesh::MeshData plane = mesh::GeneratePlane(20, 20, 1, 1);
+	/*VertexIn vertices[] =;
 	{
 		{ XMFLOAT3(+1.f, +1.f, +1.f), XMFLOAT4(DirectX::Colors::Red) },
 		{ XMFLOAT3(+1.f, +1.f, -1.f), XMFLOAT4(DirectX::Colors::Red) },
@@ -103,18 +105,18 @@ void BoxDemoApp::InitBuffers()
 		{ XMFLOAT3(-1.f, +1.f, -1.f), XMFLOAT4(DirectX::Colors::Blue) },
 		{ XMFLOAT3(-1.f, -1.f, +1.f), XMFLOAT4(DirectX::Colors::Green) },
 		{ XMFLOAT3(-1.f, -1.f, -1.f), XMFLOAT4(DirectX::Colors::Green) },
-	};
+	};*/
 
 	D3D11_BUFFER_DESC vertexBufferDesc;
 	vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	vertexBufferDesc.ByteWidth = sizeof(vertices);
+	vertexBufferDesc.ByteWidth = sizeof(plane.vertices.data());
 	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	vertexBufferDesc.CPUAccessFlags = 0;
 	vertexBufferDesc.MiscFlags = 0;
 	vertexBufferDesc.StructureByteStride = 0;
 
 	D3D11_SUBRESOURCE_DATA vertexInitData;
-	vertexInitData.pSysMem = vertices;
+	vertexInitData.pSysMem = plane.vertices.data();
 	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexInitData, &m_vertexBuffer));
 
 
@@ -148,14 +150,14 @@ void BoxDemoApp::InitBuffers()
 
 	D3D11_BUFFER_DESC indexBufferDesc;
 	indexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	indexBufferDesc.ByteWidth = sizeof(indicies);
+	indexBufferDesc.ByteWidth = sizeof(plane.indices.data());
 	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	indexBufferDesc.CPUAccessFlags = 0;
 	indexBufferDesc.MiscFlags = 0;
 	indexBufferDesc.StructureByteStride = 0;
 
 	D3D11_SUBRESOURCE_DATA indexInitdata;
-	indexInitdata.pSysMem = &indicies;
+	indexInitdata.pSysMem = plane.indices.data();
 	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &m_indexBuffer));
 
 
