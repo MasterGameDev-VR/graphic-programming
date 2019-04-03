@@ -3,6 +3,7 @@
 #include <application/directx_app.h>
 #include <input/keyboard.h>
 #include <camera/spherical_camera.h>
+#include <mesh/mesh_format.h>
 
 namespace xtest {
 	namespace demo {
@@ -70,9 +71,9 @@ namespace xtest {
 				Material material;
 				DirectX::XMFLOAT4X4 worldMatrix;
 				UINT indeces;
-				Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBuffer;
-				Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBuffer;
-				Microsoft::WRL::ComPtr<ID3D11Buffer> m_constantBuffer;
+				Microsoft::WRL::ComPtr<ID3D11Buffer> vertexBuffer;
+				Microsoft::WRL::ComPtr<ID3D11Buffer> indexBuffer;
+				Microsoft::WRL::ComPtr<ID3D11Buffer> constantBuffer;
 			};
 
 			
@@ -109,13 +110,20 @@ namespace xtest {
 
 
 			std::size_t m_objectsNumber;
-			std::vector<ObjectToDraw> objects;
+			std::vector<ObjectToDraw> m_objects;
 
-			DirectionalLight dirLight;
-			PointLight pLight;
-			SpotLight sLight;
+			DirectionalLight m_dirLight;
+			PointLight m_pLight;
+			SpotLight m_sLight;
 
-			
+			std::map<std::string, Material> m_crateMaterials;
+			DirectX::XMFLOAT4X4 m_crateWorldMatrix;
+			Microsoft::WRL::ComPtr<ID3D11Buffer> m_crateVertexBuffer;
+			Microsoft::WRL::ComPtr<ID3D11Buffer> m_crateIndexBuffer;
+			std::map<std::string, Microsoft::WRL::ComPtr<ID3D11Buffer>> m_crateConstantBufferMap;
+			std::map<std::string, xtest::mesh::GPFMesh::MeshDescriptor> m_crateMeshDescriptorMap;
+
+
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_vsLightBuffer;
 			Microsoft::WRL::ComPtr<ID3D11VertexShader> m_vertexShader;
 			Microsoft::WRL::ComPtr<ID3D11PixelShader> m_pixelShader;
