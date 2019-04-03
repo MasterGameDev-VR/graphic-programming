@@ -3,10 +3,9 @@
 #include <application/directx_app.h>
 #include <input/keyboard.h>
 #include <camera/spherical_camera.h>
-
+#include <mesh/mesh_generator.h>
 namespace xtest {
 namespace demo {
-
 	class BoxDemoApp : public application::DirectxApp, public input::MouseListener, public input::KeyboardListener
 	{
 	public:
@@ -49,6 +48,7 @@ namespace demo {
 		DirectX::XMFLOAT4X4 m_viewMatrix;
 		DirectX::XMFLOAT4X4 m_worldMatrix;
 		DirectX::XMFLOAT4X4 m_projectionMatrix;
+		mesh::MeshData m_plane;
 
 		camera::SphericalCamera m_camera;
 

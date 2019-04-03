@@ -1,10 +1,12 @@
 #include "stdafx.h"
 #include "box_demo_app.h"
-#include <mesh/mesh_generator.h>
 #include <file/file_utils.h>
 #include <math/math_utils.h>
 #include <service/locator.h>
 
+namespace mesh {
+	class MeshData;
+}
 
 using namespace DirectX;
 using namespace xtest;
@@ -94,8 +96,14 @@ void BoxDemoApp::InitShaders()
 void BoxDemoApp::InitBuffers()
 {
 	// vertex buffer composed by the cube's vertices
-	mesh::MeshData plane = mesh::GeneratePlane(20, 20, 1, 1);
-	/*VertexIn vertices[] =;
+	m_plane = mesh::GeneratePlane(500, 500, 2, 2);
+	/*std::vector<VertexIn> vertices(plane.vertices.size());
+	for (int i = 0; i < plane.vertices.size(); i++) {
+		vertices[i] = {
+			plane.vertices[i].position,XMFLOAT4(DirectX::Colors::Red)
+		};
+	}
+	VertexIn vertices[] =;
 	{
 		{ XMFLOAT3(+1.f, +1.f, +1.f), XMFLOAT4(DirectX::Colors::Red) },
 		{ XMFLOAT3(+1.f, +1.f, -1.f), XMFLOAT4(DirectX::Colors::Red) },
@@ -109,14 +117,14 @@ void BoxDemoApp::InitBuffers()
 
 	D3D11_BUFFER_DESC vertexBufferDesc;
 	vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	vertexBufferDesc.ByteWidth = sizeof(plane.vertices.data());
+	vertexBufferDesc.ByteWidth = UINT(sizeof(mesh::MeshData::Vertex)* m_plane.vertices.size());
 	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	vertexBufferDesc.CPUAccessFlags = 0;
 	vertexBufferDesc.MiscFlags = 0;
 	vertexBufferDesc.StructureByteStride = 0;
 
 	D3D11_SUBRESOURCE_DATA vertexInitData;
-	vertexInitData.pSysMem = plane.vertices.data();
+	vertexInitData.pSysMem = m_plane.vertices.data();
 	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexInitData, &m_vertexBuffer));
 
 
@@ -150,14 +158,14 @@ void BoxDemoApp::InitBuffers()
 
 	D3D11_BUFFER_DESC indexBufferDesc;
 	indexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	indexBufferDesc.ByteWidth = sizeof(plane.indices.data());
+	indexBufferDesc.ByteWidth = UINT(sizeof(uint32)*m_plane.indices.size());
 	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	indexBufferDesc.CPUAccessFlags = 0;
 	indexBufferDesc.MiscFlags = 0;
 	indexBufferDesc.StructureByteStride = 0;
 
 	D3D11_SUBRESOURCE_DATA indexInitdata;
-	indexInitdata.pSysMem = plane.indices.data();
+	indexInitdata.pSysMem = m_plane.indices.data();
 	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &m_indexBuffer));
 
 
@@ -298,7 +306,7 @@ void BoxDemoApp::RenderScene()
 
 	// clear the frame
 	m_d3dContext->ClearDepthStencilView(m_depthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
-	m_d3dContext->ClearRenderTargetView(m_backBufferView.Get(), DirectX::Colors::Black);
+	m_d3dContext->ClearRenderTargetView(m_backBufferView.Get(), DirectX::Colors::White);
 
 	// set the shaders and the input layout
 	m_d3dContext->RSSetState(m_rasterizerState.Get());
@@ -311,14 +319,14 @@ void BoxDemoApp::RenderScene()
 	m_d3dContext->VSSetConstantBuffers(bufferRegister, 1, m_vsConstantBuffer.GetAddressOf());
 
 	// set what to draw
-	UINT stride = sizeof(VertexIn);
+	UINT stride = sizeof(mesh::MeshData::Vertex);
 	UINT offset = 0;
 	m_d3dContext->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), &stride, &offset);
 	m_d3dContext->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 	m_d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// draw and present the frame
-	m_d3dContext->DrawIndexed(36, 0, 0);
+	m_d3dContext->DrawIndexed(m_plane.vertices.size(), 0, 0);
 	XTEST_D3D_CHECK(m_swapChain->Present(0, 0));
 
 	m_d3dAnnotation->EndEvent();
