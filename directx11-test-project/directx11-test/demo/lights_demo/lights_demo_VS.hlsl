@@ -9,6 +9,7 @@ struct Material {
 cbuffer PerObjectCB : register(b0)
 {
 	float4x4 W;
+	float4x4 W_inverseTranspose;
 	float4x4 WVP;
 	Material material;
 };
@@ -35,5 +36,6 @@ VertexOut main(VertexIn vin)
 	vout.posH = mul(float4(vin.posL, 1.0), WVP);
 	vout.posW = (mul(float4(vin.posL, 1.0), W)).xyz;
 	vout.normal = mul(vin.normal, (float3x3)W );
+	vout.normal = mul(vin.normal, (float3x3)W_inverseTranspose);
 	return vout;
 }

@@ -35,6 +35,7 @@ struct Material {
 cbuffer PerObjectCB : register(b0)
 {
 	float4x4 W;
+	float4x4 W_inverseTraspose;
 	float4x4 WVP;
 	Material material;
 };

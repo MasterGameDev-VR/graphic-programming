@@ -22,6 +22,7 @@ namespace xtest {
 			struct PerObjectCB
 			{
 				DirectX::XMFLOAT4X4 W;
+				DirectX::XMFLOAT4X4 W_inverseTranspose;
 				DirectX::XMFLOAT4X4 WVP;
 				Material material;
 			};

@@ -421,6 +421,8 @@ void LightDemoApp::UpdateScene(float deltaSeconds)
 		XMMATRIX W = XMLoadFloat4x4(&(m_objects[i].worldMatrix));
 		XMStoreFloat4x4(&(m_objects[i].worldMatrix), W);
 
+		XMMATRIX W_inverseTranspose = XMMatrixInverse(nullptr, W);
+
 		// create the model-view-projection matrix
 		XMMATRIX V = m_camera.GetViewMatrix();
 		XMStoreFloat4x4(&m_viewMatrix, V);
@@ -445,6 +447,7 @@ void LightDemoApp::UpdateScene(float deltaSeconds)
 			//update the data
 			XMStoreFloat4x4(&constantBufferData->WVP, WVP);
 			XMStoreFloat4x4(&constantBufferData->W, W);
+			XMStoreFloat4x4(&constantBufferData->W_inverseTranspose, W_inverseTranspose);
 			constantBufferData->material = m_objects[i].material;
 
 
@@ -453,11 +456,13 @@ void LightDemoApp::UpdateScene(float deltaSeconds)
 		}
 	}
 
-	//CRETE CONSTANT BUFFER UPDATE
+	//CRATE CONSTANT BUFFER UPDATE
 	for (auto it = m_crateMeshDescriptorMap.begin(); it != m_crateMeshDescriptorMap.end(); it++) {
 
 		XMMATRIX W = XMLoadFloat4x4(&(m_crateWorldMatrix));
 		XMStoreFloat4x4(&(m_crateWorldMatrix), W);
+
+		XMMATRIX W_inverseTranspose = XMMatrixInverse(nullptr, W);
 
 		// create the model-view-projection matrix
 		XMMATRIX V = m_camera.GetViewMatrix();
@@ -483,6 +488,7 @@ void LightDemoApp::UpdateScene(float deltaSeconds)
 			//update the data
 			XMStoreFloat4x4(&constantBufferData->WVP, WVP);
 			XMStoreFloat4x4(&constantBufferData->W, W);
+			XMStoreFloat4x4(&constantBufferData->W_inverseTranspose, W_inverseTranspose);
 			constantBufferData->material = m_crateMaterials.at(it->first);
 
 			// enable gpu access
