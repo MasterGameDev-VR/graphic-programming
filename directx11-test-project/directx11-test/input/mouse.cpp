@@ -1,5 +1,7 @@
 #include "stdafx.h"
 #include "mouse.h"
+#include <application/windows_app.h>
+
 
 using xtest::input::Mouse;
 using xtest::input::MouseButton;
@@ -8,20 +10,14 @@ using xtest::input::MouseListener;
 using xtest::input::CursorMode;
 
 
-Mouse& Mouse::GetMouse()
-{
-	static Mouse s_instance;
-	return s_instance;
-}
-
-
-Mouse::Mouse()
+Mouse::Mouse(xtest::application::WindowsApp* ownerApplication)
 	: m_buttonStatus()
 	, m_listeners()
 	, m_mode(CursorMode::free_mode)
 	, m_cursorPos(0,0)
 	, m_lastMovement(0,0)
 	, m_isCursorVisible(true)
+	, m_ownerApplication(ownerApplication)
 {}
 
 
@@ -77,7 +73,7 @@ void Mouse::SetCursorMode(CursorMode mode)
 
 	if (m_mode == CursorMode::clip_mode)
 	{
-		HWND mainWindow = application::WindowsApp::CurrentApp()->GetMainWindow();
+		HWND mainWindow = m_ownerApplication->GetMainWindow();
 
 		RECT clientArea;
 		GetClientRect(mainWindow, &clientArea);
@@ -129,7 +125,7 @@ const DirectX::XMINT2& Mouse::GetCursorPosition()
 
 bool Mouse::IsInClientArea() const
 {
-	HWND mainWindow = application::WindowsApp::CurrentApp()->GetMainWindow();
+	HWND mainWindow = m_ownerApplication->GetMainWindow();
 
 	// translate the current position in client area coordinates
 	POINT mousePos;
@@ -243,9 +239,3 @@ void Mouse::UpdateButtonStatus(MouseButton button, bool isDown)
 }
 
 
-
-xtest::input::MouseListener::MouseListener()
-{
-	// auto register
-	Mouse::GetMouse().AddListener(this);
-}

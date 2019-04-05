@@ -72,6 +72,9 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <ShaderModel>5.0</ShaderModel>
     </FxCompile>
+    <PostBuildEvent>
+      <Command>xcopy /S/y "$(ProjectDir)application\resources\data" "$(TargetDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -94,6 +97,9 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <ShaderModel>5.0</ShaderModel>
     </FxCompile>
+    <PostBuildEvent>
+      <Command>xcopy /S/y "$(ProjectDir)application\resources\data" "$(TargetDir)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="application\directx_app.h" />
@@ -104,14 +110,18 @@
     <ClInclude Include="common\common_macros.h" />
     <ClInclude Include="common\int_types.h" />
     <ClInclude Include="demo\box_demo\box_demo_app.h" />
+    <ClInclude Include="demo\lights_demo\lights_demo_app.h" />
+    <ClInclude Include="external_libs\tiny_obj_loader\tiny_obj_loader.h" />
     <ClInclude Include="file\binary_file.h" />
     <ClInclude Include="file\file_utils.h" />
     <ClInclude Include="input\keyboard.h" />
     <ClInclude Include="input\mouse.h" />
     <ClInclude Include="math\math_utils.h" />
+    <ClInclude Include="mesh\mesh_format.h" />
     <ClInclude Include="mesh\mesh_generator.h" />
     <ClInclude Include="render\directx_backend.h" />
     <ClInclude Include="render\render_macros.h" />
+    <ClInclude Include="service\locator.h" />
     <ClInclude Include="time\timer.h" />
     <ClInclude Include="application\window_settings.h" />
     <ClInclude Include="application\resources\Resource.h" />
@@ -126,13 +136,17 @@
     <ClCompile Include="camera\spherical_camera.cpp" />
     <ClCompile Include="common\assert.cpp" />
     <ClCompile Include="demo\box_demo\box_demo_app.cpp" />
+    <ClCompile Include="demo\lights_demo\lights_demo_app.cpp" />
+    <ClCompile Include="external_libs\tiny_obj_loader\tiny_obj_loader.cc" />
     <ClCompile Include="file\binary_file.cpp" />
     <ClCompile Include="file\file_utils.cpp" />
     <ClCompile Include="input\keyboard.cpp" />
     <ClCompile Include="input\mouse.cpp" />
     <ClCompile Include="math\math_utils.cpp" />
+    <ClCompile Include="mesh\mesh_format.cpp" />
     <ClCompile Include="mesh\mesh_generator.cpp" />
     <ClCompile Include="render\directx_backend.cpp" />
+    <ClCompile Include="service\locator.cpp" />
     <ClCompile Include="time\timer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -156,6 +170,14 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="demo\box_demo\box_demo_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\lights_demo\lights_demo_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\lights_demo\lights_demo_VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <application/window_settings.h>
+#include <input/mouse.h>
+#include <input/keyboard.h>
 
 namespace xtest {
 namespace application {
@@ -9,8 +11,6 @@ namespace application {
 	class WindowsApp
 	{
 	public:
-
-		static WindowsApp* CurrentApp();
 
 		WindowsApp(HINSTANCE instance, const WindowSettings& windowSettings);
 		virtual ~WindowsApp() {};
@@ -35,7 +35,7 @@ namespace application {
 
 		HINSTANCE GetInstance() const;
 		HWND GetMainWindow() const;
-		const std::wstring& GetRootDir() const;
+		std::wstring GetRootDir() const;
 
 	protected:
 
@@ -51,7 +51,6 @@ namespace application {
 	private:
 
 		static LRESULT CALLBACK s_MsgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-		static WindowsApp* s_currentApp;
 
 		LRESULT OnWmSizeCallback(WPARAM wParam);
 		LRESULT OnWmEnterSizeMoveCallback();
@@ -72,6 +71,8 @@ namespace application {
 		bool m_hasBeenShown;
 		bool m_isFullscreen;
 		std::wstring m_rootDir;
+		input::Mouse m_mouse;
+		input::Keyboard m_keyboard;
 	};
 
 

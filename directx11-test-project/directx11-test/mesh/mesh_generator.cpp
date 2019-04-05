@@ -7,304 +7,255 @@ using namespace xtest::mesh;
 using namespace DirectX;
 
 
-PlaneInfo xtest::mesh::GeneratePlaneInfo(unsigned xEdgeVertexCount, unsigned zEdgeVertexCount, float xEdgeLength, float zEdgeLength)
+
+xtest::mesh::MeshData xtest::mesh::GeneratePlane(float xLength, float zLength, uint32 zDivisions, uint32 xDivisions)
 {
-	XTEST_ASSERT(xEdgeLength > 0.f);
-	XTEST_ASSERT(zEdgeLength > 0.f);
-	XTEST_ASSERT(xEdgeVertexCount > 1);
-	XTEST_ASSERT(zEdgeVertexCount > 1);
+	const float halfWidth = 0.5f*xLength;
+	const float halfDepth = 0.5f*zLength;
+	const float dx = xLength / (xDivisions - 1);
+	const float dz = zLength / (zDivisions - 1);
+	const float du = 1.0f / (xDivisions - 1);
+	const float dv = 1.0f / (zDivisions - 1);
 
-	PlaneInfo planeInfo;
-	planeInfo.xEdgeVertexCount = xEdgeVertexCount;
-	planeInfo.zEdgeVertexCount = zEdgeVertexCount;
-	planeInfo.xEdgeLength = xEdgeLength;
-	planeInfo.zEdgeLength = zEdgeLength;
-	planeInfo.vertexCount = xEdgeVertexCount * zEdgeVertexCount;
-	planeInfo.indexCount = (xEdgeVertexCount - 1) * (zEdgeVertexCount - 1) * 6;
+	MeshData mesh;
 
-	return planeInfo;
-}
+	const uint32 vertexCount = zDivisions * xDivisions;
+	mesh.vertices.resize(vertexCount);
 
-void xtest::mesh::GeneratePlane(
-	const PlaneInfo& planeInfo,
-	DirectX::XMFLOAT3* out_positions, 
-	size_t positionByteStride, 
-	DirectX::XMFLOAT3* out_normals, 
-	size_t normalByteStride,
-	DirectX::XMFLOAT2* out_uvs, 
-	size_t uvByteStride, 
-	DirectX::XMFLOAT3* out_tangets,
-	size_t tangentByteStride,
-	uint32* out_indices)
-{
-
-	XTEST_ASSERT(out_positions, L"Vertex positions destination must be specified.");
-	XTEST_ASSERT(out_indices, L"Vertex indices destination must be specified.");
-
-	const float xPosIncrement = planeInfo.xEdgeLength / float(planeInfo.xEdgeVertexCount - 1);
-	const float zPosIncrement = planeInfo.zEdgeLength / float(planeInfo.zEdgeVertexCount - 1);
-	const float xUVIncrement = 1.f / float(planeInfo.xEdgeVertexCount - 1);
-	const float zUVIncrement = 1.f / float(planeInfo.zEdgeVertexCount - 1);
-	const float halfXEdgeLength = planeInfo.xEdgeLength / 2.f;
-	const float halfZEdgeLength = planeInfo.zEdgeLength / 2.f;
-
-	unsigned currentVertex = 0;
-	unsigned currentIndex = 0;
-	for (unsigned xVert = 0; xVert < planeInfo.xEdgeVertexCount; xVert++)
+	//vertices
+	for (uint32 zIter = 0; zIter < zDivisions; ++zIter)
 	{
-		for (unsigned zVert = 0; zVert < planeInfo.zEdgeVertexCount; zVert++)
+		float z = halfDepth - zIter * dz;
+		for (uint32 xIter = 0; xIter < xDivisions; ++xIter)
 		{
-			//vertices
-			XMFLOAT3& position = reinterpret_cast<XMFLOAT3&>(reinterpret_cast<byte*>(out_positions)[positionByteStride * currentVertex]);
-			position.x = xVert * xPosIncrement - halfXEdgeLength;
-			position.y = 0.f;
-			position.z = zVert * zPosIncrement - halfZEdgeLength;
+			float x = -halfWidth + xIter * dx;
 
-			if (out_normals)
-			{
-				XMFLOAT3& normal = reinterpret_cast<XMFLOAT3&>(reinterpret_cast<byte*>(out_normals)[normalByteStride * currentVertex]);
-				normal.x = 0.f;
-				normal.y = 1.f;
-				normal.z = 0.f;
-			}
-			
-			if (out_uvs)
-			{
-				XMFLOAT2& uv = reinterpret_cast<XMFLOAT2&>(reinterpret_cast<byte*>(out_uvs)[uvByteStride * currentVertex]);
-				uv.x = xVert * xUVIncrement;
-				uv.y = zVert * zUVIncrement;
-			}
+			mesh.vertices[zIter*xDivisions + xIter].position = { x, 0.0f, z };
+			mesh.vertices[zIter*xDivisions + xIter].normal = { 0.0f, 1.0f, 0.0f };
+			mesh.vertices[zIter*xDivisions + xIter].tangentU = { 1.0f, 0.0f, 0.0f };
 
-			if (out_tangets)
-			{
-				XMFLOAT3& tangent = reinterpret_cast<XMFLOAT3&>(reinterpret_cast<byte*>(out_tangets)[tangentByteStride * currentVertex]);
-				tangent.x = 1.f;
-				tangent.y = 0.f;
-				tangent.z = 0.f;
-			}
-
-
-			//indices
-			if (xVert < (planeInfo.xEdgeVertexCount -1) && zVert < (planeInfo.zEdgeVertexCount -1))
-			{
-				// first triangle
-				out_indices[currentIndex]	 = (planeInfo.zEdgeVertexCount*xVert) + zVert;
-				out_indices[currentIndex +1] = (planeInfo.zEdgeVertexCount*xVert) + zVert +1;
-				out_indices[currentIndex +2] = (planeInfo.zEdgeVertexCount*(xVert +1)) + zVert;
-
-				// second triangle
-				out_indices[currentIndex +3] = (planeInfo.zEdgeVertexCount*xVert) + zVert + 1;
-				out_indices[currentIndex +4] = (planeInfo.zEdgeVertexCount*(xVert + 1)) + zVert +1;
-				out_indices[currentIndex +5] = (planeInfo.zEdgeVertexCount*(xVert + 1)) + zVert;
-				currentIndex += 6;
-			}
-
-			currentVertex++;
-		}
-	}
-}
-
-
-
-CylinderInfo xtest::mesh::GenerateCylinderInfo(unsigned sliceCount, unsigned stackCount, float height, float topRadius, float bottomRadius)
-{
-	XTEST_ASSERT(height > 0.f);
-	XTEST_ASSERT(topRadius > 0.f);
-	XTEST_ASSERT(bottomRadius > 0.f);
-	XTEST_ASSERT(sliceCount > 1);
-	XTEST_ASSERT(stackCount > 0);
-
-	CylinderInfo info;
-	info.sliceCount = sliceCount;
-	info.stackCount = stackCount;
-	info.height = height;
-	info.topRadius = topRadius;
-	info.bottomRadius = bottomRadius;
-
-	// the top and the bottom bases are different vertices and have a vertex at the center
-
-	const unsigned baseVertexCount = (sliceCount + 1);
-	const unsigned sideVertexCount = sliceCount * (stackCount + 2);
-	const unsigned baseIndexCount = sliceCount * 3;
-	const unsigned sideIndexCount = (sliceCount * 6) * stackCount;
-
-	info.vertexCount = baseVertexCount * 2 + sideVertexCount;
-	info.indexCount = baseIndexCount * 2 + sideIndexCount;
-
-	return info;
-}
-
-
-void xtest::mesh::GenerateCylinder(
-	const CylinderInfo& cylinderInfo, 
-	DirectX::XMFLOAT3* out_positions, 
-	size_t positionByteStride, 
-	DirectX::XMFLOAT3* out_normals, 
-	size_t normalByteStride,
-	DirectX::XMFLOAT2* out_uvs, 
-	size_t uvStride, 
-	DirectX::XMFLOAT3* out_tangets,
-	size_t tangentByteStride, 
-	uint32* out_indices)
-{
-	XTEST_UNUSED_VAR(uvStride);
-	XTEST_UNUSED_VAR(tangentByteStride);
-
-	XTEST_ASSERT(out_positions, L"Vertex positions destination must be specified.");
-	XTEST_ASSERT(out_indices, L"Vertex indices destination must be specified.");
-
-	const float halfHeight = cylinderInfo.height * 0.5f;
-	const float sliceDeltaAngle = DirectX::XM_2PI / cylinderInfo.sliceCount;
-	unsigned currentVertex = 0;
-	unsigned currentIndex = 0;
-
-	// bases
-	{
-
-		for (unsigned base = 0; base < 2; base++)
-		{
-			const bool isFacingUp = base == 0;
-			const float baseHeight = isFacingUp ? halfHeight : -halfHeight;
-			const float baseradius = isFacingUp ? cylinderInfo.topRadius : cylinderInfo.bottomRadius;
-			
-
-			// center vertex
-			{
-				XMFLOAT3& position = reinterpret_cast<XMFLOAT3&>(reinterpret_cast<byte*>(out_positions)[positionByteStride * currentVertex]);
-				position = { 0.f, baseHeight, 0.f };
-				
-				if (out_normals)
-				{
-					XMFLOAT3& normal = reinterpret_cast<XMFLOAT3&>(reinterpret_cast<byte*>(out_normals)[normalByteStride * currentVertex]);
-					normal = { 0.f, isFacingUp ? 1.f : -1.f , 0.f };
-				}
-
-				if (out_uvs)
-				{
-					// TODO
-				}
-
-				if (out_tangets)
-				{
-					// TODO
-				}
-			}
-			currentVertex++;
-
-			const unsigned centerVertexIndex = currentVertex -1;
-			const unsigned previousVertexCount = currentVertex;
-
-			for (unsigned sliceIndex = 0; sliceIndex < cylinderInfo.sliceCount; sliceIndex++)
-			{
-				// vertices
-				XMFLOAT3& position = reinterpret_cast<XMFLOAT3&>(reinterpret_cast<byte*>(out_positions)[positionByteStride * currentVertex]);
-				position.x = std::cosf(sliceDeltaAngle * sliceIndex) * baseradius;
-				position.y = baseHeight;
-				position.z = std::sinf(sliceDeltaAngle * sliceIndex) * baseradius;
-
-				if (out_normals)
-				{
-					XMFLOAT3& normal = reinterpret_cast<XMFLOAT3&>(reinterpret_cast<byte*>(out_normals)[normalByteStride * currentVertex]);
-					normal.x = 0.f;
-					normal.y = isFacingUp ? 1.f : -1.f;
-					normal.z = 0.f;
-				}
-
-				if (out_uvs)
-				{
-					// TODO
-				}
-
-				if (out_tangets)
-				{
-					// TODO
-				}
-
-
-				// indices
-				if (sliceIndex < cylinderInfo.sliceCount -1)
-				{
-
-					out_indices[currentIndex] = centerVertexIndex;
-					out_indices[currentIndex + 1] = previousVertexCount + (sliceIndex + 1);
-					out_indices[currentIndex + 2] = previousVertexCount + sliceIndex;
-					if (!isFacingUp)
-					{
-						std::swap(out_indices[currentIndex + 1], out_indices[currentIndex + 2]);
-					}
-					currentIndex += 3;
-				}
-
-				currentVertex++;
-			}
-
-
-			//close the circle
-			out_indices[currentIndex] = centerVertexIndex;
-			out_indices[currentIndex + 1] = previousVertexCount;
-			out_indices[currentIndex + 2] = previousVertexCount + cylinderInfo.sliceCount -1;
-			
-			if (!isFacingUp)
-			{
-				std::swap(out_indices[currentIndex + 1], out_indices[currentIndex + 2]);
-			}
-			currentIndex += 3;
-
+			mesh.vertices[zIter*xDivisions + xIter].uv.x = xIter * du;
+			mesh.vertices[zIter*xDivisions + xIter].uv.y = zIter * dv;
 		}
 	}
 
 
-
-	// side part
+	const uint32 faceCount = (zDivisions - 1)*(xDivisions - 1) * 2;
+	mesh.indices.resize(faceCount * 3); // 3 indices per face
+	
+	// indices
+	uint32 k = 0;
+	for (uint32 zIter = 0; zIter < zDivisions - 1; ++zIter)
 	{
-		const float deltaHeight = cylinderInfo.height / cylinderInfo.stackCount;
-		const unsigned layerCount = cylinderInfo.stackCount + 1;
-		const unsigned previousVertexCount = currentVertex;
-		const unsigned layerVertexCount = cylinderInfo.sliceCount + 1;
-
-		for (unsigned layerIndex = 0; layerIndex < layerCount; layerIndex++)
+		for (uint32 xIter = 0; xIter < xDivisions - 1; ++xIter)
 		{
-			const float layerRadius = math::Lerp(cylinderInfo.topRadius, cylinderInfo.bottomRadius, float(cylinderInfo.stackCount - layerIndex) / float(cylinderInfo.stackCount));
+			mesh.indices[k] = zIter * xDivisions + xIter;
+			mesh.indices[k + 1] = zIter * xDivisions + xIter + 1;
+			mesh.indices[k + 2] = (zIter + 1)*xDivisions + xIter;
 
-			for (unsigned sliceIndex = 0; sliceIndex < layerVertexCount; sliceIndex++)
-			{
-				// vertices
-				XMFLOAT3& position = reinterpret_cast<XMFLOAT3&>(reinterpret_cast<byte*>(out_positions)[positionByteStride * currentVertex]);
-				position.x = std::cosf(sliceDeltaAngle * sliceIndex) * layerRadius;
-				position.y = (layerIndex * deltaHeight) - halfHeight;
-				position.z = std::sinf(sliceDeltaAngle * sliceIndex) * layerRadius;
+			mesh.indices[k + 3] = (zIter + 1)*xDivisions + xIter;
+			mesh.indices[k + 4] = zIter * xDivisions + xIter + 1;
+			mesh.indices[k + 5] = (zIter + 1)*xDivisions + xIter + 1;
 
-				if (out_normals)
-				{
-					// TODO
-				}
-
-				if (out_uvs)
-				{
-					// TODO
-				}
-
-				if (out_tangets)
-				{
-					// TODO
-				}
-
-				// indices
-				if (sliceIndex < (layerVertexCount -1) && layerIndex < (layerCount -1))
-				{
-					out_indices[currentIndex] = previousVertexCount + (sliceIndex + (layerVertexCount * layerIndex));
-					out_indices[currentIndex + 1] = previousVertexCount + (sliceIndex + (layerVertexCount * (layerIndex + 1)));
-					out_indices[currentIndex + 2] = previousVertexCount + ((sliceIndex + 1) + (layerVertexCount * layerIndex));
-					out_indices[currentIndex + 3] = previousVertexCount + ((sliceIndex + 1) + (layerVertexCount * layerIndex));
-					out_indices[currentIndex + 4] = previousVertexCount + (sliceIndex + (layerVertexCount * (layerIndex + 1)));
-					out_indices[currentIndex + 5] = previousVertexCount + ((sliceIndex + 1) + (layerVertexCount * (layerIndex + 1)));
-					currentIndex += 6;
-				}
-				
-				currentVertex++;
-			}
+			k += 6; // next quad
 		}
 	}
 
-
+	return mesh;
 }
+
+
+
+xtest::mesh::MeshData xtest::mesh::GenerateSphere(float radius, uint32 sliceCount, uint32 stackCount)
+{
+	// poles vertices
+	MeshData::Vertex topVertex = { {0.0f, +radius, 0.0f}, {0.0f, +1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f} };
+	MeshData::Vertex bottomVertex = { {0.0f, -radius, 0.0f}, {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f} };
+
+	MeshData mesh;
+	mesh.vertices.push_back(topVertex);
+
+	const float phiStep = XM_PI / stackCount;
+	const float thetaStep = 2.0f*XM_PI / sliceCount;
+
+	//rings vertices
+	for (uint32 stack = 1; stack <= stackCount - 1; ++stack)
+	{
+		float phi = stack * phiStep;
+
+		for (uint32 slice = 0; slice <= sliceCount; ++slice)
+		{
+			float theta = slice * thetaStep;
+
+			MeshData::Vertex vertex;
+
+			// spherical to cartesian
+			vertex.position.x = radius * sinf(phi)*cosf(theta);
+			vertex.position.y = radius * cosf(phi);
+			vertex.position.z = radius * sinf(phi)*sinf(theta);
+
+			// Partial derivative of P with respect to theta
+			vertex.tangentU.x = -radius * sinf(phi)*sinf(theta);
+			vertex.tangentU.y = 0.0f;
+			vertex.tangentU.z = +radius * sinf(phi)*cosf(theta);
+
+			XMVECTOR tangentU = XMLoadFloat3(&vertex.tangentU);
+			XMStoreFloat3(&vertex.tangentU, XMVector3Normalize(tangentU));
+
+			XMVECTOR position = XMLoadFloat3(&vertex.position);
+			XMStoreFloat3(&vertex.normal, XMVector3Normalize(position));
+
+			vertex.uv.x = theta / XM_2PI;
+			vertex.uv.y = phi / XM_PI;
+
+			mesh.vertices.push_back(vertex);
+		}
+	}
+
+	mesh.vertices.push_back(bottomVertex);
+
+
+	// top indices
+	for (uint32 slice = 1; slice <= sliceCount; ++slice)
+	{
+		mesh.indices.push_back(0);
+		mesh.indices.push_back(slice + 1);
+		mesh.indices.push_back(slice);
+	}
+
+	// stacks indices
+	uint32 baseIndex = 1;
+	uint32 ringVertexCount = sliceCount + 1;
+	for (uint32 stack = 0; stack < stackCount - 2; ++stack)
+	{
+		for (uint32 slice = 0; slice < sliceCount; ++slice)
+		{
+			mesh.indices.push_back(baseIndex + stack * ringVertexCount + slice);
+			mesh.indices.push_back(baseIndex + stack * ringVertexCount + slice + 1);
+			mesh.indices.push_back(baseIndex + (stack + 1)*ringVertexCount + slice);
+			
+			mesh.indices.push_back(baseIndex + (stack + 1)*ringVertexCount + slice);
+			mesh.indices.push_back(baseIndex + stack * ringVertexCount + slice + 1);
+			mesh.indices.push_back(baseIndex + (stack + 1)*ringVertexCount + slice + 1);
+		}
+	}
+
+	
+	// South pole vertex was added last.
+	uint32 southPoleIndex = uint32(mesh.vertices.size() - 1);
+
+	// Offset the indices to the index of the first vertex in the last ring.
+	baseIndex = southPoleIndex - ringVertexCount;
+
+	for (uint32 slice = 0; slice < sliceCount; ++slice)
+	{
+		mesh.indices.push_back(southPoleIndex);
+		mesh.indices.push_back(baseIndex + slice);
+		mesh.indices.push_back(baseIndex + slice + 1);
+	}
+
+	return mesh;
+}
+
+
+xtest::mesh::MeshData xtest::mesh::GenerateBox(float xLength, float yLength, float zLength)
+{
+	MeshData mesh;
+	mesh.vertices.resize(24);
+
+	float xHalfLength = 0.5f*xLength;
+	float yHalfLength = 0.5f*yLength;
+	float zHalfLength = 0.5f*zLength;
+
+	// front
+	mesh.vertices[0] = { {-xHalfLength, -yHalfLength, -zHalfLength}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f} };
+	mesh.vertices[1] = { {-xHalfLength, +yHalfLength, -zHalfLength}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f} };
+	mesh.vertices[2] = { {+xHalfLength, +yHalfLength, -zHalfLength}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f} };
+	mesh.vertices[3] = { {+xHalfLength, -yHalfLength, -zHalfLength}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f} };
+					   																							 
+	// back		   																							 
+	mesh.vertices[4] = { {-xHalfLength, -yHalfLength, +zHalfLength}, {0.0f, 0.0f, 1.0f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f} };
+	mesh.vertices[5] = { {+xHalfLength, -yHalfLength, +zHalfLength}, {0.0f, 0.0f, 1.0f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 1.0f} };
+	mesh.vertices[6] = { {+xHalfLength, +yHalfLength, +zHalfLength}, {0.0f, 0.0f, 1.0f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f} };
+	mesh.vertices[7] = { {-xHalfLength, +yHalfLength, +zHalfLength}, {0.0f, 0.0f, 1.0f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 0.0f} };
+
+	// top			
+	mesh.vertices[8]  = {{-xHalfLength, +yHalfLength, -zHalfLength}, {0.0f, 1.0f, 0.0f }, {1.0f, 0.0f, 0.0f }, {0.0f, 1.0f}};
+	mesh.vertices[9]  = {{-xHalfLength, +yHalfLength, +zHalfLength}, {0.0f, 1.0f, 0.0f }, {1.0f, 0.0f, 0.0f }, {0.0f, 0.0f}};
+	mesh.vertices[10] = {{+xHalfLength, +yHalfLength, +zHalfLength}, {0.0f, 1.0f, 0.0f }, {1.0f, 0.0f, 0.0f }, {1.0f, 0.0f}};
+	mesh.vertices[11] = {{+xHalfLength, +yHalfLength, -zHalfLength}, {0.0f, 1.0f, 0.0f }, {1.0f, 0.0f, 0.0f }, {1.0f, 1.0f}};
+						
+	// bottom			
+	mesh.vertices[12] = {{-xHalfLength, -yHalfLength, -zHalfLength}, {0.0f, -1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}};
+	mesh.vertices[13] = {{+xHalfLength, -yHalfLength, -zHalfLength}, {0.0f, -1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}};
+	mesh.vertices[14] = {{+xHalfLength, -yHalfLength, +zHalfLength}, {0.0f, -1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}};
+	mesh.vertices[15] = {{-xHalfLength, -yHalfLength, +zHalfLength}, {0.0f, -1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}};
+						
+	// left			
+	mesh.vertices[16] = {{-xHalfLength, -yHalfLength, +zHalfLength}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f}};
+	mesh.vertices[17] = {{-xHalfLength, +yHalfLength, +zHalfLength}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f}};
+	mesh.vertices[18] = {{-xHalfLength, +yHalfLength, -zHalfLength}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f}};
+	mesh.vertices[19] = {{-xHalfLength, -yHalfLength, -zHalfLength}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f}};
+						
+	// right			
+	mesh.vertices[20] = {{+xHalfLength, -yHalfLength, -zHalfLength}, {1.0f, 0.0f, 0.0f }, {0.0f, 0.0f, 1.0f }, {0.0f, 1.0f}};
+	mesh.vertices[21] = {{+xHalfLength, +yHalfLength, -zHalfLength}, {1.0f, 0.0f, 0.0f }, {0.0f, 0.0f, 1.0f }, {0.0f, 0.0f}};
+	mesh.vertices[22] = {{+xHalfLength, +yHalfLength, +zHalfLength}, {1.0f, 0.0f, 0.0f }, {0.0f, 0.0f, 1.0f }, {1.0f, 0.0f}};
+	mesh.vertices[23] = {{+xHalfLength, -yHalfLength, +zHalfLength}, {1.0f, 0.0f, 0.0f }, {0.0f, 0.0f, 1.0f }, {1.0f, 1.0f}};
+
+
+
+	// Create the indices
+	mesh.indices.resize(36);
+
+	// front
+	mesh.indices[0] = 0; 
+	mesh.indices[1] = 1; 
+	mesh.indices[2] = 2;
+	mesh.indices[3] = 0; 
+	mesh.indices[4] = 2; 
+	mesh.indices[5] = 3;
+
+	// back
+	mesh.indices[6] = 4;
+	mesh.indices[7] = 5;
+	mesh.indices[8] = 6;
+	mesh.indices[9] = 4;
+	mesh.indices[10] = 6;
+	mesh.indices[11] = 7;
+
+	// top
+	mesh.indices[12] = 8;
+	mesh.indices[13] = 9;
+	mesh.indices[14] = 10;
+	mesh.indices[15] = 8;
+	mesh.indices[16] = 10; 
+	mesh.indices[17] = 11;
+
+	// bottom
+	mesh.indices[18] = 12; 
+	mesh.indices[19] = 13; 
+	mesh.indices[20] = 14;
+	mesh.indices[21] = 12; 
+	mesh.indices[22] = 14;
+	mesh.indices[23] = 15;
+
+	// left
+	mesh.indices[24] = 16;
+	mesh.indices[25] = 17; 
+	mesh.indices[26] = 18;
+	mesh.indices[27] = 16;
+	mesh.indices[28] = 18; 
+	mesh.indices[29] = 19;
+
+	// right
+	mesh.indices[30] = 20;
+	mesh.indices[31] = 21; 
+	mesh.indices[32] = 22;
+	mesh.indices[33] = 20; 
+	mesh.indices[34] = 22; 
+	mesh.indices[35] = 23;
+
+	return mesh;
+}
+
