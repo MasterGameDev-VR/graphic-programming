@@ -84,9 +84,9 @@ LightDemoApp::LightDemoApp(HINSTANCE instance,
 	//TORUS
 	{
 		Material material;
-		material.ambient = DirectX::XMFLOAT4(0.7f, 0.6f, 0.1f, 0.0f);
-		material.diffuse = DirectX::XMFLOAT4(0.8f, 0.6f, 0.1f, 0.0f);
-		material.specular = DirectX::XMFLOAT4(0.7f, 0.7f, 0.4f, 20.f);
+		material.ambient = DirectX::XMFLOAT4(0.5f, 0.4f, 0.1f, 0.0f);
+		material.diffuse = DirectX::XMFLOAT4(0.7f, 0.6f, 0.1f, 0.0f);
+		material.specular = DirectX::XMFLOAT4(0.4f, 0.4f, 0.0f, 60.f);
 
 		m_objects[2].material = material;
 	}

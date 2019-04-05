@@ -181,9 +181,16 @@ xtest::mesh::MeshData xtest::mesh::GenerateTorus(float majorRadius, float minorR
 			vertex.position.y = minorRadius * sinf(phi);
 			vertex.position.z = (majorRadius + minorRadius * cosf(phi)) * cosf(theta);
 
+			XMFLOAT3 centerRingPosition;
+
+			centerRingPosition.x = (majorRadius) * sinf(theta);
+			centerRingPosition.y = 0;
+			centerRingPosition.z = (majorRadius) * cosf(theta);
+
 
 			XMVECTOR position = XMLoadFloat3(&vertex.position);
-			XMStoreFloat3(&vertex.normal, XMVector3Normalize(position));
+			XMVECTOR ringPosition = XMLoadFloat3(&centerRingPosition);
+			XMStoreFloat3(&vertex.normal, XMVector3Normalize(position - ringPosition));
 
 			mesh.vertices.push_back(vertex);
 		}
