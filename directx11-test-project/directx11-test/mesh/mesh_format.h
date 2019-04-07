@@ -13,9 +13,8 @@ namespace mesh {
 			DirectX::XMFLOAT3 normal;
 			DirectX::XMFLOAT3 tangentU;
 			DirectX::XMFLOAT2 uv;
-
 			bool operator==(const Vertex& other) const;
-			
+
 		};
 
 		std::vector<Vertex> vertices;

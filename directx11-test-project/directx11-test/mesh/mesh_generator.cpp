@@ -157,6 +157,97 @@ xtest::mesh::MeshData xtest::mesh::GenerateSphere(float radius, uint32 sliceCoun
 	return mesh;
 }
 
+xtest::mesh::MeshData xtest::mesh::GenerateTorus(float sliceRadius, float torusRadius, uint32 sliceDivisions, uint32 torusDivisions) 
+{
+	MeshData mesh;
+
+	const float angleTorusStep = 2.0f*XM_PI / torusDivisions;
+	const float angleSliceStep = 2.0f*XM_PI / sliceDivisions;
+	for (uint32 torusIndex = 0; torusIndex < torusDivisions; ++torusIndex)
+	{
+		float angleTorus = torusIndex * angleTorusStep;
+
+		XMFLOAT3 centerSlice = XMFLOAT3(torusRadius*cosf(angleTorus),0.0f, torusRadius*sinf(angleTorus));
+		XMVECTOR centerSliceVec = XMLoadFloat3(&centerSlice);
+		for (uint32 sliceIndex = 0; sliceIndex < sliceDivisions; ++sliceIndex)
+		{
+			float angleSlice = sliceIndex * angleSliceStep;
+
+			MeshData::Vertex vertex;
+			vertex.position.x=(torusRadius + sliceRadius*cosf(angleSlice)) *cosf(angleTorus);
+			vertex.position.y= sliceRadius*sinf(angleSlice);
+			vertex.position.z= (torusRadius + sliceRadius * cosf(angleSlice))*sinf(angleTorus);
+			XMVECTOR vertexPositionVec = XMLoadFloat3(&vertex.position);
+			XMVECTOR vertexRadiusVec = vertexPositionVec - centerSliceVec;
+			XMStoreFloat3(&vertex.normal, XMVector3Normalize(vertexRadiusVec));
+
+			vertex.tangentU.x = 0.0f;
+			vertex.tangentU.y = 0.0f;
+			vertex.tangentU.z = 0.0f;
+
+			vertex.uv.x = 0.0f;
+			vertex.uv.y = 0.0f;
+
+			mesh.vertices.push_back(vertex);
+		}
+	}
+	//come per la sfera, devo fare due cicli for: entrambi terminano a "numero divisioni - 1";
+	// per la sfera un ciclo termina a "numero divisioni -2"... qui non è necessario perchè per le due rotazioni si considera 
+	// tutto l'angolo giro (per la sfera lo stack viene spazzato solo sui 180 gradi, da polo nord a polo sud)
+	// arrivato all'ultimo indice, è necessario formare una terna di indici che reintroduce l'indice 0, sia per la rotazione sulla slice,
+	//sia per quella sul toro
+	for (uint32 torusIndex = 0; torusIndex < torusDivisions; ++torusIndex)
+	{
+		if (torusIndex == torusDivisions - 1) 
+		{
+			for (uint32 sliceIndex = 0; sliceIndex < sliceDivisions; ++sliceIndex)
+			{
+				if (sliceIndex == sliceDivisions - 1)
+				{
+					mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex);
+					mesh.indices.push_back(0*sliceDivisions + sliceIndex);
+					mesh.indices.push_back(torusIndex*sliceDivisions + 0);
+
+					mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex);
+					mesh.indices.push_back(0*sliceDivisions + 0);
+					mesh.indices.push_back(torusIndex*sliceDivisions + 0);
+					break;
+				}
+				mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex);
+				mesh.indices.push_back(0*sliceDivisions + sliceIndex);
+				mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex + 1);
+
+				mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex);
+				mesh.indices.push_back(0*sliceDivisions + sliceIndex+1);
+				mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex + 1);
+			}
+			break;
+		}
+
+		for (uint32 sliceIndex = 0; sliceIndex < sliceDivisions; ++sliceIndex)
+		{
+			if (sliceIndex == sliceDivisions - 1) 
+			{
+				mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex);
+				mesh.indices.push_back((torusIndex + 1)*sliceDivisions + sliceIndex);
+				mesh.indices.push_back(torusIndex*sliceDivisions + 0);
+
+				mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex);
+				mesh.indices.push_back((torusIndex + 1)*sliceDivisions + 0);
+				mesh.indices.push_back(torusIndex*sliceDivisions + 0);
+				break;
+			}
+			mesh.indices.push_back(torusIndex*sliceDivisions+ sliceIndex);
+			mesh.indices.push_back((torusIndex+1)*sliceDivisions + sliceIndex);
+			mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex+1);
+
+			mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex);
+			mesh.indices.push_back((torusIndex + 1)*sliceDivisions + sliceIndex+1);
+			mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex + 1);
+		}
+	}
+	return mesh;
+}
 
 xtest::mesh::MeshData xtest::mesh::GenerateBox(float xLength, float yLength, float zLength)
 {

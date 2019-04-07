@@ -10,9 +10,6 @@
     <Filter Include="time">
       <UniqueIdentifier>{8020e758-cad3-4830-879c-06a53187b95d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="render">
-      <UniqueIdentifier>{c5e18eac-473d-4b22-a80d-83d5596b1906}</UniqueIdentifier>
-    </Filter>
     <Filter Include="math">
       <UniqueIdentifier>{be94f99d-5a37-4959-9293-beec89952f45}</UniqueIdentifier>
     </Filter>
@@ -52,6 +49,9 @@
     <Filter Include="external_libs\tiny_obj_laoder">
       <UniqueIdentifier>{04806977-1a85-4e8f-ab7c-d1950c923f14}</UniqueIdentifier>
     </Filter>
+    <Filter Include="mesh\render">
+      <UniqueIdentifier>{c5e18eac-473d-4b22-a80d-83d5596b1906}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\resources\Resource.h">
@@ -72,10 +72,10 @@
       <Filter>application</Filter>
     </ClInclude>
     <ClInclude Include="render\render_macros.h">
-      <Filter>render</Filter>
+      <Filter>mesh\render</Filter>
     </ClInclude>
     <ClInclude Include="render\directx_backend.h">
-      <Filter>render</Filter>
+      <Filter>mesh\render</Filter>
     </ClInclude>
     <ClInclude Include="math\math_utils.h">
       <Filter>math</Filter>
@@ -119,9 +119,6 @@
     <ClInclude Include="camera\spherical_camera.h">
       <Filter>camera</Filter>
     </ClInclude>
-    <ClInclude Include="demo\lights_demo\lights_demo_app.h">
-      <Filter>demo\lights_demo</Filter>
-    </ClInclude>
     <ClInclude Include="service\locator.h">
       <Filter>service</Filter>
     </ClInclude>
@@ -131,6 +128,7 @@
     <ClInclude Include="mesh\mesh_format.h">
       <Filter>mesh</Filter>
     </ClInclude>
+    <ClInclude Include="demo\lights_demo\lights_demo_app.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -141,7 +139,7 @@
       <Filter>time</Filter>
     </ClCompile>
     <ClCompile Include="render\directx_backend.cpp">
-      <Filter>render</Filter>
+      <Filter>mesh\render</Filter>
     </ClCompile>
     <ClCompile Include="math\math_utils.cpp">
       <Filter>math</Filter>
@@ -180,9 +178,6 @@
     <ClCompile Include="camera\spherical_camera.cpp">
       <Filter>camera</Filter>
     </ClCompile>
-    <ClCompile Include="demo\lights_demo\lights_demo_app.cpp">
-      <Filter>demo\lights_demo</Filter>
-    </ClCompile>
     <ClCompile Include="service\locator.cpp">
       <Filter>service</Filter>
     </ClCompile>
@@ -192,6 +187,7 @@
     <ClCompile Include="mesh\mesh_format.cpp">
       <Filter>mesh</Filter>
     </ClCompile>
+    <ClCompile Include="demo\lights_demo\lights_demo_app.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="application\resources\small.ico">
@@ -213,12 +209,8 @@
     <FxCompile Include="demo\box_demo\box_demo_VS.hlsl">
       <Filter>demo\box_demo</Filter>
     </FxCompile>
-    <FxCompile Include="demo\lights_demo\lights_demo_VS.hlsl">
-      <Filter>demo\lights_demo</Filter>
-    </FxCompile>
-    <FxCompile Include="demo\lights_demo\lights_demo_PS.hlsl">
-      <Filter>demo\lights_demo</Filter>
-    </FxCompile>
+    <FxCompile Include="demo\lights_demo\lights_demo_VS.hlsl" />
+    <FxCompile Include="demo\lights_demo\lights_demo_PS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="math\math_utils.inl">
