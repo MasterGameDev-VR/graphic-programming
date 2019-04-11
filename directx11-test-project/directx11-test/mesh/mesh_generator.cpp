@@ -259,3 +259,60 @@ xtest::mesh::MeshData xtest::mesh::GenerateBox(float xLength, float yLength, flo
 	return mesh;
 }
 
+
+xtest::mesh::MeshData xtest::mesh::GenerateTorus(float radius, float ringRadius, uint32 sliceCount, uint32 stackCount) {
+	MeshData mesh;
+
+	const float phiStep = 2.0f*XM_PI / stackCount;
+	const float thetaStep = 2.0f*XM_PI / sliceCount;
+	radius /= 2;
+	ringRadius /= 2;
+
+	//rings vertices
+	for (uint32 stack = 1; stack <= stackCount + 1; ++stack)
+	{
+		float phi = stack * phiStep;
+
+		MeshData::Vertex center;
+		center.position.x = radius * sinf(phi);
+		center.position.y = 0;
+		center.position.z = radius * cosf(phi);
+
+		for (uint32 slice = 0; slice <= sliceCount; ++slice)
+		{
+			float theta = slice * thetaStep;
+
+			MeshData::Vertex vertex;
+
+			// spherical to cartesian
+			vertex.position.x = ringRadius * sinf(phi)*cosf(theta) + center.position.x;
+			vertex.position.y = ringRadius * sinf(theta) + center.position.y;
+			vertex.position.z = ringRadius * cosf(phi)*cosf(theta) + center.position.z;
+			
+			XMVECTOR position = XMLoadFloat3(&vertex.position);
+			XMVECTOR centerPosition = XMLoadFloat3(&center.position);
+			XMStoreFloat3(&vertex.normal, XMVector3Normalize(position - centerPosition));
+
+			mesh.vertices.push_back(vertex);
+		}
+	}
+
+	// stacks indices
+	uint32 ringVertexCount = sliceCount + 1;
+	for (uint32 stack = 0; stack < stackCount; ++stack)
+	{
+		for (uint32 slice = 0; slice < sliceCount; ++slice)
+		{
+			mesh.indices.push_back(stack * ringVertexCount + slice);
+			mesh.indices.push_back((stack + 1)*ringVertexCount + slice);
+			mesh.indices.push_back(stack * ringVertexCount + slice + 1);
+
+			mesh.indices.push_back((stack + 1)*ringVertexCount + slice);
+			mesh.indices.push_back((stack + 1)*ringVertexCount + slice + 1);
+			mesh.indices.push_back(stack * ringVertexCount + slice + 1);
+		}
+	}
+
+	return mesh;
+}
+
