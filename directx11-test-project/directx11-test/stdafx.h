@@ -34,3 +34,6 @@
 #include <common/common_macros.h>
 #include <common/int_types.h>
 #include <render/render_macros.h>
+
+// DirectXTK precompile header
+#include "external_libs/directxtk/pch.h"

@@ -52,6 +52,12 @@
     <Filter Include="external_libs\tiny_obj_laoder">
       <UniqueIdentifier>{04806977-1a85-4e8f-ab7c-d1950c923f14}</UniqueIdentifier>
     </Filter>
+    <Filter Include="demo\textures_demo">
+      <UniqueIdentifier>{25f43c5a-8ec0-4717-b18d-715cb0ddb92a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external_libs\directxtk">
+      <UniqueIdentifier>{2b35d0b8-0e59-4c7e-91c5-aa1249fee502}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\resources\Resource.h">
@@ -131,6 +137,30 @@
     <ClInclude Include="mesh\mesh_format.h">
       <Filter>mesh</Filter>
     </ClInclude>
+    <ClInclude Include="demo\textures_demo\textures_demo_app.h">
+      <Filter>demo\textures_demo</Filter>
+    </ClInclude>
+    <ClInclude Include="external_libs\directxtk\dds.h">
+      <Filter>external_libs\directxtk</Filter>
+    </ClInclude>
+    <ClInclude Include="external_libs\directxtk\DDSTextureLoader.h">
+      <Filter>external_libs\directxtk</Filter>
+    </ClInclude>
+    <ClInclude Include="external_libs\directxtk\DirectXHelpers.h">
+      <Filter>external_libs\directxtk</Filter>
+    </ClInclude>
+    <ClInclude Include="external_libs\directxtk\LoaderHelpers.h">
+      <Filter>external_libs\directxtk</Filter>
+    </ClInclude>
+    <ClInclude Include="external_libs\directxtk\pch.h">
+      <Filter>external_libs\directxtk</Filter>
+    </ClInclude>
+    <ClInclude Include="external_libs\directxtk\PlatformHelpers.h">
+      <Filter>external_libs\directxtk</Filter>
+    </ClInclude>
+    <ClInclude Include="external_libs\directxtk\WICTextureLoader.h">
+      <Filter>external_libs\directxtk</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -192,6 +222,15 @@
     <ClCompile Include="mesh\mesh_format.cpp">
       <Filter>mesh</Filter>
     </ClCompile>
+    <ClCompile Include="demo\textures_demo\textures_demo_app.cpp">
+      <Filter>demo\textures_demo</Filter>
+    </ClCompile>
+    <ClCompile Include="external_libs\directxtk\DDSTextureLoader.cpp">
+      <Filter>external_libs\directxtk</Filter>
+    </ClCompile>
+    <ClCompile Include="external_libs\directxtk\WICTextureLoader.cpp">
+      <Filter>external_libs\directxtk</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="application\resources\small.ico">
@@ -218,6 +257,12 @@
     </FxCompile>
     <FxCompile Include="demo\lights_demo\lights_demo_PS.hlsl">
       <Filter>demo\lights_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\textures_demo\textures_demo_PS.hlsl">
+      <Filter>demo\textures_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\textures_demo\textures_demo_VS.hlsl">
+      <Filter>demo\textures_demo</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
