@@ -208,7 +208,7 @@ xtest::mesh::MeshData xtest::mesh::GenerateTorus(float sliceRadius, float torusR
 					mesh.indices.push_back(0*sliceDivisions + sliceIndex);
 					mesh.indices.push_back(torusIndex*sliceDivisions + 0);
 
-					mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex);
+					mesh.indices.push_back(0 * sliceDivisions + sliceIndex);
 					mesh.indices.push_back(0*sliceDivisions + 0);
 					mesh.indices.push_back(torusIndex*sliceDivisions + 0);
 					break;
@@ -217,7 +217,7 @@ xtest::mesh::MeshData xtest::mesh::GenerateTorus(float sliceRadius, float torusR
 				mesh.indices.push_back(0*sliceDivisions + sliceIndex);
 				mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex + 1);
 
-				mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex);
+				mesh.indices.push_back(0 * sliceDivisions + sliceIndex);
 				mesh.indices.push_back(0*sliceDivisions + sliceIndex+1);
 				mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex + 1);
 			}
@@ -232,7 +232,7 @@ xtest::mesh::MeshData xtest::mesh::GenerateTorus(float sliceRadius, float torusR
 				mesh.indices.push_back((torusIndex + 1)*sliceDivisions + sliceIndex);
 				mesh.indices.push_back(torusIndex*sliceDivisions + 0);
 
-				mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex);
+				mesh.indices.push_back((torusIndex + 1)*sliceDivisions + sliceIndex);
 				mesh.indices.push_back((torusIndex + 1)*sliceDivisions + 0);
 				mesh.indices.push_back(torusIndex*sliceDivisions + 0);
 				break;
@@ -241,7 +241,7 @@ xtest::mesh::MeshData xtest::mesh::GenerateTorus(float sliceRadius, float torusR
 			mesh.indices.push_back((torusIndex+1)*sliceDivisions + sliceIndex);
 			mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex+1);
 
-			mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex);
+			mesh.indices.push_back((torusIndex + 1)*sliceDivisions + sliceIndex);
 			mesh.indices.push_back((torusIndex + 1)*sliceDivisions + sliceIndex+1);
 			mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex + 1);
 		}

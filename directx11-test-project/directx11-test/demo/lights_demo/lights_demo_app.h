@@ -105,6 +105,7 @@ namespace xtest
 
 
 			DirectX::XMFLOAT4X4 m_worldMatrixPlane;
+			DirectX::XMFLOAT4X4 m_worldMatrixTorus;
 			DirectX::XMFLOAT4X4 m_worldMatrixBox;
 			DirectX::XMFLOAT4X4 m_worldMatrixSphere;
 
@@ -115,12 +116,15 @@ namespace xtest
 
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBufferPlane;
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBufferPlane;
+			Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBufferTorus;
+			Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBufferTorus;
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBufferBox;
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBufferBox;
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBufferSphere;
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBufferSphere;
 			//-----------------------------------------------------
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_vsConstantBufferPlane;
+			Microsoft::WRL::ComPtr<ID3D11Buffer> m_vsConstantBufferTorus;
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_vsConstantBufferSphere;
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_vsConstantBufferBox;
 
@@ -128,10 +132,25 @@ namespace xtest
 
 			//----------OBJECT MATERIALS 
 			//DirectX::XMFLOAT4 color_plane = { 0.0f,0.502f,0.0f,1.0f }; //green
-			DirectX::XMFLOAT4 mat_plane_rgba;
-			DirectX::XMFLOAT4 mat_sphere_rgba;
-			DirectX::XMFLOAT4 mat_box_rgba;
+			DirectX::XMFLOAT4 mat_plane_rgba_ambient;
+			DirectX::XMFLOAT4 mat_plane_rgba_diffuse;
+			DirectX::XMFLOAT4 mat_plane_rgba_specular;
+
+			DirectX::XMFLOAT4 mat_torus_rgba_ambient;
+			DirectX::XMFLOAT4 mat_torus_rgba_diffuse;
+			DirectX::XMFLOAT4 mat_torus_rgba_specular;
+
+			DirectX::XMFLOAT4 mat_sphere_rgba_ambient;
+			DirectX::XMFLOAT4 mat_sphere_rgba_diffuse;
+			DirectX::XMFLOAT4 mat_sphere_rgba_specular;
+
+			DirectX::XMFLOAT4 mat_box_rgba_ambient;
+			DirectX::XMFLOAT4 mat_box_rgba_diffuse;
+			DirectX::XMFLOAT4 mat_box_rgba_specular;
+
 			Material mat_plane;
+			Material mat_torus;
+
 			Material mat_sphere;  //orange-red
 			Material mat_box; //tomato
 

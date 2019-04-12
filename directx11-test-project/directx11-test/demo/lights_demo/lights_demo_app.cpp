@@ -18,6 +18,8 @@ LightsDemoApp::LightsDemoApp(HINSTANCE instance,
 	: application::DirectxApp(instance, windowSettings, directxSettings, fps)
 	, m_vertexBufferPlane(nullptr)
 	, m_indexBufferPlane(nullptr)
+	, m_vertexBufferTorus(nullptr)
+	, m_indexBufferTorus(nullptr)
 	, m_vertexBufferBox(nullptr)
 	, m_indexBufferBox(nullptr)
 	, m_vertexBufferSphere(nullptr)
@@ -54,26 +56,26 @@ void LightsDemoApp::Init()
 
 void LightsDemoApp::InitLights()
 {
-	color_dirLight_ambient = { 0.2f, 0.2f, 0.2f,1.0f };
-	color_dirLight_diffuse = { 1.0f,1.0f,1.0f,1.0f };	 
-	color_dirLight_specular = { 1.0f,1.0f,1.0f,0.05f };
-	color_pointLight_ambient = { 0.0f,  0.0f,  0.0f,1.0f };
-	color_pointLigh_diffuse = { 1.0f, 1.0f, 1.0f,1.0f };
-	color_pointLight_specular = { 1.0f, 1.0f, 1.0f,4.0f };
-	color_spotLight_ambient = { 0.0f,  0.0f,  0.0f,1.0f };
-	color_spotLight_diffuse = { 1.0f, 1.0f, 1.0f,1.0f };
-	color_spotLight_specular = { 1.0f, 1.0f, 1.0f,4.0f };
+	color_dirLight_ambient = { 0.16f, 0.18f, 0.18f,1.0f };
+	color_dirLight_diffuse = { 0.4f* 0.87f, 0.4f*0.9f, 0.4f*0.94f,1.0f };
+	color_dirLight_specular = { 0.87f,0.9f,0.94f,1.0f };
+	color_pointLight_ambient = { 0.18f,  0.04f,  0.16f,1.0f };
+	color_pointLigh_diffuse = { 0.94f, 0.23f, 0.87f,1.0f };
+	color_pointLight_specular = { 0.94f, 0.23f, 0.87f,1.0f };
+	color_spotLight_ambient = { 0.018f,  0.18f,  0.18f,1.0f };
+	color_spotLight_diffuse = { 0.1f, 0.1f, 0.9f,1.0f };
+	color_spotLight_specular = { 0.1f, 0.1f, 0.9f,4.0f };
 
 	dirSpotLight = DirectX::XMFLOAT3{ -2.0f,-2.0f,7.0f };
 	float dirLength = sqrtf((dirSpotLight.x)*(dirSpotLight.x) + (dirSpotLight.y)*(dirSpotLight.y) + (dirSpotLight.z)*(dirSpotLight.z));
 	dirSpotLight = DirectX::XMFLOAT3{ dirSpotLight.x / dirLength,dirSpotLight.y / dirLength,dirSpotLight.z / dirLength };
 
-	myDirectionalLight = { color_dirLight_ambient ,color_dirLight_diffuse ,color_dirLight_specular,DirectX::XMFLOAT3{-1 / sqrtf(2.0f),0.0f,1 / sqrtf(2.0f)},0.0f };
+	myDirectionalLight = { color_dirLight_ambient ,color_dirLight_diffuse ,color_dirLight_specular,DirectX::XMFLOAT3{1 / sqrtf(2.0f),0.0f,1 / sqrtf(2.0f)},0.0f };
 	// colors ---- direction -------- padding float
-	myPointLight = { color_pointLight_ambient ,color_pointLigh_diffuse ,color_pointLight_specular,DirectX::XMFLOAT3{35.0f,35.0f,35.0f},200.0f, DirectX::XMFLOAT3{0.0f,1.0f,0.0f},0.0f };
+	myPointLight = { color_pointLight_ambient ,color_pointLigh_diffuse ,color_pointLight_specular,DirectX::XMFLOAT3{35.0f,35.0f,35.0f},10.0f, DirectX::XMFLOAT3{0.0f,0.2f,0.0f},0.0f };
 	// colors --------position ------- range ------- attenuation ---- padding float
 
-	mySpotLight = { color_spotLight_ambient, color_spotLight_diffuse, color_spotLight_specular , DirectX::XMFLOAT3{30.0f,40.0f,+30.0f}, 100.0f,DirectX::XMFLOAT3{-1 / sqrtf(2.0f),0.0f,-1 / sqrtf(2.0f)} , 0.6f, DirectX::XMFLOAT3{1.0f,0.0f,0.0f},0.0f };
+	mySpotLight = { color_spotLight_ambient, color_spotLight_diffuse, color_spotLight_specular , DirectX::XMFLOAT3{30.0f,90.0f,+30.0f}, 100.0f,DirectX::XMFLOAT3{-1 / sqrtf(2.0f),0.0f,-1 / sqrtf(2.0f)} , 0.6f, DirectX::XMFLOAT3{1.0f,0.0f,0.0f},0.0f };
 	// colors --------position ------- range -------direction ----------- spot dimension (cosine of the angle)---------  attenuation ---- padding float
 
 
@@ -82,12 +84,26 @@ void LightsDemoApp::InitLights()
 }
 void LightsDemoApp::InitMaterials()
 {
-	mat_plane_rgba = { 1.0f,0.0f,0.0f,1.0f };
-	mat_sphere_rgba = { 0.0f,1.0f,0.0f,1.0f };
-	mat_box_rgba = { 0.0f,0.0f,1.0f,1.0f };
-	mat_plane = { mat_plane_rgba,  mat_plane_rgba , mat_plane_rgba };
-	mat_sphere = { mat_sphere_rgba,   mat_sphere_rgba ,  mat_sphere_rgba };  //orange-red
-	mat_box = { mat_box_rgba,  mat_box_rgba , mat_box_rgba }; //tomato
+	mat_plane_rgba_ambient = { 0.15f,0.15f,0.15f,1.0f };
+	mat_plane_rgba_diffuse = { 0.52f,0.52f,0.52f,1.0f };
+	mat_plane_rgba_specular = { 0.8f,0.8f,0.8f,190.0f };
+
+	mat_torus_rgba_ambient = { 0.7f,0.1f,0.1f,1.0f };
+	mat_torus_rgba_diffuse = { 0.81f,0.15f,0.15f,1.0f };
+	mat_torus_rgba_specular = { 0.7f,0.7f,0.7f,40.0f };
+
+	mat_sphere_rgba_ambient = { 0.7f,0.1f,0.1f,1.0f };
+	mat_sphere_rgba_diffuse = { 0.81f,0.15f,0.15f,1.0f };
+	mat_sphere_rgba_specular = { 0.7f,0.7f,0.7f,40.0f };
+
+	mat_box_rgba_ambient = { 0.0f,0.0f,1.0f,100.0f };
+	mat_box_rgba_diffuse = { 0.0f,0.0f,1.0f,100.0f };
+	mat_box_rgba_specular = { 0.0f,0.0f,1.0f,100.0f };
+
+	mat_plane = { mat_plane_rgba_ambient,  mat_plane_rgba_diffuse , mat_plane_rgba_specular };
+	mat_torus = { mat_torus_rgba_ambient,  mat_torus_rgba_diffuse , mat_torus_rgba_specular };
+	mat_sphere = { mat_sphere_rgba_ambient,   mat_sphere_rgba_diffuse ,  mat_sphere_rgba_specular };  
+	mat_box = { mat_box_rgba_ambient,  mat_box_rgba_diffuse , mat_box_rgba_specular }; 
 
 }
 
@@ -99,6 +115,8 @@ void LightsDemoApp::InitMatrices()
 
 	// world matrices
 	XMStoreFloat4x4(&m_worldMatrixPlane, XMMatrixIdentity());
+	XMStoreFloat4x4(&m_worldMatrixTorus, XMMatrixIdentity());
+
 	XMStoreFloat4x4(&m_worldMatrixBox, XMMatrixIdentity());
 	XMStoreFloat4x4(&m_worldMatrixSphere, XMMatrixIdentity());
 	
@@ -158,6 +176,8 @@ void LightsDemoApp::InitBuffers() {
 
 	//VERTICES SHOULD COME FROM THE MESH GENERATOR METHODS
 	MeshData planeMesh = GeneratePlane(500.0f, 500.0f, 1500, 1500);
+	MeshData torusMesh = GenerateTorus(20.0f, 70.0f, 360, 360);
+
 	MeshData sphereMesh = GenerateSphere(25.0f, 360, 360);
 	MeshData boxMesh = GenerateBox(40.0f, 30.0f, 70.0f);
 
@@ -171,6 +191,17 @@ void LightsDemoApp::InitBuffers() {
 	D3D11_SUBRESOURCE_DATA planeIndicesInitdata;
 	planeIndicesInitdata.pSysMem = &planeMesh.indices[0];
 	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &planeIndicesInitdata, &m_indexBufferPlane));
+
+	//------------------- Torus
+	vertexBufferDesc.ByteWidth = UINT(sizeof(MeshData::Vertex)*torusMesh.vertices.size());
+	indexBufferDesc.ByteWidth = UINT(sizeof(uint32)*torusMesh.indices.size());
+
+	D3D11_SUBRESOURCE_DATA torusVerticesInitData;
+	torusVerticesInitData.pSysMem = &torusMesh.vertices[0];
+	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vertexBufferDesc, &torusVerticesInitData, &m_vertexBufferTorus));
+	D3D11_SUBRESOURCE_DATA torusIndicesInitdata;
+	torusIndicesInitdata.pSysMem = &torusMesh.indices[0];
+	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &torusIndicesInitdata, &m_indexBufferTorus));
 
 	// ----------------- Sphere
 	vertexBufferDesc.ByteWidth = UINT(sizeof(MeshData::Vertex)*sphereMesh.vertices.size());
@@ -203,6 +234,7 @@ void LightsDemoApp::InitBuffers() {
 	vsConstantBufferDesc.MiscFlags = 0;
 	vsConstantBufferDesc.StructureByteStride = 0;
 	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vsConstantBufferDesc, nullptr, &m_vsConstantBufferPlane));
+	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vsConstantBufferDesc, nullptr, &m_vsConstantBufferTorus));
 	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vsConstantBufferDesc, nullptr, &m_vsConstantBufferSphere));
 	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vsConstantBufferDesc, nullptr, &m_vsConstantBufferBox));
 
@@ -243,6 +275,11 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 	//W_plane.r[3].m128_f32[0] = -1.0f;
 	XMStoreFloat4x4(&m_worldMatrixPlane, W_plane);
 
+	XMMATRIX W_torus = XMLoadFloat4x4(&m_worldMatrixTorus);
+	W_torus.r[3] = { -100.0f,40.0f,-100.0f,1.0f };
+	//W_plane.r[3].m128_f32[0] = -1.0f;
+	XMStoreFloat4x4(&m_worldMatrixTorus, W_torus);
+
 	XMMATRIX W_sphere = XMLoadFloat4x4(&m_worldMatrixSphere);
 	W_sphere.r[3] = { 20.0f,0.0f,80.0f,1.0f };
 	XMStoreFloat4x4(&m_worldMatrixSphere, W_sphere);
@@ -258,18 +295,22 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 	// create projection matrix
 	XMMATRIX P = XMLoadFloat4x4(&m_projectionMatrix);
 	XMMATRIX WVP_plane = W_plane * V*P;
+	XMMATRIX WVP_torus = W_torus * V*P;
 	XMMATRIX WVP_sphere = W_sphere * V*P;
 	XMMATRIX WVP_box = W_box * V*P;
 
 	XMVECTOR det_W_plane = XMMatrixDeterminant(W_plane);
+	XMVECTOR det_W_torus = XMMatrixDeterminant(W_torus);
 	XMVECTOR det_W_sphere = XMMatrixDeterminant(W_sphere);
 	XMVECTOR det_W_box = XMMatrixDeterminant(W_box);
 	XMMATRIX W_Inv_Transp_plane = XMMatrixInverse(&det_W_plane,W_plane);
+	XMMATRIX W_Inv_Transp_torus = XMMatrixInverse(&det_W_torus, W_torus);
 	XMMATRIX W_Inv_Transp_sphere = XMMatrixInverse(&det_W_sphere, W_sphere);
 	XMMATRIX W_Inv_Transp_box = XMMatrixInverse(&det_W_box, W_box);
 
 	// matrices must be transposed since HLSL use column-major ordering.
 	WVP_plane = XMMatrixTranspose(WVP_plane);
+	WVP_torus = XMMatrixTranspose(WVP_torus);
 	WVP_sphere = XMMatrixTranspose(WVP_sphere);
 	WVP_box = XMMatrixTranspose(WVP_box);
 
@@ -301,6 +342,34 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 		m_d3dContext->Unmap(m_vsConstantBufferPlane.Get(), 0);
 	}
 	m_d3dAnnotation->EndEvent();
+
+	m_d3dAnnotation->BeginEvent(L"update-constant-buffer");
+
+	// load the constant buffer data in the gpu
+	{
+		D3D11_MAPPED_SUBRESOURCE mappedResourceTorus;
+		ZeroMemory(&mappedResourceTorus, sizeof(D3D11_MAPPED_SUBRESOURCE));
+
+		// disable gpu access
+		XTEST_D3D_CHECK(m_d3dContext->Map(m_vsConstantBufferTorus.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResourceTorus));
+		PerObjectCB* constantBufferDataTorus = (PerObjectCB*)mappedResourceTorus.pData;
+
+		//update the data
+		XMStoreFloat4x4(&constantBufferDataTorus->W, W_torus);
+		XMStoreFloat4x4(&constantBufferDataTorus->WVP, WVP_torus);
+		XMStoreFloat4x4(&constantBufferDataTorus->W_Inv_Transp, W_Inv_Transp_torus);
+		XMStoreFloat4(&constantBufferDataTorus->material.ambient, XMLoadFloat4(&mat_torus.ambient));
+		XMStoreFloat4(&constantBufferDataTorus->material.diffuse, XMLoadFloat4(&mat_torus.diffuse));
+		XMStoreFloat4(&constantBufferDataTorus->material.specular, XMLoadFloat4(&mat_torus.specular));
+
+
+
+
+		// enable gpu access
+		m_d3dContext->Unmap(m_vsConstantBufferTorus.Get(), 0);
+	}
+	m_d3dAnnotation->EndEvent();
+
 
 	m_d3dAnnotation->BeginEvent(L"update-constant-buffer");
 
@@ -437,10 +506,9 @@ void LightsDemoApp::RenderScene()
 	m_indexBufferPlane->GetDesc(&tempIndexBufferDesc);
 	// draw and present the frame
 	m_d3dContext->DrawIndexed(tempIndexBufferDesc.ByteWidth / sizeof(uint32), 0, 0);
-	
-	// set what to draw - sphere
-	
-	
+
+	// set what to draw - SPHERE!!!
+
 	m_d3dContext->VSSetConstantBuffers(bufferRegisterMatrices, 1, m_vsConstantBufferSphere.GetAddressOf());
 	m_d3dContext->PSSetConstantBuffers(bufferRegisterMatrices, 1, m_vsConstantBufferSphere.GetAddressOf());
 
@@ -448,6 +516,19 @@ void LightsDemoApp::RenderScene()
 	m_d3dContext->IASetIndexBuffer(m_indexBufferSphere.Get(), DXGI_FORMAT_R32_UINT, 0);
 	m_d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_indexBufferSphere->GetDesc(&tempIndexBufferDesc);
+	// draw and present the frame
+	m_d3dContext->DrawIndexed(tempIndexBufferDesc.ByteWidth / sizeof(uint32), 0, 0);
+	
+	// set what to draw - TORUS
+	
+	
+	m_d3dContext->VSSetConstantBuffers(bufferRegisterMatrices, 1, m_vsConstantBufferTorus.GetAddressOf());
+	m_d3dContext->PSSetConstantBuffers(bufferRegisterMatrices, 1, m_vsConstantBufferTorus.GetAddressOf());
+
+	m_d3dContext->IASetVertexBuffers(0, 1, m_vertexBufferTorus.GetAddressOf(), &stride, &offset);
+	m_d3dContext->IASetIndexBuffer(m_indexBufferTorus.Get(), DXGI_FORMAT_R32_UINT, 0);
+	m_d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	m_indexBufferTorus->GetDesc(&tempIndexBufferDesc);
 	// draw and present the frame
 	m_d3dContext->DrawIndexed(tempIndexBufferDesc.ByteWidth / sizeof(uint32), 0, 0);
 	

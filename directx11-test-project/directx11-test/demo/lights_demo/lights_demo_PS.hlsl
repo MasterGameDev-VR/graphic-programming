@@ -53,6 +53,7 @@ cbuffer PerFrameCB :register(b1)
 struct VertexOut
 {
 	float4 posH : SV_POSITION;
+	float4 posW : POSITION;
 	float4 normalW : NORMAL;
 	
 };
@@ -172,7 +173,7 @@ void SpotLightContribution(Material mat,SpotLight light, float4 normalW, float3 
 
 float4 main(VertexOut pin) : SV_TARGET
 {
-	float3 posW = pin.posH.xyz;
+	float3 posW = pin.posW.xyz;
 	float3 toEyeW = normalize(eyePosW - posW);
 	pin.normalW = normalize(pin.normalW);
 

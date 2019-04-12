@@ -27,6 +27,7 @@ struct VertexIn
 struct VertexOut
 {
 	float4 posH : SV_POSITION;
+	float4 posW : POSITION;
 	float4 normalW : NORMAL;
 };
 
@@ -34,6 +35,7 @@ void main( VertexIn vin, out VertexOut vout  )
 {
 	float4 posLout = float4(vin.posL, 1.0f);
 	float4 normalWout = float4(vin.normalL, 1.0f);
+	vout.posW = mul(posLout, W);
 	vout.posH = mul(posLout, WVP);
 	vout.normalW = mul(normalWout, W_Inv_Transp);
 	//vout.normalW = mul(vout.normalW, W_Inv_Transp);
