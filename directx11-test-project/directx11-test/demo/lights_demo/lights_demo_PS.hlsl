@@ -81,9 +81,10 @@ void DirectionalLightContribution(Material mat, DirectionalLight light, float4 n
 	};
 };
 
-void PointLightContribution(Material mat, PointLight light, float4 normalW, float3 toEyeW, float3 posW, out float4 ambient, out float4 diffuse, out float4 specular)
+void PointLightContribution(Material mat, PointLight light, float3 normalW, float3 toEyeW, float3 posW, out float4 ambient, out float4 diffuse, out float4 specular)
 
 {
+	/*
 	ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -119,11 +120,57 @@ void PointLightContribution(Material mat, PointLight light, float4 normalW, floa
 			}
 		}
 	}
+	*/
+
+	// default values
+	ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
+
+	float3 toLightW = light.posW - posW;
+	float distance = length(toLightW);
+
+	// ealry rejection
+	if (distance > light.range)
+		return;
+
+	// now light dir is normalize 
+	toLightW /= distance;
+
+
+	// ambient component
+	ambient = mat.ambient * light.ambient;
+
+	// diffuse factor
+	float Kd = dot(toLightW, normalW);
+
+	[flatten]
+	if (Kd > 0.0f)
+	{
+		// diffuse component
+		diffuse = Kd * mat.diffuse * light.diffuse;
+
+		// specular component
+		float3 halfVectorW = normalize(toLightW + toEyeW);
+		float Ks = pow(max(dot(halfVectorW, normalW), 0.f), mat.specular.w);
+		specular = Ks * mat.specular * light.specular;
+	}
+
+	// custom "gentle" falloff
+	float falloff = 1.f - (distance / light.range);
+
+	// attenuation
+	float attenuationFactor = 1.0f / dot(light.attenuation, float3(1.0f, distance, distance*distance));
+	ambient *= falloff;
+	diffuse *= attenuationFactor * falloff;
+	specular *= attenuationFactor * falloff;
+
 }
 
-void SpotLightContribution(Material mat,SpotLight light, float4 normalW, float3 toEyeW, float3 posW, out float4 ambient, out float4 diffuse, out float4 specular)
+void SpotLightContribution(Material mat,SpotLight light, float3 normalW, float3 toEyeW, float3 posW, out float4 ambient, out float4 diffuse, out float4 specular)
 
 {
+	/*
 	ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -168,6 +215,49 @@ void SpotLightContribution(Material mat,SpotLight light, float4 normalW, float3 
 			}
 		}
 	}
+	*/
+	// default values
+	ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
+
+	float3 toLightW = light.posW - posW;
+	float distance = length(toLightW);
+
+	// early rejection
+	if (distance > light.range)
+		return;
+
+	// now light dir is normalize 
+	toLightW /= distance;
+
+	// ambient component
+	ambient = mat.ambient * light.ambient;
+
+	// diffuse factor
+	float Kd = dot(toLightW, normalW);
+
+	[flatten]
+	if (Kd > 0.0f)
+	{
+		// diffuse component
+		diffuse = Kd * mat.diffuse * light.diffuse;
+
+		// specular component
+		float3 halfVectorW = normalize(toLightW + toEyeW);
+		float Ks = pow(max(dot(halfVectorW, normalW), 0.f), mat.specular.w);
+		specular = Ks * mat.specular * light.specular;
+
+	}
+
+	// spot effect factor
+	float spot = pow(max(dot(-toLightW, light.dirW), 0.0f), light.spot);
+
+	// attenuation
+	float attenuationFactor = 1 / dot(light.attenuation, float3(1.0f, distance, distance*distance));
+	ambient *= spot;
+	diffuse *= spot * attenuationFactor;
+	specular *= spot * attenuationFactor;
 }
 
 
@@ -176,7 +266,7 @@ float4 main(VertexOut pin) : SV_TARGET
 	float3 posW = pin.posW.xyz;
 	float3 toEyeW = normalize(eyePosW - posW);
 	pin.normalW = normalize(pin.normalW);
-
+	float3 normalW = pin.normalW.xyz;
 
 
 	float4 totalAmbient = float4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -191,12 +281,12 @@ float4 main(VertexOut pin) : SV_TARGET
 	totalDiffuse += diffuse;
 	totalSpecular += specular;
 
-	PointLightContribution(material, pointLight, pin.normalW, toEyeW, posW, ambient, diffuse, specular);
+	PointLightContribution(material, pointLight, normalW, toEyeW, posW, ambient, diffuse, specular);
 	totalAmbient += ambient;
 	totalDiffuse += diffuse;
 	totalSpecular += specular;
 
-	SpotLightContribution(material, spotLight, pin.normalW, toEyeW, posW, ambient, diffuse, specular);
+	SpotLightContribution(material, spotLight, normalW, toEyeW, posW, ambient, diffuse, specular);
 
 	totalAmbient += ambient;
 	totalDiffuse += diffuse;
