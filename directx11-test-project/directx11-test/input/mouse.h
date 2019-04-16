@@ -1,10 +1,12 @@
 #pragma once
 
-#include <application/windows_app.h>
 #include <time/time_point.h>
 
 
 namespace xtest {
+
+	namespace application {	class WindowsApp; }
+
 namespace input {
 
 	enum class MouseButton
@@ -32,6 +34,7 @@ namespace input {
 		bool isDown = false;
 	};
 
+
 	struct ScrollStatus
 	{
 		time::TimePoint startingTime = time::TimePoint();
@@ -44,8 +47,6 @@ namespace input {
 	{
 	public:
 
-		MouseListener();
-
 		virtual void OnButtonStatusChange(MouseButton button, const ButtonStatus& status) { XTEST_UNUSED_VAR(button); XTEST_UNUSED_VAR(status); }
 		virtual void OnWheelScroll(ScrollStatus scroll) { XTEST_UNUSED_VAR(scroll); }
 		virtual void OnMouseMove(const DirectX::XMINT2& movement, const DirectX::XMINT2& currentPos) { XTEST_UNUSED_VAR(movement); XTEST_UNUSED_VAR(currentPos); }
@@ -55,12 +56,10 @@ namespace input {
 	class Mouse
 	{
 		friend class application::WindowsApp;
-
+		
 	public:
 
-		static Mouse& GetMouse();
-
-
+		Mouse(application::WindowsApp* ownerApplication);
 		~Mouse() {}
 
 		Mouse(Mouse&&) = delete;
@@ -88,8 +87,6 @@ namespace input {
 
 	private:
 
-		Mouse();
-
 		void OnWmMouseRawInput(const RAWINPUTHEADER& header, const RAWMOUSE& data);
 		void UpdateButtonStatus(MouseButton button, bool isDown);
 
@@ -99,7 +96,7 @@ namespace input {
 		DirectX::XMINT2 m_cursorPos;
 		DirectX::XMINT2 m_lastMovement;
 		bool m_isCursorVisible;
-
+		application::WindowsApp* m_ownerApplication;
 	};
 
 } // input

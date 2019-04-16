@@ -2,9 +2,12 @@
 
 #include <time/time_point.h>
 #include <unordered_map>
-#include <application/windows_app.h>
+
 
 namespace xtest {
+
+	namespace application { class WindowsApp; }
+
 namespace input {
 
 
@@ -142,9 +145,7 @@ namespace input {
 
 	public:
 
-		static Keyboard& GetKeyboard();
-		
-
+		Keyboard();
 		~Keyboard() {}
 
 		Keyboard(Keyboard&&) = delete;
@@ -167,7 +168,6 @@ namespace input {
 
 		static std::unordered_map<uint32, Key> s_windowsVKToKey;
 
-		Keyboard();
 		void OnWmKeyboardRawInput(const RAWINPUTHEADER& header, const RAWKEYBOARD& data);
 		void OnWmChar(WPARAM wParam, LPARAM lParam);
 

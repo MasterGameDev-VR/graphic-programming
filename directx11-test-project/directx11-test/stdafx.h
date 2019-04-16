@@ -20,6 +20,7 @@
 #include <memory>
 #include <vector>
 #include <array>
+#include <map>
 
 // DirectX headers
 #include <d3d11_1.h>
