@@ -306,6 +306,69 @@ void xtest::demo::TexturesDemoApp::InitRenderable()
 		m_objectsToDrawByGroup.push_back(squareGroup);
 	}
 
+	// TORUS
+	{
+		ObjectGroup torusGroup;
+
+		Mesh mesh;
+		mesh.meshData = mesh::GenerateTorus(1.f, 0.5f, 40, 40); // mesh::GenerateBox(2, 2, 2);
+
+
+		// vertex buffer
+		D3D11_BUFFER_DESC vertexBufferDesc;
+		vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+		vertexBufferDesc.ByteWidth = UINT(sizeof(mesh::MeshData::Vertex) * mesh.meshData.vertices.size());
+		vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+		vertexBufferDesc.CPUAccessFlags = 0;
+		vertexBufferDesc.MiscFlags = 0;
+		vertexBufferDesc.StructureByteStride = 0;
+
+		D3D11_SUBRESOURCE_DATA vertexInitData;
+		vertexInitData.pSysMem = &mesh.meshData.vertices[0];
+		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexInitData, &mesh.d3dVertexBuffer));
+
+
+		// index buffer
+		D3D11_BUFFER_DESC indexBufferDesc;
+		indexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+		indexBufferDesc.ByteWidth = UINT(sizeof(uint32) * mesh.meshData.indices.size());
+		indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+		indexBufferDesc.CPUAccessFlags = 0;
+		indexBufferDesc.MiscFlags = 0;
+		indexBufferDesc.StructureByteStride = 0;
+
+		D3D11_SUBRESOURCE_DATA indexInitdata;
+		indexInitdata.pSysMem = &mesh.meshData.indices[0];
+		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &mesh.d3dIndexBuffer));
+
+		torusGroup.mesh = mesh;
+
+		for (size_t i = 0; i < m_objectsNumber; i++) {
+
+			Renderable square;
+
+			XMStoreFloat4x4(&square.W, XMMatrixTranslation(0.f, 4.f, 0.f));
+			XMStoreFloat4x4(&square.textureMatrix, XMMatrixIdentity());
+			square.materialKey = "material_default";
+
+			// perObjectCB
+			D3D11_BUFFER_DESC perObjectCBDesc;
+			perObjectCBDesc.Usage = D3D11_USAGE_DYNAMIC;
+			perObjectCBDesc.ByteWidth = sizeof(PerObjectCB);
+			perObjectCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+			perObjectCBDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+			perObjectCBDesc.MiscFlags = 0;
+			perObjectCBDesc.StructureByteStride = 0;
+			XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &square.d3dPerObjectCB));
+
+			square.textureViewKey = "ground";
+
+			torusGroup.objects.push_back(square);
+		}
+
+		m_objectsToDrawByGroup.push_back(torusGroup);
+	}
+
 }
 
 
@@ -483,7 +546,7 @@ void TexturesDemoApp::InitMaterials()
 
 void TexturesDemoApp::InitObjects()
 {
-	const int PLANE = 0, SPHERE = 1, SQUARE = 2;
+	const int PLANE = 0, SPHERE = 1, SQUARE = 2, TORUS = 3;
 
 	//Plane
 	{
@@ -498,6 +561,9 @@ void TexturesDemoApp::InitObjects()
 
 		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "sci_fi";
 		m_objectsToDrawByGroup[SQUARE].objects[INDEX].materialKey = "material_0";
+
+		m_objectsToDrawByGroup[TORUS].objects[INDEX].textureViewKey = "sci_fi";
+		m_objectsToDrawByGroup[TORUS].objects[INDEX].materialKey = "material_0";
 	}
 
 	//Object1
@@ -512,11 +578,18 @@ void TexturesDemoApp::InitObjects()
 		W *= XMMatrixTranslation(-10.f, 0.f, 0.f);
 		XMStoreFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W, W);
 
+		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[TORUS].objects[INDEX].W);
+		W *= XMMatrixTranslation(-10.f, 0.f, 0.f);
+		XMStoreFloat4x4(&m_objectsToDrawByGroup[TORUS].objects[INDEX].W, W);
+
 		m_objectsToDrawByGroup[SPHERE].objects[INDEX].textureViewKey = "wood";
 		m_objectsToDrawByGroup[SPHERE].objects[INDEX].materialKey = "material_0";
 
 		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "wood";
 		m_objectsToDrawByGroup[SQUARE].objects[INDEX].materialKey = "material_0";
+
+		m_objectsToDrawByGroup[TORUS].objects[INDEX].textureViewKey = "wood";
+		m_objectsToDrawByGroup[TORUS].objects[INDEX].materialKey = "material_0";
 	}
 
 	//Object2
@@ -531,11 +604,18 @@ void TexturesDemoApp::InitObjects()
 		W *= XMMatrixTranslation(10.f, 0.f, 0.f);
 		XMStoreFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W, W);
 
+		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[TORUS].objects[INDEX].W);
+		W *= XMMatrixTranslation(10.f, 0.f, 0.f);
+		XMStoreFloat4x4(&m_objectsToDrawByGroup[TORUS].objects[INDEX].W, W);
+
 		m_objectsToDrawByGroup[SPHERE].objects[INDEX].textureViewKey = "twine";
 		m_objectsToDrawByGroup[SPHERE].objects[INDEX].materialKey = "material_0";
 
 		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "twine";
 		m_objectsToDrawByGroup[SQUARE].objects[INDEX].materialKey = "material_0";
+
+		m_objectsToDrawByGroup[TORUS].objects[INDEX].textureViewKey = "twine";
+		m_objectsToDrawByGroup[TORUS].objects[INDEX].materialKey = "material_0";
 	}
 
 	//Object3
@@ -550,11 +630,18 @@ void TexturesDemoApp::InitObjects()
 		W *= XMMatrixTranslation(0.f, 0.f, -10.f);
 		XMStoreFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W, W);
 
+		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[TORUS].objects[INDEX].W);
+		W *= XMMatrixTranslation(0.f, 0.f, -10.f);
+		XMStoreFloat4x4(&m_objectsToDrawByGroup[TORUS].objects[INDEX].W, W);
+
 		m_objectsToDrawByGroup[SPHERE].objects[INDEX].textureViewKey = "wet_stone";
 		m_objectsToDrawByGroup[SPHERE].objects[INDEX].materialKey = "material_0";
 
 		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "wet_stone";
 		m_objectsToDrawByGroup[SQUARE].objects[INDEX].materialKey = "material_0";
+
+		m_objectsToDrawByGroup[TORUS].objects[INDEX].textureViewKey = "wet_stone";
+		m_objectsToDrawByGroup[TORUS].objects[INDEX].materialKey = "material_0";
 	}
 
 	//Object4
@@ -569,11 +656,18 @@ void TexturesDemoApp::InitObjects()
 		W *= XMMatrixTranslation(0.f, 0.f, 10.f);
 		XMStoreFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W, W);
 
+			W = XMLoadFloat4x4(&m_objectsToDrawByGroup[TORUS].objects[INDEX].W);
+		W *= XMMatrixTranslation(0.f, 0.f, 10.f);
+		XMStoreFloat4x4(&m_objectsToDrawByGroup[TORUS].objects[INDEX].W, W);
+
 		m_objectsToDrawByGroup[SPHERE].objects[INDEX].textureViewKey = "fabric";
 		m_objectsToDrawByGroup[SPHERE].objects[INDEX].materialKey = "material_0";
 
 		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "fabric";
 		m_objectsToDrawByGroup[SQUARE].objects[INDEX].materialKey = "material_0";
+
+		m_objectsToDrawByGroup[TORUS].objects[INDEX].textureViewKey = "fabric";
+		m_objectsToDrawByGroup[TORUS].objects[INDEX].materialKey = "material_0";
 	}
 
 
