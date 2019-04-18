@@ -42,15 +42,15 @@ struct VertexOut
 	float4 posH : SV_POSITION;
 	float3 posW : POSITION;
 	float3 normalW : NORMAL;
+	float2 uv : TEXCOORD;
 };
-
-
 
 cbuffer PerObjectCB : register(b0)
 {
 	float4x4 W;
 	float4x4 W_inverseTraspose;
 	float4x4 WVP;
+	float4x4 TextcoordMatrix;
 	Material material;
 };
 
@@ -67,6 +67,10 @@ cbuffer RarelyChangedCB : register(b2)
 	bool usePointLight;
 	bool useSpotLight;
 }
+
+Texture2D diffuseTexture : register(t0);
+
+SamplerState textureSampler : register(s0);
 
 
 void DirectionalLightContribution(Material mat, DirectionalLight light, float3 normalW, float3 toEyeW, out float4 ambient, out float4 diffuse, out float4 specular)
@@ -183,8 +187,9 @@ float4 main(VertexOut pin) : SV_TARGET
 		}
 	}  
 
+	float4 diffuseColor = diffuseTexture.Sample(textureSampler, pin.uv);
 
-	float4 finalColor = totalAmbient + totalDiffuse + totalSpecular;
+	float4 finalColor = diffuseColor * (totalAmbient + totalDiffuse) + totalSpecular;
 	finalColor.a = totalDiffuse.a;
 
 	return finalColor;

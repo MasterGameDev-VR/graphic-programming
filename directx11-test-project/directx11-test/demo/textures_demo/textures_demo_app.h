@@ -71,6 +71,7 @@ namespace xtest {
 				DirectX::XMFLOAT4X4 W;
 				DirectX::XMFLOAT4X4 W_inverseTraspose;
 				DirectX::XMFLOAT4X4 WVP;
+				DirectX::XMFLOAT4X4 textureMatrix;
 				Material material;
 			};
 
@@ -93,12 +94,22 @@ namespace xtest {
 
 			struct Renderable
 			{
-				mesh::MeshData mesh;
 				DirectX::XMFLOAT4X4 W;
-				Material material;
+				DirectX::XMFLOAT4X4 textureMatrix;
+				std::string materialKey;
+				std::string textureViewKey;
 				Microsoft::WRL::ComPtr<ID3D11Buffer> d3dPerObjectCB;
+			};
+
+			struct Mesh {
+				mesh::MeshData meshData;
 				Microsoft::WRL::ComPtr<ID3D11Buffer> d3dVertexBuffer;
 				Microsoft::WRL::ComPtr<ID3D11Buffer> d3dIndexBuffer;
+			};
+
+			struct ObjectGroup {
+				std::vector<Renderable> objects;
+				Mesh mesh;
 			};
 
 
@@ -115,6 +126,14 @@ namespace xtest {
 				DirectX::XMFLOAT4X4 W;
 				Microsoft::WRL::ComPtr<ID3D11Buffer> d3dVertexBuffer;
 				Microsoft::WRL::ComPtr<ID3D11Buffer> d3dIndexBuffer;
+			};
+
+			struct TexturePack {
+				Microsoft::WRL::ComPtr<ID3D11Resource> texture;
+			};
+
+			struct TexturePackView {
+				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textureView;
 			};
 
 
@@ -143,7 +162,8 @@ namespace xtest {
 			void InitRenderable();
 			void InitLights();
 			void InitRasterizerState();
-
+			void InitTextures();
+			void InitObjects();
 
 			DirectX::XMFLOAT4X4 m_viewMatrix;
 			DirectX::XMFLOAT4X4 m_projectionMatrix;
@@ -156,11 +176,14 @@ namespace xtest {
 			bool m_isLightControlDirty;
 			bool m_stopLights;
 
-			size_t m_objectsToRender;
+			size_t m_objectsNumber;
 
-			std::vector<Renderable> m_spheres;
-			std::vector<Renderable> m_squares;
-			Renderable m_plane;
+			std::vector<ObjectGroup> m_objectsToDrawByGroup;
+
+			std::map<std::string, Material> m_materialMap;
+			std::map<std::string, TexturePackView> m_texturePackViewMap;
+			std::vector<TexturePack> m_texturePacks;
+			Microsoft::WRL::ComPtr<ID3D11SamplerState> m_textureSampler;
 
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dPerFrameCB;
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dRarelyChangedCB;
