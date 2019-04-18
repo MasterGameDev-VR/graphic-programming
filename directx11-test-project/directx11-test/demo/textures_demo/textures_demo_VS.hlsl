@@ -10,7 +10,7 @@ struct VertexIn
 {
 	float3 posL : POSITION;
 	float3 normalL : NORMAL;
-	float3 tangent : TANGENT;
+	float3 tangentL : TANGENT;
 	float2 uv : TEXCOORD;
 };
 
@@ -19,6 +19,7 @@ struct VertexOut
 	float4 posH : SV_POSITION;
 	float3 posW : POSITION;
 	float3 normalW : NORMAL;
+	float3 tangentW : TANGENT;
 	float2 uv : TEXCOORD;
 };
 
@@ -40,8 +41,8 @@ VertexOut main(VertexIn vin)
 	vout.posW = mul(float4(vin.posL, 1.0f), W).xyz;
 	vout.normalW = mul(vin.normalL, (float3x3)W_inverseTraspose);
 	vout.posH = mul(float4(vin.posL, 1.0f), WVP);
-	//vout.uv = mul(float4(vin.uv, 0.f, 1.f), TextcoordMatrix).xy;
-	vout.uv = vin.uv;
+	vout.tangentW = vin.tangentL;
+	vout.uv = mul(float4(vin.uv, 0.f, 1.f), TextcoordMatrix).xy;
 
 	return vout;
 }

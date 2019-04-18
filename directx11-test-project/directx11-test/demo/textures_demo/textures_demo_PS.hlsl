@@ -42,6 +42,7 @@ struct VertexOut
 	float4 posH : SV_POSITION;
 	float3 posW : POSITION;
 	float3 normalW : NORMAL;
+	float3 tangentW : TANGENT;
 	float2 uv : TEXCOORD;
 };
 
@@ -69,6 +70,7 @@ cbuffer RarelyChangedCB : register(b2)
 }
 
 Texture2D diffuseTexture : register(t0);
+Texture2D normalTexture : register(t1);
 
 SamplerState textureSampler : register(s0);
 
@@ -149,7 +151,16 @@ void PointLightContribution(Material mat, PointLight light, float3 posW, float3 
 }
 
 
+float3 BumpNormalW(float2 uv, float3 normalW, float3 tangentW) 
+{
+	float3 normalSample = normalTexture.Sample(textureSampler, uv).rgb;
 
+	float3 bumpNormalT = 2.f * normalSample - 1.f;
+
+	float3x3 TBN = float3x3(tangentW, cross(normalW, tangentW), normalW);
+
+	return mul(bumpNormalT, TBN);
+}
 
 
 
@@ -168,6 +179,10 @@ float4 main(VertexOut pin) : SV_TARGET
 	float4 diffuse;
 	float4 specular;
 
+	pin.tangentW = pin.tangentW - (dot(pin.tangentW, pin.normalW) * pin.normalW);
+	pin.tangentW = normalize(pin.tangentW);
+
+	pin.normalW = BumpNormalW(pin.uv, pin.normalW, pin.tangentW);
 
 	if (useDirLight)
 	{

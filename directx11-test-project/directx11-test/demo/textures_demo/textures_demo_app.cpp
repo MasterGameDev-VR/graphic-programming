@@ -34,7 +34,7 @@ TexturesDemoApp::TexturesDemoApp(HINSTANCE instance,
 	, m_rasterizerState(nullptr)
 	, m_objectsToDrawByGroup()
 	, m_materialMap()
-	, m_objectsNumber(1)
+	, m_objectsNumber(3)
 {
 
 }
@@ -56,6 +56,7 @@ void TexturesDemoApp::Init()
 	InitLights();
 	InitRasterizerState();
 	InitTextures();
+	InitMaterials();
 	InitObjects();
 
 	service::Locator::GetMouse()->AddListener(this);
@@ -152,18 +153,11 @@ void xtest::demo::TexturesDemoApp::InitRenderable()
 
 		planeGroup.mesh = mesh;
 
-		Material material;
-		material.ambient = { 0.15f, 0.15f, 0.15f, 1.f };
-		material.diffuse = { 0.52f, 0.52f, 0.52f, 1.f };
-		material.specular = { 0.8f, 0.8f, 0.8f, 190.0f };
-
-		m_materialMap.emplace("material_plane", material);
-
 		Renderable plane;
 
 		XMStoreFloat4x4(&plane.W, XMMatrixIdentity());
 		XMStoreFloat4x4(&plane.textureMatrix, XMMatrixIdentity());
-		plane.materialKey = "material_plane";
+		plane.materialKey = "material_default";
 
 		// perObjectCB
 		D3D11_BUFFER_DESC perObjectCBDesc;
@@ -222,19 +216,12 @@ void xtest::demo::TexturesDemoApp::InitRenderable()
 
 		sphereGroup.mesh = mesh;
 
-		// material
-		Material material;
-		material.ambient = { 0.7f, 0.1f, 0.1f, 1.0f };
-		material.diffuse = { 0.81f, 0.15f, 0.15f, 1.0f };
-		material.specular = { 0.7f, 0.7f, 0.7f, 40.0f };
-		m_materialMap.emplace("material_sphere", material);
-
 
 		for (size_t i = 0; i < m_objectsNumber; i++) {
 
 			Renderable sphere;
 
-			sphere.materialKey = "material_sphere";
+			sphere.materialKey = "material_default";
 
 			XMStoreFloat4x4(&sphere.W, XMMatrixTranslation(0.f, 2.5f, 0.f));
 			XMStoreFloat4x4(&sphere.textureMatrix, XMMatrixIdentity());
@@ -293,19 +280,13 @@ void xtest::demo::TexturesDemoApp::InitRenderable()
 
 		squareGroup.mesh = mesh;
 
-		Material material;
-		material.ambient = { 0.7f, 0.1f, 0.1f, 1.0f };
-		material.diffuse = { 0.81f, 0.15f, 0.15f, 1.0f };
-		material.specular = { 0.7f, 0.7f, 0.7f, 40.0f };
-		m_materialMap.emplace("material_sphere", material);
-
 		for (size_t i = 0; i < m_objectsNumber; i++) {
 
 			Renderable square;
 
 			XMStoreFloat4x4(&square.W, XMMatrixTranslation(0.f, 1.f, 0.f));
 			XMStoreFloat4x4(&square.textureMatrix, XMMatrixIdentity());
-			square.materialKey = "material_sphere";
+			square.materialKey = "material_default";
 
 			// perObjectCB
 			D3D11_BUFFER_DESC perObjectCBDesc;
@@ -330,8 +311,8 @@ void xtest::demo::TexturesDemoApp::InitRenderable()
 
 void TexturesDemoApp::InitLights()
 {
-	m_dirLight.ambient = { 0.16f, 0.18f, 0.18f, 1.f };
-	m_dirLight.diffuse = { 0.4f* 0.87f,0.4f* 0.90f,0.4f* 0.94f, 1.f };
+	m_dirLight.ambient = { 0.3f, 0.3f, 0.3f, 1.f };
+	m_dirLight.diffuse = { 0.6f, 0.6 , 0.6 , 1.f };
 	m_dirLight.specular = { 0.87f, 0.90f, 0.94f, 1.f };
 	XMVECTOR dirLightDirection = XMVector3Normalize(-XMVectorSet(5.f, 3.f, 5.f, 0.f));
 	XMStoreFloat3(&m_dirLight.dirW, dirLightDirection);
@@ -348,11 +329,11 @@ void TexturesDemoApp::InitLights()
 		m_pointLights[i] = m_pointLights[0];
 	}
 
-	m_pointLights[0].posW = { 0.f, 2.f, -10.f };
-	m_pointLights[1].posW = { -10.f, 2.f, -3.f };
-	m_pointLights[2].posW = { -6.f, 2.f, 8.f };
-	m_pointLights[3].posW = { 6.f, 2.f, 8.f };
-	m_pointLights[4].posW = { 10.f, 2.f, -3.f };
+	m_pointLights[0].posW = { 0.f, 3.f, -7.f };
+	m_pointLights[1].posW = { -7.f, 3.f, -2.f };
+	m_pointLights[2].posW = { -4.f, 3.f, 6.f };
+	m_pointLights[3].posW = { 4.f, 3.f, 6.f };
+	m_pointLights[4].posW = { 7.f, 3.f, -2.f };
 
 	m_lightsControl.useDirLight = true;
 	m_lightsControl.usePointLight = true;
@@ -396,6 +377,7 @@ void TexturesDemoApp::InitTextures()
 		TexturePack texturePack;
 		TexturePackView texturePackView;
 		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\wood\wood_color.png)").c_str(), texturePack.texture.GetAddressOf(), texturePackView.textureView.GetAddressOf()));
+		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\wood\wood_norm.png)").c_str(), texturePack.normalMap.GetAddressOf(), texturePackView.normalMapView.GetAddressOf()));
 
 		m_texturePacks.push_back(texturePack);
 		m_texturePackViewMap.emplace("wood", texturePackView);
@@ -406,9 +388,21 @@ void TexturesDemoApp::InitTextures()
 		TexturePack texturePack;
 		TexturePackView texturePackView;
 		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\ground\ground_color.png)").c_str(), texturePack.texture.GetAddressOf(), texturePackView.textureView.GetAddressOf()));
+		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\ground\ground_norm.png)").c_str(), texturePack.normalMap.GetAddressOf(), texturePackView.normalMapView.GetAddressOf()));
 
 		m_texturePacks.push_back(texturePack);
 		m_texturePackViewMap.emplace("ground", texturePackView);
+	}
+
+	//GROUND
+	{
+		TexturePack texturePack;
+		TexturePackView texturePackView;
+		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\twine\twine_color.png)").c_str(), texturePack.texture.GetAddressOf(), texturePackView.textureView.GetAddressOf()));
+		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\twine\twine_norm.png)").c_str(), texturePack.normalMap.GetAddressOf(), texturePackView.normalMapView.GetAddressOf()));
+
+		m_texturePacks.push_back(texturePack);
+		m_texturePackViewMap.emplace("twine", texturePackView);
 	}
 
 	//SAMPLER
@@ -427,12 +421,85 @@ void TexturesDemoApp::InitTextures()
 	}
 }
 
+void TexturesDemoApp::InitMaterials()
+{
+	{
+		Material material;
+		material.ambient = { 0.2f, 0.2f, 0.2f, 1.f };
+		material.diffuse = { 0.5f, 0.5f, 0.5f, 1.f };
+		material.specular = { 0.5f, 0.5f, 0.5f, 50.0f };
+
+		m_materialMap.emplace("material_default", material);
+	}
+
+	{
+		// material
+		Material material;
+		material.ambient = { 0.3f, 0.3f, 0.3f, 1.0f };
+		material.diffuse = { 0.5f, 0.5f, 0.5f, 1.0f };
+		material.specular = { 0.3f, 0.3f, 0.3f, 40.0f };
+		m_materialMap.emplace("material_0", material);
+	}
+}
+
 void TexturesDemoApp::InitObjects()
 {
-	m_objectsToDrawByGroup[0].objects[0].textureViewKey = "ground";
+	const int PLANE = 0, SPHERE = 1, SQUARE = 2;
 
-	m_objectsToDrawByGroup[1].objects[0].textureViewKey = "wood";
-	m_objectsToDrawByGroup[2].objects[0].textureViewKey = "wood";
+	//Plane
+	{
+		m_objectsToDrawByGroup[PLANE].objects[0].textureViewKey = "ground";
+	}
+
+	//Object0
+	{
+		size_t INDEX = 0;
+		m_objectsToDrawByGroup[SPHERE].objects[INDEX].textureViewKey = "twine";
+		m_objectsToDrawByGroup[SPHERE].objects[INDEX].materialKey = "material_0";
+
+		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "twine";
+		m_objectsToDrawByGroup[SQUARE].objects[INDEX].materialKey = "material_0";
+	}
+
+	//Object1
+	{
+		size_t INDEX = 1;
+		XMMATRIX W;
+		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[SPHERE].objects[INDEX].W);
+		W *= XMMatrixTranslation(-10.f, 0.f, 0.f);
+		XMStoreFloat4x4(&m_objectsToDrawByGroup[SPHERE].objects[INDEX].W, W);
+
+		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W);
+		W *= XMMatrixTranslation(-10.f, 0.f, 0.f);
+		XMStoreFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W, W);
+
+		m_objectsToDrawByGroup[SPHERE].objects[INDEX].textureViewKey = "wood";
+		m_objectsToDrawByGroup[SPHERE].objects[INDEX].materialKey = "material_0";
+
+		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "wood";
+		m_objectsToDrawByGroup[SQUARE].objects[INDEX].materialKey = "material_0";
+	}
+
+	//Object2
+	{
+		size_t INDEX = 2;
+		XMMATRIX W;
+		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[SPHERE].objects[INDEX].W);
+		W *= XMMatrixTranslation(10.f, 0.f, 0.f);
+		XMStoreFloat4x4(&m_objectsToDrawByGroup[SPHERE].objects[INDEX].W, W);
+
+		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W);
+		W *= XMMatrixTranslation(10.f, 0.f, 0.f);
+		XMStoreFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W, W);
+
+		m_objectsToDrawByGroup[SPHERE].objects[INDEX].textureViewKey = "wood";
+		m_objectsToDrawByGroup[SPHERE].objects[INDEX].materialKey = "material_0";
+
+		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "wood";
+		m_objectsToDrawByGroup[SQUARE].objects[INDEX].materialKey = "material_0";
+	}
+
+
 }
 
 
@@ -630,7 +697,7 @@ void TexturesDemoApp::RenderScene()
 
 	// clear the frame
 	m_d3dContext->ClearDepthStencilView(m_depthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
-	m_d3dContext->ClearRenderTargetView(m_backBufferView.Get(), DirectX::Colors::DarkGray);
+	m_d3dContext->ClearRenderTargetView(m_backBufferView.Get(), DirectX::Colors::LightSkyBlue);
 
 	// set the shaders and the input layout
 	m_d3dContext->RSSetState(m_rasterizerState.Get());
@@ -660,6 +727,7 @@ void TexturesDemoApp::RenderScene()
 			m_d3dContext->PSSetConstantBuffers(0, 1, m_objectsToDrawByGroup[i].objects[j].d3dPerObjectCB.GetAddressOf());
 
 			m_d3dContext->PSSetShaderResources(0, 1, m_texturePackViewMap.at(m_objectsToDrawByGroup[i].objects[j].textureViewKey).textureView.GetAddressOf());
+			m_d3dContext->PSSetShaderResources(1, 1, m_texturePackViewMap.at(m_objectsToDrawByGroup[i].objects[j].textureViewKey).normalMapView.GetAddressOf());
 
 			m_d3dContext->DrawIndexed(UINT(mesh.meshData.indices.size()), 0, 0);
 		}

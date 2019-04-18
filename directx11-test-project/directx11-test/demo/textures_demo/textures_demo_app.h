@@ -130,10 +130,12 @@ namespace xtest {
 
 			struct TexturePack {
 				Microsoft::WRL::ComPtr<ID3D11Resource> texture;
+				Microsoft::WRL::ComPtr<ID3D11Resource> normalMap;
 			};
 
 			struct TexturePackView {
 				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textureView;
+				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> normalMapView;
 			};
 
 
@@ -163,6 +165,7 @@ namespace xtest {
 			void InitLights();
 			void InitRasterizerState();
 			void InitTextures();
+			void InitMaterials();
 			void InitObjects();
 
 			DirectX::XMFLOAT4X4 m_viewMatrix;
