@@ -34,7 +34,7 @@ TexturesDemoApp::TexturesDemoApp(HINSTANCE instance,
 	, m_rasterizerState(nullptr)
 	, m_objectsToDrawByGroup()
 	, m_materialMap()
-	, m_objectsNumber(3)
+	, m_objectsNumber(5)
 {
 
 }
@@ -408,6 +408,42 @@ void TexturesDemoApp::InitTextures()
 		m_texturePackViewMap.emplace("twine", texturePackView);
 	}
 
+	//FABRIC
+	{
+		TexturePack texturePack;
+		TexturePackView texturePackView;
+		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\fabric\fabric_color.png)").c_str(), texturePack.texture.GetAddressOf(), texturePackView.textureView.GetAddressOf()));
+		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\fabric\fabric_norm.png)").c_str(), texturePack.normalMap.GetAddressOf(), texturePackView.normalMapView.GetAddressOf()));
+		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\fabric\fabric_gloss.png)").c_str(), texturePack.glossMap.GetAddressOf(), texturePackView.glossMapView.GetAddressOf()));
+
+		m_texturePacks.push_back(texturePack);
+		m_texturePackViewMap.emplace("fabric", texturePackView);
+	}
+
+	//WET STONE
+	{
+		TexturePack texturePack;
+		TexturePackView texturePackView;
+		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\wet-stone\wet_stone_color.png)").c_str(), texturePack.texture.GetAddressOf(), texturePackView.textureView.GetAddressOf()));
+		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\wet-stone\wet_stone_norm.png)").c_str(), texturePack.normalMap.GetAddressOf(), texturePackView.normalMapView.GetAddressOf()));
+		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\wet-stone\wet_stone_gloss.png)").c_str(), texturePack.glossMap.GetAddressOf(), texturePackView.glossMapView.GetAddressOf()));
+
+		m_texturePacks.push_back(texturePack);
+		m_texturePackViewMap.emplace("wet_stone", texturePackView);
+	}
+
+	//SCI FI
+	{
+		TexturePack texturePack;
+		TexturePackView texturePackView;
+		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\sci-fi\sci_fi_color.png)").c_str(), texturePack.texture.GetAddressOf(), texturePackView.textureView.GetAddressOf()));
+		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\sci-fi\sci_fi_norm.png)").c_str(), texturePack.normalMap.GetAddressOf(), texturePackView.normalMapView.GetAddressOf()));
+		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\sci-fi\sci_fi_gloss.png)").c_str(), texturePack.glossMap.GetAddressOf(), texturePackView.glossMapView.GetAddressOf()));
+
+		m_texturePacks.push_back(texturePack);
+		m_texturePackViewMap.emplace("sci_fi", texturePackView);
+	}
+
 	//SAMPLER
 	{
 		D3D11_SAMPLER_DESC samplerDesc;
@@ -457,10 +493,10 @@ void TexturesDemoApp::InitObjects()
 	//Object0
 	{
 		size_t INDEX = 0;
-		m_objectsToDrawByGroup[SPHERE].objects[INDEX].textureViewKey = "twine";
+		m_objectsToDrawByGroup[SPHERE].objects[INDEX].textureViewKey = "sci_fi";
 		m_objectsToDrawByGroup[SPHERE].objects[INDEX].materialKey = "material_0";
 
-		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "twine";
+		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "sci_fi";
 		m_objectsToDrawByGroup[SQUARE].objects[INDEX].materialKey = "material_0";
 	}
 
@@ -495,10 +531,48 @@ void TexturesDemoApp::InitObjects()
 		W *= XMMatrixTranslation(10.f, 0.f, 0.f);
 		XMStoreFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W, W);
 
-		m_objectsToDrawByGroup[SPHERE].objects[INDEX].textureViewKey = "wood";
+		m_objectsToDrawByGroup[SPHERE].objects[INDEX].textureViewKey = "twine";
 		m_objectsToDrawByGroup[SPHERE].objects[INDEX].materialKey = "material_0";
 
-		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "wood";
+		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "twine";
+		m_objectsToDrawByGroup[SQUARE].objects[INDEX].materialKey = "material_0";
+	}
+
+	//Object3
+	{
+		size_t INDEX = 3;
+		XMMATRIX W;
+		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[SPHERE].objects[INDEX].W);
+		W *= XMMatrixTranslation(0.f, 0.f, -10.f);
+		XMStoreFloat4x4(&m_objectsToDrawByGroup[SPHERE].objects[INDEX].W, W);
+
+		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W);
+		W *= XMMatrixTranslation(0.f, 0.f, -10.f);
+		XMStoreFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W, W);
+
+		m_objectsToDrawByGroup[SPHERE].objects[INDEX].textureViewKey = "wet_stone";
+		m_objectsToDrawByGroup[SPHERE].objects[INDEX].materialKey = "material_0";
+
+		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "wet_stone";
+		m_objectsToDrawByGroup[SQUARE].objects[INDEX].materialKey = "material_0";
+	}
+
+	//Object4
+	{
+		size_t INDEX = 4;
+		XMMATRIX W;
+		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[SPHERE].objects[INDEX].W);
+		W *= XMMatrixTranslation(0.f, 0.f, 10.f);
+		XMStoreFloat4x4(&m_objectsToDrawByGroup[SPHERE].objects[INDEX].W, W);
+
+		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W);
+		W *= XMMatrixTranslation(0.f, 0.f, 10.f);
+		XMStoreFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W, W);
+
+		m_objectsToDrawByGroup[SPHERE].objects[INDEX].textureViewKey = "fabric";
+		m_objectsToDrawByGroup[SPHERE].objects[INDEX].materialKey = "material_0";
+
+		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "fabric";
 		m_objectsToDrawByGroup[SQUARE].objects[INDEX].materialKey = "material_0";
 	}
 
