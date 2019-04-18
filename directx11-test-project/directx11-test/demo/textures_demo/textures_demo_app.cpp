@@ -122,7 +122,7 @@ void xtest::demo::TexturesDemoApp::InitRenderable()
 		ObjectGroup planeGroup;
 
 		Mesh mesh;
-		mesh.meshData = mesh::GeneratePlane(50.f, 50.f, 50, 50);
+		mesh.meshData = mesh::GeneratePlane(35.f, 35.f, 100, 100);
 
 		// vertex buffer
 		D3D11_BUFFER_DESC vertexBufferDesc;
@@ -378,6 +378,7 @@ void TexturesDemoApp::InitTextures()
 		TexturePackView texturePackView;
 		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\wood\wood_color.png)").c_str(), texturePack.texture.GetAddressOf(), texturePackView.textureView.GetAddressOf()));
 		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\wood\wood_norm.png)").c_str(), texturePack.normalMap.GetAddressOf(), texturePackView.normalMapView.GetAddressOf()));
+		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\wood\wood_gloss.png)").c_str(), texturePack.glossMap.GetAddressOf(), texturePackView.glossMapView.GetAddressOf()));
 
 		m_texturePacks.push_back(texturePack);
 		m_texturePackViewMap.emplace("wood", texturePackView);
@@ -389,17 +390,19 @@ void TexturesDemoApp::InitTextures()
 		TexturePackView texturePackView;
 		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\ground\ground_color.png)").c_str(), texturePack.texture.GetAddressOf(), texturePackView.textureView.GetAddressOf()));
 		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\ground\ground_norm.png)").c_str(), texturePack.normalMap.GetAddressOf(), texturePackView.normalMapView.GetAddressOf()));
+		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\ground\ground_gloss.png)").c_str(), texturePack.glossMap.GetAddressOf(), texturePackView.glossMapView.GetAddressOf()));
 
 		m_texturePacks.push_back(texturePack);
 		m_texturePackViewMap.emplace("ground", texturePackView);
 	}
 
-	//GROUND
+	//TWINE
 	{
 		TexturePack texturePack;
 		TexturePackView texturePackView;
 		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\twine\twine_color.png)").c_str(), texturePack.texture.GetAddressOf(), texturePackView.textureView.GetAddressOf()));
 		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\twine\twine_norm.png)").c_str(), texturePack.normalMap.GetAddressOf(), texturePackView.normalMapView.GetAddressOf()));
+		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\twine\twine_gloss.png)").c_str(), texturePack.glossMap.GetAddressOf(), texturePackView.glossMapView.GetAddressOf()));
 
 		m_texturePacks.push_back(texturePack);
 		m_texturePackViewMap.emplace("twine", texturePackView);
@@ -728,6 +731,7 @@ void TexturesDemoApp::RenderScene()
 
 			m_d3dContext->PSSetShaderResources(0, 1, m_texturePackViewMap.at(m_objectsToDrawByGroup[i].objects[j].textureViewKey).textureView.GetAddressOf());
 			m_d3dContext->PSSetShaderResources(1, 1, m_texturePackViewMap.at(m_objectsToDrawByGroup[i].objects[j].textureViewKey).normalMapView.GetAddressOf());
+			m_d3dContext->PSSetShaderResources(2, 1, m_texturePackViewMap.at(m_objectsToDrawByGroup[i].objects[j].textureViewKey).glossMapView.GetAddressOf());
 
 			m_d3dContext->DrawIndexed(UINT(mesh.meshData.indices.size()), 0, 0);
 		}

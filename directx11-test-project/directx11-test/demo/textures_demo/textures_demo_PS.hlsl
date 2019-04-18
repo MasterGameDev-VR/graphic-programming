@@ -71,11 +71,11 @@ cbuffer RarelyChangedCB : register(b2)
 
 Texture2D diffuseTexture : register(t0);
 Texture2D normalTexture : register(t1);
-
+Texture2D glossTexture : register(t2);
 SamplerState textureSampler : register(s0);
 
 
-void DirectionalLightContribution(Material mat, DirectionalLight light, float3 normalW, float3 toEyeW, out float4 ambient, out float4 diffuse, out float4 specular)
+void DirectionalLightContribution(Material mat, DirectionalLight light, float3 normalW, float3 toEyeW, float exponent, out float4 ambient, out float4 diffuse, out float4 specular)
 {
 	// default values
 	ambient = float4(0.f, 0.f, 0.f, 0.f);
@@ -98,11 +98,11 @@ void DirectionalLightContribution(Material mat, DirectionalLight light, float3 n
 
 		// specular component
 		float3 halfVectorW = normalize(toLightW + toEyeW);
-		float Ks = pow(max(dot(halfVectorW, normalW), 0.f), mat.specular.w);
+		float Ks = pow(max(dot(halfVectorW, normalW), 0.f), exponent);
 		specular += Ks * mat.specular * light.specular;
 	}
 }
-void PointLightContribution(Material mat, PointLight light, float3 posW, float3 normalW, float3 toEyeW, out float4 ambient, out float4 diffuse, out float4 specular)
+void PointLightContribution(Material mat, PointLight light, float3 posW, float3 normalW, float3 toEyeW, float exponent, out float4 ambient, out float4 diffuse, out float4 specular)
 {
 
 	// default values
@@ -135,7 +135,7 @@ void PointLightContribution(Material mat, PointLight light, float3 posW, float3 
 
 		// specular component
 		float3 halfVectorW = normalize(toLightW + toEyeW);
-		float Ks = pow(max(dot(halfVectorW, normalW), 0.f), mat.specular.w);
+		float Ks = pow(max(dot(halfVectorW, normalW), 0.f),  exponent);
 		specular = Ks * mat.specular * light.specular;
 	}
 
@@ -184,9 +184,12 @@ float4 main(VertexOut pin) : SV_TARGET
 
 	pin.normalW = BumpNormalW(pin.uv, pin.normalW, pin.tangentW);
 
+	float glossSample = glossTexture.Sample(textureSampler, pin.uv).r;
+	float exponent = exp2(13.0 * (1.f - glossSample));
+
 	if (useDirLight)
 	{
-		DirectionalLightContribution(material, dirLight, pin.normalW, toEyeW, ambient, diffuse, specular);
+		DirectionalLightContribution(material, dirLight, pin.normalW, toEyeW, exponent, ambient, diffuse, specular);
 		totalAmbient += ambient;
 		totalDiffuse += diffuse;
 		totalSpecular += specular;
@@ -195,7 +198,7 @@ float4 main(VertexOut pin) : SV_TARGET
 	if (usePointLight)
 	{
 		for (int i = 0; i < SPOTNUMBER; i++) {
-			PointLightContribution(material, pointLight[i], pin.posW, pin.normalW, toEyeW, ambient, diffuse, specular);
+			PointLightContribution(material, pointLight[i], pin.posW, pin.normalW, toEyeW, exponent, ambient, diffuse, specular);
 			totalAmbient += ambient;
 			totalDiffuse += diffuse;
 			totalSpecular += specular;

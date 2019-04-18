@@ -131,11 +131,13 @@ namespace xtest {
 			struct TexturePack {
 				Microsoft::WRL::ComPtr<ID3D11Resource> texture;
 				Microsoft::WRL::ComPtr<ID3D11Resource> normalMap;
+				Microsoft::WRL::ComPtr<ID3D11Resource> glossMap;
 			};
 
 			struct TexturePackView {
 				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textureView;
 				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> normalMapView;
+				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> glossMapView;
 			};
 
 
