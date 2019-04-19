@@ -72,7 +72,10 @@ namespace xtest {
 				DirectX::XMFLOAT4X4 W_inverseTraspose;
 				DirectX::XMFLOAT4X4 WVP;
 				DirectX::XMFLOAT4X4 textureMatrix;
+				DirectX::XMFLOAT4X4 textureMatrix2;
 				Material material;
+				int32 useSecondTexture;
+				DirectX::XMFLOAT3 _explicit_pad_;
 			};
 
 			struct PerFrameCB
@@ -99,6 +102,12 @@ namespace xtest {
 				std::string materialKey;
 				std::string textureViewKey;
 				Microsoft::WRL::ComPtr<ID3D11Buffer> d3dPerObjectCB;
+			};
+
+			struct RenderablePlus : Renderable
+			{
+				std::string texture2ViewKey;
+				DirectX::XMFLOAT4X4 textureMatrix2;
 			};
 
 			struct Mesh {
@@ -181,7 +190,9 @@ namespace xtest {
 			bool m_isLightControlDirty;
 			bool m_stopLights;
 
-			size_t m_objectsNumber;
+			size_t m_spheresToDraw;
+			size_t m_squaresToDraw;
+			size_t m_torusesToDraw;
 
 			std::vector<ObjectGroup> m_objectsToDrawByGroup;
 
@@ -189,6 +200,9 @@ namespace xtest {
 			std::map<std::string, TexturePackView> m_texturePackViewMap;
 			std::vector<TexturePack> m_texturePacks;
 			Microsoft::WRL::ComPtr<ID3D11SamplerState> m_textureSampler;
+
+			Mesh m_meshCoolObject;
+			RenderablePlus m_coolObject;
 
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dPerFrameCB;
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dRarelyChangedCB;

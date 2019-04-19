@@ -34,7 +34,9 @@ TexturesDemoApp::TexturesDemoApp(HINSTANCE instance,
 	, m_rasterizerState(nullptr)
 	, m_objectsToDrawByGroup()
 	, m_materialMap()
-	, m_objectsNumber(5)
+	, m_spheresToDraw(4)
+	, m_squaresToDraw(5)
+	, m_torusesToDraw(2)
 {
 
 }
@@ -217,7 +219,7 @@ void xtest::demo::TexturesDemoApp::InitRenderable()
 		sphereGroup.mesh = mesh;
 
 
-		for (size_t i = 0; i < m_objectsNumber; i++) {
+		for (size_t i = 0; i < m_spheresToDraw; i++) {
 
 			Renderable sphere;
 
@@ -280,7 +282,7 @@ void xtest::demo::TexturesDemoApp::InitRenderable()
 
 		squareGroup.mesh = mesh;
 
-		for (size_t i = 0; i < m_objectsNumber; i++) {
+		for (size_t i = 0; i < m_squaresToDraw; i++) {
 
 			Renderable square;
 
@@ -343,13 +345,13 @@ void xtest::demo::TexturesDemoApp::InitRenderable()
 
 		torusGroup.mesh = mesh;
 
-		for (size_t i = 0; i < m_objectsNumber; i++) {
+		for (size_t i = 0; i < m_torusesToDraw; i++) {
 
-			Renderable square;
+			Renderable torus;
 
-			XMStoreFloat4x4(&square.W, XMMatrixTranslation(0.f, 4.f, 0.f));
-			XMStoreFloat4x4(&square.textureMatrix, XMMatrixIdentity());
-			square.materialKey = "material_default";
+			XMStoreFloat4x4(&torus.W, XMMatrixTranslation(0.f, 2.5f, 0.f));
+			XMStoreFloat4x4(&torus.textureMatrix, XMMatrixIdentity());
+			torus.materialKey = "material_default";
 
 			// perObjectCB
 			D3D11_BUFFER_DESC perObjectCBDesc;
@@ -359,14 +361,36 @@ void xtest::demo::TexturesDemoApp::InitRenderable()
 			perObjectCBDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 			perObjectCBDesc.MiscFlags = 0;
 			perObjectCBDesc.StructureByteStride = 0;
-			XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &square.d3dPerObjectCB));
+			XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &torus.d3dPerObjectCB));
 
-			square.textureViewKey = "ground";
+			torus.textureViewKey = "ground";
 
-			torusGroup.objects.push_back(square);
+			torusGroup.objects.push_back(torus);
 		}
 
 		m_objectsToDrawByGroup.push_back(torusGroup);
+	}
+
+	{
+		m_meshCoolObject = m_objectsToDrawByGroup[1].mesh;
+
+		m_coolObject.materialKey = "material_default";
+
+		XMStoreFloat4x4(&m_coolObject.W, XMMatrixTranslation(0.f, 2.5f, 0.f));
+		XMStoreFloat4x4(&m_coolObject.textureMatrix, XMMatrixIdentity());
+		XMStoreFloat4x4(&m_coolObject.textureMatrix2, XMMatrixIdentity());
+
+		D3D11_BUFFER_DESC perObjectCBDesc;
+		perObjectCBDesc.Usage = D3D11_USAGE_DYNAMIC;
+		perObjectCBDesc.ByteWidth = sizeof(PerObjectCB);
+		perObjectCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		perObjectCBDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		perObjectCBDesc.MiscFlags = 0;
+		perObjectCBDesc.StructureByteStride = 0;
+		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &m_coolObject.d3dPerObjectCB));
+
+		m_coolObject.textureViewKey = "ground";
+		m_coolObject.texture2ViewKey = "ground";
 	}
 
 }
@@ -375,7 +399,7 @@ void xtest::demo::TexturesDemoApp::InitRenderable()
 void TexturesDemoApp::InitLights()
 {
 	m_dirLight.ambient = { 0.3f, 0.3f, 0.3f, 1.f };
-	m_dirLight.diffuse = { 0.6f, 0.6 , 0.6 , 1.f };
+	m_dirLight.diffuse = { 0.6f, 0.6f , 0.6f , 1.f };
 	m_dirLight.specular = { 0.87f, 0.90f, 0.94f, 1.f };
 	XMVECTOR dirLightDirection = XMVector3Normalize(-XMVectorSet(5.f, 3.f, 5.f, 0.f));
 	XMStoreFloat3(&m_dirLight.dirW, dirLightDirection);
@@ -507,6 +531,18 @@ void TexturesDemoApp::InitTextures()
 		m_texturePackViewMap.emplace("sci_fi", texturePackView);
 	}
 
+	//PLASTIC COVER
+	{
+		TexturePack texturePack;
+		TexturePackView texturePackView;
+		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\plastic-cover\plastic_cover_color.png)").c_str(), texturePack.texture.GetAddressOf(), texturePackView.textureView.GetAddressOf()));
+		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\plastic-cover\plastic_cover_norm.png)").c_str(), texturePack.normalMap.GetAddressOf(), texturePackView.normalMapView.GetAddressOf()));
+		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), GetRootDir().append(LR"(\3d-objects\plastic-cover\plastic_cover_gloss.png)").c_str(), texturePack.glossMap.GetAddressOf(), texturePackView.glossMapView.GetAddressOf()));
+
+		m_texturePacks.push_back(texturePack);
+		m_texturePackViewMap.emplace("plastic_cover", texturePackView);
+	}
+
 	//SAMPLER
 	{
 		D3D11_SAMPLER_DESC samplerDesc;
@@ -555,32 +591,30 @@ void TexturesDemoApp::InitObjects()
 
 	//Object0
 	{
-		size_t INDEX = 0;
-		m_objectsToDrawByGroup[SPHERE].objects[INDEX].textureViewKey = "sci_fi";
-		m_objectsToDrawByGroup[SPHERE].objects[INDEX].materialKey = "material_0";
+		size_t INDEX = 4;
+		m_coolObject.materialKey = "material_0";
+		m_coolObject.textureViewKey = "plastic_cover";
+		m_coolObject.texture2ViewKey = "sci_fi";
 
-		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "sci_fi";
+		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "plastic_cover";
 		m_objectsToDrawByGroup[SQUARE].objects[INDEX].materialKey = "material_0";
-
-		m_objectsToDrawByGroup[TORUS].objects[INDEX].textureViewKey = "sci_fi";
-		m_objectsToDrawByGroup[TORUS].objects[INDEX].materialKey = "material_0";
 	}
 
 	//Object1
 	{
-		size_t INDEX = 1;
+		size_t INDEX = 0;
 		XMMATRIX W;
 		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[SPHERE].objects[INDEX].W);
-		W *= XMMatrixTranslation(-10.f, 0.f, 0.f);
+		W *= XMMatrixTranslation(-10.f, 0.5f, 0.f);
 		XMStoreFloat4x4(&m_objectsToDrawByGroup[SPHERE].objects[INDEX].W, W);
 
 		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W);
 		W *= XMMatrixTranslation(-10.f, 0.f, 0.f);
 		XMStoreFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W, W);
 
-		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[TORUS].objects[INDEX].W);
+		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[TORUS].objects[0].W);
 		W *= XMMatrixTranslation(-10.f, 0.f, 0.f);
-		XMStoreFloat4x4(&m_objectsToDrawByGroup[TORUS].objects[INDEX].W, W);
+		XMStoreFloat4x4(&m_objectsToDrawByGroup[TORUS].objects[0].W, W);
 
 		m_objectsToDrawByGroup[SPHERE].objects[INDEX].textureViewKey = "wood";
 		m_objectsToDrawByGroup[SPHERE].objects[INDEX].materialKey = "material_0";
@@ -588,51 +622,26 @@ void TexturesDemoApp::InitObjects()
 		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "wood";
 		m_objectsToDrawByGroup[SQUARE].objects[INDEX].materialKey = "material_0";
 
-		m_objectsToDrawByGroup[TORUS].objects[INDEX].textureViewKey = "wood";
-		m_objectsToDrawByGroup[TORUS].objects[INDEX].materialKey = "material_0";
+		m_objectsToDrawByGroup[TORUS].objects[0].textureViewKey = "wood";
+		m_objectsToDrawByGroup[TORUS].objects[0].materialKey = "material_0";
+
 	}
 
 	//Object2
 	{
-		size_t INDEX = 2;
+		size_t INDEX = 1;
 		XMMATRIX W;
 		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[SPHERE].objects[INDEX].W);
-		W *= XMMatrixTranslation(10.f, 0.f, 0.f);
+		W *= XMMatrixTranslation(10.f, 0.5f, 0.f);
 		XMStoreFloat4x4(&m_objectsToDrawByGroup[SPHERE].objects[INDEX].W, W);
 
 		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W);
 		W *= XMMatrixTranslation(10.f, 0.f, 0.f);
 		XMStoreFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W, W);
 
-		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[TORUS].objects[INDEX].W);
+		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[TORUS].objects[1].W);
 		W *= XMMatrixTranslation(10.f, 0.f, 0.f);
-		XMStoreFloat4x4(&m_objectsToDrawByGroup[TORUS].objects[INDEX].W, W);
-
-		m_objectsToDrawByGroup[SPHERE].objects[INDEX].textureViewKey = "twine";
-		m_objectsToDrawByGroup[SPHERE].objects[INDEX].materialKey = "material_0";
-
-		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "twine";
-		m_objectsToDrawByGroup[SQUARE].objects[INDEX].materialKey = "material_0";
-
-		m_objectsToDrawByGroup[TORUS].objects[INDEX].textureViewKey = "twine";
-		m_objectsToDrawByGroup[TORUS].objects[INDEX].materialKey = "material_0";
-	}
-
-	//Object3
-	{
-		size_t INDEX = 3;
-		XMMATRIX W;
-		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[SPHERE].objects[INDEX].W);
-		W *= XMMatrixTranslation(0.f, 0.f, -10.f);
-		XMStoreFloat4x4(&m_objectsToDrawByGroup[SPHERE].objects[INDEX].W, W);
-
-		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W);
-		W *= XMMatrixTranslation(0.f, 0.f, -10.f);
-		XMStoreFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W, W);
-
-		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[TORUS].objects[INDEX].W);
-		W *= XMMatrixTranslation(0.f, 0.f, -10.f);
-		XMStoreFloat4x4(&m_objectsToDrawByGroup[TORUS].objects[INDEX].W, W);
+		XMStoreFloat4x4(&m_objectsToDrawByGroup[TORUS].objects[1].W, W);
 
 		m_objectsToDrawByGroup[SPHERE].objects[INDEX].textureViewKey = "wet_stone";
 		m_objectsToDrawByGroup[SPHERE].objects[INDEX].materialKey = "material_0";
@@ -640,13 +649,32 @@ void TexturesDemoApp::InitObjects()
 		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "wet_stone";
 		m_objectsToDrawByGroup[SQUARE].objects[INDEX].materialKey = "material_0";
 
-		m_objectsToDrawByGroup[TORUS].objects[INDEX].textureViewKey = "wet_stone";
-		m_objectsToDrawByGroup[TORUS].objects[INDEX].materialKey = "material_0";
+		m_objectsToDrawByGroup[TORUS].objects[1].textureViewKey = "wet_stone";
+		m_objectsToDrawByGroup[TORUS].objects[1].materialKey = "material_0";
+	}
+
+	//Object3
+	{
+		size_t INDEX = 2;
+		XMMATRIX W;
+		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[SPHERE].objects[INDEX].W);
+		W *= XMMatrixTranslation(0.f, 0.f, -10.f);
+		XMStoreFloat4x4(&m_objectsToDrawByGroup[SPHERE].objects[INDEX].W, W);
+
+		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W);
+		W *= XMMatrixTranslation(0.f, 0.f, -10.f);
+		XMStoreFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W, W);
+
+		m_objectsToDrawByGroup[SPHERE].objects[INDEX].textureViewKey = "twine";
+		m_objectsToDrawByGroup[SPHERE].objects[INDEX].materialKey = "material_0";
+
+		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "twine";
+		m_objectsToDrawByGroup[SQUARE].objects[INDEX].materialKey = "material_0";
 	}
 
 	//Object4
 	{
-		size_t INDEX = 4;
+		size_t INDEX = 3;
 		XMMATRIX W;
 		W = XMLoadFloat4x4(&m_objectsToDrawByGroup[SPHERE].objects[INDEX].W);
 		W *= XMMatrixTranslation(0.f, 0.f, 10.f);
@@ -656,18 +684,11 @@ void TexturesDemoApp::InitObjects()
 		W *= XMMatrixTranslation(0.f, 0.f, 10.f);
 		XMStoreFloat4x4(&m_objectsToDrawByGroup[SQUARE].objects[INDEX].W, W);
 
-			W = XMLoadFloat4x4(&m_objectsToDrawByGroup[TORUS].objects[INDEX].W);
-		W *= XMMatrixTranslation(0.f, 0.f, 10.f);
-		XMStoreFloat4x4(&m_objectsToDrawByGroup[TORUS].objects[INDEX].W, W);
-
 		m_objectsToDrawByGroup[SPHERE].objects[INDEX].textureViewKey = "fabric";
 		m_objectsToDrawByGroup[SPHERE].objects[INDEX].materialKey = "material_0";
 
 		m_objectsToDrawByGroup[SQUARE].objects[INDEX].textureViewKey = "fabric";
 		m_objectsToDrawByGroup[SQUARE].objects[INDEX].materialKey = "material_0";
-
-		m_objectsToDrawByGroup[TORUS].objects[INDEX].textureViewKey = "fabric";
-		m_objectsToDrawByGroup[TORUS].objects[INDEX].materialKey = "material_0";
 	}
 
 
@@ -766,18 +787,15 @@ void TexturesDemoApp::UpdateScene(float deltaSeconds)
 	// create projection matrix
 	XMMATRIX P = XMLoadFloat4x4(&m_projectionMatrix);
 
-
-
 	m_d3dAnnotation->BeginEvent(L"update-constant-buffer");
-
-
-	// plane PerObjectCB
+	//PerObjectCB
 	for (size_t i = 0; i < m_objectsToDrawByGroup.size(); i++)
 	{
 		for (size_t j = 0; j < m_objectsToDrawByGroup[i].objects.size(); j++)
 		{
 			XMMATRIX W = XMLoadFloat4x4(&m_objectsToDrawByGroup[i].objects[j].W);
 			XMMATRIX textureMatrix = XMLoadFloat4x4(&m_objectsToDrawByGroup[i].objects[j].textureMatrix);
+
 			XMMATRIX WVP = W * V*P;
 
 			D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -792,11 +810,54 @@ void TexturesDemoApp::UpdateScene(float deltaSeconds)
 			XMStoreFloat4x4(&perObjectCB->WVP, XMMatrixTranspose(WVP));
 			XMStoreFloat4x4(&perObjectCB->W_inverseTraspose, XMMatrixInverse(nullptr, W));
 			XMStoreFloat4x4(&perObjectCB->textureMatrix, XMMatrixTranspose(textureMatrix));
+			perObjectCB->useSecondTexture = false;
 			perObjectCB->material = m_materialMap.at(m_objectsToDrawByGroup[i].objects[j].materialKey);
 
 			// enable gpu access
 			m_d3dContext->Unmap(m_objectsToDrawByGroup[i].objects[j].d3dPerObjectCB.Get(), 0);
 		}
+	}
+
+	//Cool object update
+	{
+
+		//Texture moving
+		{
+			// 		XMMATRIX textureMatrix;
+
+
+			// 		textureMatrix = XMLoadFloat4x4(&m_objectsToDrawByGroup[2].objects[0].textureMatrix);
+			// 		textureMatrix *= XMMatrixTranslation(1.f * deltaSeconds, 1.f * deltaSeconds, 0);
+			// 		XMStoreFloat4x4(&m_objectsToDrawByGroup[2].objects[0].textureMatrix, textureMatrix);
+		}
+
+		XMMATRIX W = XMLoadFloat4x4(&m_coolObject.W);
+		XMMATRIX textureMatrix = XMLoadFloat4x4(&m_coolObject.textureMatrix);
+		XMMATRIX textureMatrix2 = XMLoadFloat4x4(&m_coolObject.textureMatrix2);
+
+		textureMatrix2 *= XMMatrixTranslation(0.05f * deltaSeconds, 0.2f * deltaSeconds, 0);
+		XMStoreFloat4x4(&m_coolObject.textureMatrix2, textureMatrix2);
+
+		XMMATRIX WVP = W * V*P;
+
+		D3D11_MAPPED_SUBRESOURCE mappedResource;
+		ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+
+		// disable gpu access
+		XTEST_D3D_CHECK(m_d3dContext->Map(m_coolObject.d3dPerObjectCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
+		PerObjectCB* perObjectCB = (PerObjectCB*)mappedResource.pData;
+
+		//update the data
+		XMStoreFloat4x4(&perObjectCB->W, XMMatrixTranspose(W));
+		XMStoreFloat4x4(&perObjectCB->WVP, XMMatrixTranspose(WVP));
+		XMStoreFloat4x4(&perObjectCB->W_inverseTraspose, XMMatrixInverse(nullptr, W));
+		XMStoreFloat4x4(&perObjectCB->textureMatrix, XMMatrixTranspose(textureMatrix));
+		XMStoreFloat4x4(&perObjectCB->textureMatrix2, XMMatrixTranspose(textureMatrix2));
+		perObjectCB->useSecondTexture = true;
+		perObjectCB->material = m_materialMap.at(m_coolObject.materialKey);
+
+		// enable gpu access
+		m_d3dContext->Unmap(m_coolObject.d3dPerObjectCB.Get(), 0);
 	}
 
 
@@ -904,6 +965,28 @@ void TexturesDemoApp::RenderScene()
 			m_d3dContext->DrawIndexed(UINT(mesh.meshData.indices.size()), 0, 0);
 		}
 	}
+
+
+	//COOL OBJECT
+	{
+		UINT stride = sizeof(mesh::MeshData::Vertex);
+		UINT offset = 0;
+		const Mesh& mesh = m_meshCoolObject;
+		m_d3dContext->IASetVertexBuffers(0, 1, mesh.d3dVertexBuffer.GetAddressOf(), &stride, &offset);
+		m_d3dContext->IASetIndexBuffer(mesh.d3dIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+
+		// bind the constant data to the vertex shader
+		m_d3dContext->VSSetConstantBuffers(0, 1, m_coolObject.d3dPerObjectCB.GetAddressOf());
+		m_d3dContext->PSSetConstantBuffers(0, 1, m_coolObject.d3dPerObjectCB.GetAddressOf());
+
+		m_d3dContext->PSSetShaderResources(0, 1, m_texturePackViewMap.at(m_coolObject.textureViewKey).textureView.GetAddressOf());
+		m_d3dContext->PSSetShaderResources(1, 1, m_texturePackViewMap.at(m_coolObject.textureViewKey).normalMapView.GetAddressOf());
+		m_d3dContext->PSSetShaderResources(2, 1, m_texturePackViewMap.at(m_coolObject.textureViewKey).glossMapView.GetAddressOf());
+		m_d3dContext->PSSetShaderResources(3, 1, m_texturePackViewMap.at(m_coolObject.texture2ViewKey).textureView.GetAddressOf());
+
+		m_d3dContext->DrawIndexed(UINT(mesh.meshData.indices.size()), 0, 0);
+	}
+
 
 
 	XTEST_D3D_CHECK(m_swapChain->Present(0, 0));

@@ -44,6 +44,7 @@ struct VertexOut
 	float3 normalW : NORMAL;
 	float3 tangentW : TANGENT;
 	float2 uv : TEXCOORD;
+	float2 uv2 : TEXCOORD2;
 };
 
 cbuffer PerObjectCB : register(b0)
@@ -52,7 +53,9 @@ cbuffer PerObjectCB : register(b0)
 	float4x4 W_inverseTraspose;
 	float4x4 WVP;
 	float4x4 TextcoordMatrix;
+	float4x4 TextcoordMatrix2;
 	Material material;
+	bool useSecondTexture;
 };
 
 cbuffer PerFrameCB : register(b1)
@@ -72,6 +75,7 @@ cbuffer RarelyChangedCB : register(b2)
 Texture2D diffuseTexture : register(t0);
 Texture2D normalTexture : register(t1);
 Texture2D glossTexture : register(t2);
+Texture2D diffuseTexture2 : register(t3);
 SamplerState textureSampler : register(s0);
 
 
@@ -208,6 +212,15 @@ float4 main(VertexOut pin) : SV_TARGET
 	float4 diffuseColor = diffuseTexture.Sample(textureSampler, pin.uv);
 
 	float4 finalColor = diffuseColor * (totalAmbient + totalDiffuse) + totalSpecular;
+
+	
+	[flatten]
+	if (useSecondTexture) {
+		float4 diffuseColor2 = diffuseTexture2.Sample(textureSampler, pin.uv2);
+		finalColor += diffuseColor2 * (totalAmbient + totalDiffuse);
+	}
+	
+
 	finalColor.a = totalDiffuse.a;
 
 	return finalColor;
