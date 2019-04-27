@@ -70,6 +70,10 @@ namespace xtest {
 				DirectX::XMFLOAT4X4 W_inverseTraspose;
 				DirectX::XMFLOAT4X4 WVP;
 				Material material;
+				int32 usesNormalMapTexture;
+				int32 usesTwoColorMapTextures;
+				int32 _explicit_pad_1_;
+				int32 _explicit_pad_2_;
 			};
 			/*
 			struct PerObjectTextureCB 
@@ -95,12 +99,12 @@ namespace xtest {
 				DirectX::XMFLOAT3 eyePosW;
 				float _explicit_pad_;
 			};
-			/*
+			
 			struct PerFrameTextureCB 
 			{
 				DirectX::XMFLOAT4X4 texCoordMatrix;
 			};
-			*/
+			
 
 			struct RarelyChangedCB
 			{
@@ -215,7 +219,7 @@ namespace xtest {
 			GPFRenderable m_crate;
 
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dPerFrameCB;
-			//Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dPerFrameTextureCB;
+			Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dPerFrameTextureCB;
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dRarelyChangedCB;
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dRarelyChangedTextureCB;
 

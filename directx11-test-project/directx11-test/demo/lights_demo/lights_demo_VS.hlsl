@@ -33,6 +33,10 @@ cbuffer PerObjectCB : register(b0)
 	float4x4 W_inverseTraspose;
 	float4x4 WVP;
 	Material material;
+	bool usesNormalMapTexture;
+	bool usesTwoColorMapTextures;
+	//bool _explicit_pad_1_;
+	//bool _explicit_pad_2_;
 };
 /*
 cbuffer PerObjectTextureCB : register(b5)
@@ -40,12 +44,12 @@ cbuffer PerObjectTextureCB : register(b5)
 	bool usesNormalMapTexture;
 	bool usesTwoColorMapTextures;
 };
-
+*/
 cbuffer PerFrameTextureCB : register (b4)
 {
 	float4x4 texCoordMatrix;
 }
-*/
+
 
 VertexOut main(VertexIn vin)
 {

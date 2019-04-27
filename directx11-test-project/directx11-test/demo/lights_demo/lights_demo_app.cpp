@@ -34,7 +34,7 @@ LightsDemoApp::LightsDemoApp(HINSTANCE instance,
 	, m_texturesControl()
 	, m_isTexturesControlDirty(true)
 	, m_d3dPerFrameCB(nullptr)
-	//, m_d3dPerFrameTextureCB(nullptr)
+	, m_d3dPerFrameTextureCB(nullptr)
 	, m_d3dRarelyChangedCB(nullptr)
 	, m_d3dRarelyChangedTextureCB(nullptr)
 	, m_vertexShader(nullptr)
@@ -819,6 +819,10 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 		XMStoreFloat4x4(&perObjectCB->WVP, XMMatrixTranspose(WVP));
 		XMStoreFloat4x4(&perObjectCB->W_inverseTraspose, XMMatrixInverse(nullptr, W));
 		perObjectCB->material = m_plane.material;
+		perObjectCB->usesNormalMapTexture = true;
+		perObjectCB->usesTwoColorMapTextures = false;
+		perObjectCB->_explicit_pad_1_ = false;
+		perObjectCB->_explicit_pad_2_ = false;
 
 		// enable gpu access
 		m_d3dContext->Unmap(m_plane.d3dPerObjectCB.Get(), 0);
@@ -853,6 +857,10 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 		XMStoreFloat4x4(&perObjectCB->WVP, XMMatrixTranspose(WVP));
 		XMStoreFloat4x4(&perObjectCB->W_inverseTraspose, XMMatrixInverse(nullptr, W));
 		perObjectCB->material = m_sphere.material;
+		perObjectCB->usesNormalMapTexture = true;
+		perObjectCB->usesTwoColorMapTextures = true;
+		perObjectCB->_explicit_pad_1_ = false;
+		perObjectCB->_explicit_pad_2_ = false;
 
 		// enable gpu access
 		m_d3dContext->Unmap(m_sphere.d3dPerObjectCB.Get(), 0);
@@ -887,6 +895,10 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 		XMStoreFloat4x4(&perObjectCB->WVP, XMMatrixTranspose(WVP));
 		XMStoreFloat4x4(&perObjectCB->W_inverseTraspose, XMMatrixInverse(nullptr, W));
 		perObjectCB->material = m_torus.material;
+		perObjectCB->usesNormalMapTexture = true;
+		perObjectCB->usesTwoColorMapTextures = true;
+		perObjectCB->_explicit_pad_1_ = false;
+		perObjectCB->_explicit_pad_2_ = false;
 
 		// enable gpu access
 		m_d3dContext->Unmap(m_torus.d3dPerObjectCB.Get(), 0);
@@ -920,6 +932,10 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 		XMStoreFloat4x4(&perObjectCB->WVP, XMMatrixTranspose(WVP));
 		XMStoreFloat4x4(&perObjectCB->W_inverseTraspose, XMMatrixInverse(nullptr, W));
 		perObjectCB->material = m_box.material;
+		perObjectCB->usesNormalMapTexture = true;
+		perObjectCB->usesTwoColorMapTextures = false;
+		perObjectCB->_explicit_pad_1_ = false;
+		perObjectCB->_explicit_pad_2_ = false;
 
 		// enable gpu access
 		m_d3dContext->Unmap(m_box.d3dPerObjectCB.Get(), 0);
@@ -959,6 +975,10 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 			XMStoreFloat4x4(&perObjectCB->WVP, XMMatrixTranspose(WVP));
 			XMStoreFloat4x4(&perObjectCB->W_inverseTraspose, XMMatrixInverse(nullptr, W));
 			perObjectCB->material = m_crate.shapeAttributeMapByName[shapeName].material;
+			perObjectCB->usesNormalMapTexture = false;
+			perObjectCB->usesTwoColorMapTextures = false;
+			perObjectCB->_explicit_pad_1_ = false;
+			perObjectCB->_explicit_pad_2_ = false;
 
 			// enable gpu access
 			m_d3dContext->Unmap(m_crate.shapeAttributeMapByName[shapeName].d3dPerObjectCB.Get(), 0);
@@ -1024,7 +1044,7 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 	}
 
 	//PerFrameTextureCB
-	/*
+	
 	{
 
 		XMMATRIX translateUVcoords = XMMatrixTranslation(0.0f, deltaSeconds, 0.0f);
@@ -1033,12 +1053,12 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 		ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
 
 		XTEST_D3D_CHECK(m_d3dContext->Map(m_d3dPerFrameCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
-		PerFrameTextureCB* perFrameCB = (PerFrameTextureCB*)mappedResource.pData;
-		XMStoreFloat4x4(&(perFrameCB->texCoordMatrix),translateUVcoords);
+		PerFrameTextureCB* perFrameTextureCB = (PerFrameTextureCB*)mappedResource.pData;
+		XMStoreFloat4x4(&(perFrameTextureCB->texCoordMatrix),translateUVcoords);
 		m_d3dContext->Unmap(m_d3dPerFrameTextureCB.Get(), 0);
 
 	}
-	*/
+	
 		// RarelyChangedCB
 		
 	{
@@ -1117,7 +1137,7 @@ void LightsDemoApp::RenderScene()
 
 	m_d3dContext->PSSetConstantBuffers(1, 1, m_d3dPerFrameCB.GetAddressOf());
 
-	//m_d3dContext->VSSetConstantBuffers(4, 1, m_d3dPerFrameTextureCB.GetAddressOf());
+	m_d3dContext->VSSetConstantBuffers(4, 1, m_d3dPerFrameTextureCB.GetAddressOf());
 
 	m_d3dContext->PSSetSamplers(0,1,m_textureSamplerState.GetAddressOf());
 
