@@ -41,8 +41,8 @@ struct VertexOut
 	float3 posW : POSITION;
 	float3 normalW : NORMAL;
 	float3 tangentW : TANGENT;
-	float2 uv : TEXCOORD;
-	//float2 uvMotion : TEXCOORD1;
+	float2 uv : TEXCOORD0;
+	float2 uvMotion : TEXCOORD1;
 };
 
 
@@ -55,22 +55,15 @@ cbuffer PerObjectCB : register(b0)
 	Material material;
 	bool usesNormalMapTexture;
 	bool usesTwoColorMapTextures;
-	//bool _explicit_pad_1_;
-	//bool _explicit_pad_2_;
+
 };
 
-/*
-cbuffer PerObjectTextureCB : register(b5)
-{
-	bool usesNormalMapTexture;
-	bool usesTwoColorMapTextures;
-};
-*/
+
 
 Texture2D diffuseTexture : register(t0);
 Texture2D normalTexture : register(t1);
 Texture2D glossTexture : register(t2);
-//Texture2D movableDiffuseTexture : register(t3);
+Texture2D movableDiffuseTexture : register(t3);
 
 SamplerState textureSampler: register(s0);
 
@@ -86,6 +79,7 @@ cbuffer PerFrameCB : register(b1)
 	SpotLight spotLight1;
 	SpotLight spotLight2;
 	float3 eyePosW;
+	float translateValue;
 };
 
 
@@ -102,6 +96,7 @@ cbuffer RarelyChangedTextureCB : register(b3)
 	bool useNormalTextureMap;
 	bool useGlossTextureMap;
 }
+
 
 float3 BumpNormalW(float2 uv, float3 normalW, float3 tangentW) 
 {
@@ -246,7 +241,7 @@ float4 main(VertexOut pin) : SV_TARGET
 	float3 toEyeW = normalize(eyePosW - pin.posW);
 	float3 bumpedNormalW = float3(0.f, 0.f, 0.f);
 	//&& usesNormalMapTexture
-	if (useNormalTextureMap )
+	if (useNormalTextureMap && usesNormalMapTexture)
 	{
 		bumpedNormalW = BumpNormalW(pin.uv, pin.normalW, pin.tangentW);
 	}
@@ -295,17 +290,17 @@ float4 main(VertexOut pin) : SV_TARGET
 		totalDiffuse += diffuse;
 		totalSpecular += specular;
 
-		PointLightContribution(material, pointLight2, pin.posW, pin.normalW, toEyeW, glossSample, ambient, diffuse, specular);
+		PointLightContribution(material, pointLight2, pin.posW, bumpedNormalW, toEyeW, glossSample, ambient, diffuse, specular);
 		totalAmbient += ambient;
 		totalDiffuse += diffuse;
 		totalSpecular += specular;
 
-		PointLightContribution(material, pointLight3, pin.posW, pin.normalW, toEyeW, glossSample, ambient, diffuse, specular);
+		PointLightContribution(material, pointLight3, pin.posW, bumpedNormalW, toEyeW, glossSample, ambient, diffuse, specular);
 		totalAmbient += ambient;
 		totalDiffuse += diffuse;
 		totalSpecular += specular;
 
-		PointLightContribution(material, pointLight4, pin.posW, pin.normalW, toEyeW, glossSample, ambient, diffuse, specular);
+		PointLightContribution(material, pointLight4, pin.posW, bumpedNormalW, toEyeW, glossSample, ambient, diffuse, specular);
 		totalAmbient += ambient;
 		totalDiffuse += diffuse;
 		totalSpecular += specular;
@@ -313,18 +308,18 @@ float4 main(VertexOut pin) : SV_TARGET
 
 	if (useSpotLight)
 	{
-		SpotLightContribution(material, spotLight0, pin.posW, pin.normalW, toEyeW, glossSample, ambient, diffuse, specular);
+		SpotLightContribution(material, spotLight0, pin.posW, bumpedNormalW, toEyeW, glossSample, ambient, diffuse, specular);
 		totalAmbient += ambient;
 		totalDiffuse += diffuse;
 		totalSpecular += specular;
 
 
-		SpotLightContribution(material, spotLight1, pin.posW, pin.normalW, toEyeW, glossSample, ambient, diffuse, specular);
+		SpotLightContribution(material, spotLight1, pin.posW, bumpedNormalW, toEyeW, glossSample, ambient, diffuse, specular);
 		totalAmbient += ambient;
 		totalDiffuse += diffuse;
 		totalSpecular += specular;
 
-		SpotLightContribution(material, spotLight2, pin.posW, pin.normalW, toEyeW, glossSample, ambient, diffuse, specular);
+		SpotLightContribution(material, spotLight2, pin.posW, bumpedNormalW, toEyeW, glossSample, ambient, diffuse, specular);
 		totalAmbient += ambient;
 		totalDiffuse += diffuse;
 		totalSpecular += specular;
@@ -332,22 +327,22 @@ float4 main(VertexOut pin) : SV_TARGET
 	float4 finalColor=float4(0.f, 0.f, 0.f, 0.f);
 	if (useColorTextureMap) 
 	{ 
-		//float4 movableDiffuseColor = float4(1.f, 1.f, 1.f, 1.f);
-		//movableDiffuseColor *
-		/*
+		float4 diffuseColor = diffuseTexture.Sample(textureSampler, pin.uv);
+		float4 movableDiffuseColor = float4(0.f, 0.f, 0.f, 0.f);
 		if (usesTwoColorMapTextures) 
 		{
+			pin.uvMotion.x+=translateValue;
 			movableDiffuseColor = movableDiffuseTexture.Sample(textureSampler, pin.uvMotion);
 		}
-		*/
-		float4 diffuseColor = diffuseTexture.Sample(textureSampler, pin.uv);
-		finalColor =  diffuseColor * (totalAmbient + totalDiffuse) + totalSpecular;
-	}
+		finalColor = (movableDiffuseColor + diffuseColor) * (totalAmbient + totalDiffuse) + totalSpecular;
+	}		
 	else
 	{
 		finalColor = totalAmbient + totalDiffuse + totalSpecular;
 	}
 	finalColor.a = totalDiffuse.a;
 	return finalColor;
-
+	/*
+	
+	*/
 }

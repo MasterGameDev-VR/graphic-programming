@@ -97,14 +97,19 @@ namespace xtest {
 				SpotLight spotLight1;
 				SpotLight spotLight2;
 				DirectX::XMFLOAT3 eyePosW;
-				float _explicit_pad_;
+				float translateValue;
 			};
-			
+			/*
 			struct PerFrameTextureCB 
 			{
 				DirectX::XMFLOAT4X4 texCoordMatrix;
+				float translateValue;
+				float _explicit_pad_1_;
+				float _explicit_pad_2_;
+				float _explicit_pad_3_;
+
 			};
-			
+			*/
 
 			struct RarelyChangedCB
 			{
@@ -135,8 +140,10 @@ namespace xtest {
 				Microsoft::WRL::ComPtr<ID3D11Buffer> d3dIndexBuffer;
 				Microsoft::WRL::ComPtr<ID3D11Resource> d3dResourceDiffText;
 				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> d3dShaderResourceViewDiffText;
-				//Microsoft::WRL::ComPtr<ID3D11Resource> d3dResourceMotionDiffText;
-				//Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> d3dShaderResourceViewMotionDiffText;
+				//texture that moves resource and resource view
+				Microsoft::WRL::ComPtr<ID3D11Resource> d3dResourceMotionDiffText;
+				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> d3dShaderResourceViewMotionDiffText;
+				//----------
 				Microsoft::WRL::ComPtr<ID3D11Resource> d3dResourceNormalMapText;
 				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> d3dShaderResourceViewNormalMapText;
 				Microsoft::WRL::ComPtr<ID3D11Resource> d3dResourceGlossMapText;
@@ -212,6 +219,8 @@ namespace xtest {
 			RarelyChangedTextureCB m_texturesControl;
 			bool m_isTexturesControlDirty;
 
+			bool m_isTheFirstTextureMovementUpdate;
+
 			Renderable m_sphere;
 			Renderable m_plane;
 			Renderable m_torus;
@@ -219,7 +228,7 @@ namespace xtest {
 			GPFRenderable m_crate;
 
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dPerFrameCB;
-			Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dPerFrameTextureCB;
+			//Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dPerFrameTextureCB;
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dRarelyChangedCB;
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dRarelyChangedTextureCB;
 

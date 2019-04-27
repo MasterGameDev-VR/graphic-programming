@@ -20,10 +20,8 @@ struct VertexOut
 	float3 posW : POSITION;
 	float3 normalW : NORMAL;
 	float3 tangentW : TANGENT;
-	float2 uv : TEXCOORD;
-	//float2 uvMotion : TEXCOORD1;
-
-
+	float2 uv : TEXCOORD0;
+	float2 uvMotion : TEXCOORD1;
 };
 
 
@@ -39,17 +37,12 @@ cbuffer PerObjectCB : register(b0)
 	//bool _explicit_pad_2_;
 };
 /*
-cbuffer PerObjectTextureCB : register(b5)
-{
-	bool usesNormalMapTexture;
-	bool usesTwoColorMapTextures;
-};
-*/
 cbuffer PerFrameTextureCB : register (b4)
 {
 	float4x4 texCoordMatrix;
+	float translateValue;
 }
-
+*/
 
 VertexOut main(VertexIn vin)
 {
@@ -61,10 +54,18 @@ VertexOut main(VertexIn vin)
 	vout.tangentW = vout.tangentW - (dot(vout.tangentW, vout.normalW)*vout.normalW);
 	vout.posH = mul(float4(vin.posL, 1.0f), WVP);
 	vout.uv = vin.uv;
+	vout.uvMotion = vin.uv;
+	//vout.uvMotion.x = vin.uv.x + translateValue;
+	//vout.uvMotion.y = vin.uv.y;
+	//vout.uvMotion = mul(float4(vin.uv, 0.0f, 1.0f), texCoordMatrix).xy;
 	/*
-	if (usesTwoColorMapTextures) 
+	[flatten]
+	if (usesTwoColorMapTextures)
 	{
 		vout.uvMotion = mul(float4(vin.uv, 0.0f, 1.0f), texCoordMatrix).xy;
+		//vout.uvMotion.x -= floor(vout.uvMotion.x);
+		//vout.uvMotion.y -= floor(vout.uvMotion.y);
+		//vout.uvMotion = vin.uv;
 	}
 	else
 	{

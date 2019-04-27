@@ -34,7 +34,8 @@ LightsDemoApp::LightsDemoApp(HINSTANCE instance,
 	, m_texturesControl()
 	, m_isTexturesControlDirty(true)
 	, m_d3dPerFrameCB(nullptr)
-	, m_d3dPerFrameTextureCB(nullptr)
+	//, m_d3dPerFrameTextureCB(nullptr)
+	, m_isTheFirstTextureMovementUpdate(true)
 	, m_d3dRarelyChangedCB(nullptr)
 	, m_d3dRarelyChangedTextureCB(nullptr)
 	, m_vertexShader(nullptr)
@@ -120,6 +121,7 @@ void LightsDemoApp::InitShaders()
 	perFrameCBDesc.MiscFlags = 0;
 	perFrameCBDesc.StructureByteStride = 0;
 	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perFrameCBDesc, nullptr, &m_d3dPerFrameCB));
+	//errore di violazione di accesso corretto: avevo dimenticato di decommentare le due righe sotto per la creazione del Frame Constant Buffer a partire dal suo Descriptor
 	//perFrameCBDesc.ByteWidth = sizeof(PerFrameTextureCB);
 	//XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perFrameCBDesc, nullptr, &m_d3dPerFrameTextureCB));
 
@@ -279,21 +281,21 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 
 
 		//diffuseTexture
-		wchar_t* diffTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\sci-fi\\sci_fi_color.png";
+		wchar_t* diffTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_color.png";
 		//discard explicit creation
 		//XTEST_D3D_CHECK(CreateWICTextureFromFileEx(m_d3dDevice.Get(),m_d3dContext.Get(), diffTextFileName,0,D3D11_USAGE_DYNAMIC,D3D11_BIND_SHADER_RESOURCE,D3D11_CPU_ACCESS_WRITE,D3D11_RESOURCE_MISC_TILED,0,&m_plane.d3dResourceDiffText, &m_plane.d3dShaderResourceViewDiffText));
 		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName, &m_sphere.d3dResourceDiffText, &m_sphere.d3dShaderResourceViewDiffText, 0Ui64));
 
 
 		//normal map Texture
-		wchar_t* normalMapTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\sci-fi\\sci_fi_norm.png";
+		wchar_t* normalMapTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_norm.png";
 		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileName, &m_sphere.d3dResourceNormalMapText, &m_sphere.d3dShaderResourceViewNormalMapText, 0Ui64));
 		//gloss map Texture
-		wchar_t* glossMapTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\sci-fi\\sci_fi_gloss.png";
+		wchar_t* glossMapTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_gloss.png";
 		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName, &m_sphere.d3dResourceGlossMapText, &m_sphere.d3dShaderResourceViewGlossMapText, 0Ui64));
 		//motion color Texture - diffuse
-		//wchar_t* motionDiffTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\twine\\twine_color.png";
-		//XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), motionDiffTextFileName, &m_sphere.d3dResourceMotionDiffText, &m_sphere.d3dShaderResourceViewMotionDiffText, 0Ui64));
+		wchar_t* motionDiffTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\sci-fi\\sci_fi_color.png";
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), motionDiffTextFileName, &m_sphere.d3dResourceMotionDiffText, &m_sphere.d3dShaderResourceViewMotionDiffText, 0Ui64));
 
 	}
 	// torus
@@ -364,8 +366,8 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		wchar_t* glossMapTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\jeans\\jeans_gloss.png";
 		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName, &m_torus.d3dResourceGlossMapText, &m_torus.d3dShaderResourceViewGlossMapText, 0Ui64));
 		//motion color Texture - diffuse
-		//wchar_t* motionDiffTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\twine\\twine_color.png";
-		//XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), motionDiffTextFileName, &m_torus.d3dResourceMotionDiffText, &m_torus.d3dShaderResourceViewMotionDiffText, 0Ui64));
+		wchar_t* motionDiffTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\twine\\twine_color.png";
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), motionDiffTextFileName, &m_torus.d3dResourceMotionDiffText, &m_torus.d3dShaderResourceViewMotionDiffText, 0Ui64));
 
 		
 	}
@@ -859,8 +861,8 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 		perObjectCB->material = m_sphere.material;
 		perObjectCB->usesNormalMapTexture = true;
 		perObjectCB->usesTwoColorMapTextures = true;
-		perObjectCB->_explicit_pad_1_ = false;
-		perObjectCB->_explicit_pad_2_ = false;
+		//perObjectCB->_explicit_pad_1_ = false;
+		//perObjectCB->_explicit_pad_2_ = false;
 
 		// enable gpu access
 		m_d3dContext->Unmap(m_sphere.d3dPerObjectCB.Get(), 0);
@@ -897,8 +899,8 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 		perObjectCB->material = m_torus.material;
 		perObjectCB->usesNormalMapTexture = true;
 		perObjectCB->usesTwoColorMapTextures = true;
-		perObjectCB->_explicit_pad_1_ = false;
-		perObjectCB->_explicit_pad_2_ = false;
+		//perObjectCB->_explicit_pad_1_ = false;
+		//perObjectCB->_explicit_pad_2_ = false;
 
 		// enable gpu access
 		m_d3dContext->Unmap(m_torus.d3dPerObjectCB.Get(), 0);
@@ -934,8 +936,8 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 		perObjectCB->material = m_box.material;
 		perObjectCB->usesNormalMapTexture = true;
 		perObjectCB->usesTwoColorMapTextures = false;
-		perObjectCB->_explicit_pad_1_ = false;
-		perObjectCB->_explicit_pad_2_ = false;
+		//perObjectCB->_explicit_pad_1_ = false;
+		//perObjectCB->_explicit_pad_2_ = false;
 
 		// enable gpu access
 		m_d3dContext->Unmap(m_box.d3dPerObjectCB.Get(), 0);
@@ -1007,7 +1009,7 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 			for (int i = 0; i < m_pointLights.size(); i++) {
 				XMStoreFloat3(&m_pointLights[i].posW, XMVector3Transform(XMLoadFloat3(&m_pointLights[i].posW), R));
 			}
-			R = XMMatrixRotationY(math::ToRadians(60.f) * deltaSeconds);
+			R = XMMatrixRotationY(math::ToRadians(20.f) * deltaSeconds);
 			for (int i = 0; i < m_spotLights.size(); i++) {
 				XMStoreFloat3(&m_spotLights[i].posW, XMVector3Transform(XMLoadFloat3(&m_spotLights[i].posW), R));
 				XMStoreFloat3(&m_spotLights[i].dirW, XMVector3Transform(XMLoadFloat3(&m_spotLights[i].dirW), R));
@@ -1036,6 +1038,11 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 		perFrameCB->spotLight0 = m_spotLights[2];
 
 		perFrameCB->eyePosW = m_camera.GetPosition();
+		perFrameCB->translateValue += 0.005f;
+		if (m_isTheFirstTextureMovementUpdate) {
+			perFrameCB->translateValue = 0.0f;
+			m_isTheFirstTextureMovementUpdate = false;
+		}
 
 		// enable gpu access
 		m_d3dContext->Unmap(m_d3dPerFrameCB.Get(), 0);
@@ -1044,78 +1051,77 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 	}
 
 	//PerFrameTextureCB
-	
+	/*
 	{
-
-		XMMATRIX translateUVcoords = XMMatrixTranslation(0.0f, deltaSeconds, 0.0f);
+		XMMATRIX translateUVcoords = XMMatrixTranslation(deltaSeconds, 0.0f, 0.0f);
 
 		D3D11_MAPPED_SUBRESOURCE mappedResource;
 		ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
 
-		XTEST_D3D_CHECK(m_d3dContext->Map(m_d3dPerFrameCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
+		XTEST_D3D_CHECK(m_d3dContext->Map(m_d3dPerFrameTextureCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)); 
 		PerFrameTextureCB* perFrameTextureCB = (PerFrameTextureCB*)mappedResource.pData;
-		XMStoreFloat4x4(&(perFrameTextureCB->texCoordMatrix),translateUVcoords);
+		XMMATRIX pastTranslation = XMMatrixTranspose(  XMLoadFloat4x4(&(perFrameTextureCB->texCoordMatrix)));
+		if (m_isTheFirstTextureMovementUpdate) {
+			pastTranslation = XMMatrixIdentity();
+			m_isTheFirstTextureMovementUpdate = false;
+		}
+		XMMATRIX nextTranslation = XMMatrixMultiply(  pastTranslation, translateUVcoords );
+		XMStoreFloat4x4(&(perFrameTextureCB->texCoordMatrix), XMMatrixTranspose(nextTranslation));
+		perFrameTextureCB->translateValue += 0.005f;
 		m_d3dContext->Unmap(m_d3dPerFrameTextureCB.Get(), 0);
-
 	}
-	
-		// RarelyChangedCB
+	*/
+	// RarelyChangedCB
 		
 	{
-			if (m_isLightControlDirty)
-			{
-				D3D11_MAPPED_SUBRESOURCE mappedResource;
-				ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+		if (m_isLightControlDirty)
+		{
+			D3D11_MAPPED_SUBRESOURCE mappedResource;
+			ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
 
-				// disable gpu access
-				XTEST_D3D_CHECK(m_d3dContext->Map(m_d3dRarelyChangedCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
-				RarelyChangedCB* rarelyChangedCB = (RarelyChangedCB*)mappedResource.pData;
+			// disable gpu access
+			XTEST_D3D_CHECK(m_d3dContext->Map(m_d3dRarelyChangedCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
+			RarelyChangedCB* rarelyChangedCB = (RarelyChangedCB*)mappedResource.pData;
 
-				//update the data
-				rarelyChangedCB->useDirLight = m_lightsControl.useDirLight;
-				rarelyChangedCB->usePointLight = m_lightsControl.usePointLight;
-				rarelyChangedCB->useSpotLight = m_lightsControl.useSpotLight;
+			//update the data
+			rarelyChangedCB->useDirLight = m_lightsControl.useDirLight;
+			rarelyChangedCB->usePointLight = m_lightsControl.usePointLight;
+			rarelyChangedCB->useSpotLight = m_lightsControl.useSpotLight;
 
-				// enable gpu access
-				m_d3dContext->Unmap(m_d3dRarelyChangedCB.Get(), 0);
+			// enable gpu access
+			m_d3dContext->Unmap(m_d3dRarelyChangedCB.Get(), 0);
 
-				m_d3dContext->PSSetConstantBuffers(2, 1, m_d3dRarelyChangedCB.GetAddressOf());
-				m_isLightControlDirty = false;
+			m_d3dContext->PSSetConstantBuffers(2, 1, m_d3dRarelyChangedCB.GetAddressOf());
+			m_isLightControlDirty = false;
 
-			}
-		
+		}
+
 	}
-		
-		
 	// RarelyChangedTextureCB
-		
 	{
-			if (m_isTexturesControlDirty) 
-			{
-				D3D11_MAPPED_SUBRESOURCE mappedResource;
-				ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+		if (m_isTexturesControlDirty)
+		{
+			D3D11_MAPPED_SUBRESOURCE mappedResource;
+			ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
 
-				// disable gpu access
-				XTEST_D3D_CHECK(m_d3dContext->Map(m_d3dRarelyChangedTextureCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
-				RarelyChangedTextureCB* rarelyChangedTextureCB = (RarelyChangedTextureCB*)mappedResource.pData;
+			// disable gpu access
+			XTEST_D3D_CHECK(m_d3dContext->Map(m_d3dRarelyChangedTextureCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
+			RarelyChangedTextureCB* rarelyChangedTextureCB = (RarelyChangedTextureCB*)mappedResource.pData;
 
-				//update the data
-				rarelyChangedTextureCB->useColorTextureMap = m_texturesControl.useColorTextureMap;
-				rarelyChangedTextureCB->useNormalTextureMap = m_texturesControl.useNormalTextureMap;
-				rarelyChangedTextureCB->useGlossTextureMap = m_texturesControl.useGlossTextureMap;
+			//update the data
+			rarelyChangedTextureCB->useColorTextureMap = m_texturesControl.useColorTextureMap;
+			rarelyChangedTextureCB->useNormalTextureMap = m_texturesControl.useNormalTextureMap;
+			rarelyChangedTextureCB->useGlossTextureMap = m_texturesControl.useGlossTextureMap;
 
-				// enable gpu access
-				m_d3dContext->Unmap(m_d3dRarelyChangedTextureCB.Get(), 0);
-				m_d3dContext->PSSetConstantBuffers(3, 1, m_d3dRarelyChangedTextureCB.GetAddressOf());
+			// enable gpu access
+			m_d3dContext->Unmap(m_d3dRarelyChangedTextureCB.Get(), 0);
+			m_d3dContext->PSSetConstantBuffers(3, 1, m_d3dRarelyChangedTextureCB.GetAddressOf());
 
 
-				m_isTexturesControlDirty = false;
+			m_isTexturesControlDirty = false;
 
-			}
-		
+		}
 	}
-
-		
 	m_d3dAnnotation->EndEvent();
 	
 }
@@ -1137,7 +1143,7 @@ void LightsDemoApp::RenderScene()
 
 	m_d3dContext->PSSetConstantBuffers(1, 1, m_d3dPerFrameCB.GetAddressOf());
 
-	m_d3dContext->VSSetConstantBuffers(4, 1, m_d3dPerFrameTextureCB.GetAddressOf());
+	//m_d3dContext->VSSetConstantBuffers(4, 1, m_d3dPerFrameTextureCB.GetAddressOf());
 
 	m_d3dContext->PSSetSamplers(0,1,m_textureSamplerState.GetAddressOf());
 
@@ -1179,7 +1185,7 @@ void LightsDemoApp::RenderScene()
 		m_d3dContext->PSSetShaderResources(0, 1, m_sphere.d3dShaderResourceViewDiffText.GetAddressOf());
 		m_d3dContext->PSSetShaderResources(1, 1, m_sphere.d3dShaderResourceViewNormalMapText.GetAddressOf());
 		m_d3dContext->PSSetShaderResources(2, 1, m_sphere.d3dShaderResourceViewGlossMapText.GetAddressOf());
-		//m_d3dContext->PSSetShaderResources(3, 1, m_sphere.d3dShaderResourceViewMotionDiffText.GetAddressOf());
+		m_d3dContext->PSSetShaderResources(3, 1, m_sphere.d3dShaderResourceViewMotionDiffText.GetAddressOf());
 
 
 		// set what to draw
@@ -1203,7 +1209,7 @@ void LightsDemoApp::RenderScene()
 		m_d3dContext->PSSetShaderResources(0, 1, m_torus.d3dShaderResourceViewDiffText.GetAddressOf());
 		m_d3dContext->PSSetShaderResources(1, 1, m_torus.d3dShaderResourceViewNormalMapText.GetAddressOf());
 		m_d3dContext->PSSetShaderResources(2, 1, m_torus.d3dShaderResourceViewGlossMapText.GetAddressOf());
-		//m_d3dContext->PSSetShaderResources(3, 1, m_torus.d3dShaderResourceViewMotionDiffText.GetAddressOf());
+		m_d3dContext->PSSetShaderResources(3, 1, m_torus.d3dShaderResourceViewMotionDiffText.GetAddressOf());
 
 
 
