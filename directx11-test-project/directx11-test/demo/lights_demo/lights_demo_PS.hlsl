@@ -5,17 +5,6 @@ struct Material
 	float4 specular;
 };
 
-<<<<<<< HEAD
-//CONSTANT BUFFERS TO USE IN THE PIXEL SHADER!!
-cbuffer PerObjectCB : register(b0)
-{
-	float4x4 W;
-	float4x4 W_Inv_Transp;
-	float4x4 WVP;
-	Material material;
-};
-=======
->>>>>>> master
 struct DirectionalLight
 {
 	float4 ambient;
@@ -23,10 +12,7 @@ struct DirectionalLight
 	float4 specular;
 	float3 dirW;
 };
-<<<<<<< HEAD
-=======
 
->>>>>>> master
 struct PointLight
 {
 	float4 ambient;
@@ -36,10 +22,7 @@ struct PointLight
 	float range;
 	float3 attenuation;
 };
-<<<<<<< HEAD
-=======
 
->>>>>>> master
 struct SpotLight
 {
 	float4 ambient;
@@ -51,94 +34,15 @@ struct SpotLight
 	float spot;
 	float3 attenuation;
 };
-<<<<<<< HEAD
-cbuffer PerFrameCB :register(b1) 
-{
-	DirectionalLight dirLight;
-	PointLight pointLight;
-	SpotLight spotLight;
-	float3 eyePosW;
-};
-//-----------------------
-
-=======
->>>>>>> master
 
 struct VertexOut
 {
 	float4 posH : SV_POSITION;
-<<<<<<< HEAD
-	float4 posW : POSITION;
-	float4 normalW : NORMAL;
-	
-};
-
-void DirectionalLightContribution(Material mat, DirectionalLight light, float4 normalW, float3 toEyeW, out float4 ambient, out float4 diffuse, out float4 specular)
-{
-	ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
-	diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
-	specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
-	ambient += mat.ambient *light.ambient;
-	//-------------------
-	float3 toLightW = -light.dirW; //already normalized
-	float Kd = dot(toLightW, float3(normalW.xyz));
-
-	//----------
-	[flatten]
-	if (Kd > 0.0f)
-	{
-		diffuse += Kd * light.diffuse *mat.diffuse;
-
-		float3 halfVectorW = normalize(toLightW + toEyeW);
-		float Ks = pow(max(dot(halfVectorW, float3(normalW.x, normalW.y, normalW.z)), 0.0f), mat.specular.w);
-		specular += Ks * mat.specular* light.specular;
-
-	};
-};
-
-void PointLightContribution(Material mat, PointLight light, float3 normalW, float3 toEyeW, float3 posW, out float4 ambient, out float4 diffuse, out float4 specular)
-
-{
-	/*
-	ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
-	diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
-	specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
-
-	float3 toLightW = light.posW - posW;
-
-	[flatten]
-	if (length(toLightW) < light.range)
-	{
-		//calcolo distanza dalla luce: solo se la distanza è minore del range
-		float distance = length(toLightW);
-		toLightW = normalize(toLightW);
-		//componente ambientale solo entro un certo range
-		ambient += mat.ambient *light.ambient;
-		float attenuation = light.attenuation.x + light.attenuation.y * distance + light.attenuation.z * pow(distance, 2);
-		[flatten]
-		if (attenuation >= 1.0f) {
-			ambient /= attenuation;
-		}
-		
-		float Kd = dot(toLightW, float3(normalW.x, normalW.y, normalW.z));
-		[flatten]
-		if (Kd > 0.0f)
-		{
-			diffuse += Kd * light.diffuse *mat.diffuse;
-			
-			float3 halfVectorW = normalize(toLightW + toEyeW);
-			float Ks = pow(max(dot(halfVectorW, float3(normalW.x, normalW.y, normalW.z)), 0.0f), mat.specular.w);
-			specular += Ks *mat.specular* light.specular;
-			if (attenuation >= 1.0f) {
-				diffuse /= attenuation;
-				specular /= attenuation;
-			}
-		}
-	}
-	*/
-=======
 	float3 posW : POSITION;
 	float3 normalW : NORMAL;
+	float3 tangentW : TANGENT;
+	float2 uv : TEXCOORD;
+	//float2 uvMotion : TEXCOORD1;
 };
 
 
@@ -151,13 +55,35 @@ cbuffer PerObjectCB : register(b0)
 	Material material;
 };
 
+/*
+cbuffer PerObjectTextureCB : register(b5)
+{
+	bool usesNormalMapTexture;
+	bool usesTwoColorMapTextures;
+};
+*/
+
+Texture2D diffuseTexture : register(t0);
+Texture2D normalTexture : register(t1);
+Texture2D glossTexture : register(t2);
+//Texture2D movableDiffuseTexture : register(t3);
+
+SamplerState textureSampler: register(s0);
+
 cbuffer PerFrameCB : register(b1)
 {
 	DirectionalLight dirLight;
-	PointLight pointLight;
-	SpotLight spotLight;
+	PointLight pointLight0;
+	PointLight pointLight1;
+	PointLight pointLight2;
+	PointLight pointLight3;
+	PointLight pointLight4;
+	SpotLight spotLight0;
+	SpotLight spotLight1;
+	SpotLight spotLight2;
 	float3 eyePosW;
 };
+
 
 cbuffer RarelyChangedCB : register(b2)
 {
@@ -166,8 +92,22 @@ cbuffer RarelyChangedCB : register(b2)
 	bool useSpotLight;
 }
 
+cbuffer RarelyChangedTextureCB : register(b3)
+{
+	bool useColorTextureMap;
+	bool useNormalTextureMap;
+	bool useGlossTextureMap;
+}
 
-void DirectionalLightContribution(Material mat, DirectionalLight light, float3 normalW, float3 toEyeW, out float4 ambient, out float4 diffuse, out float4 specular)
+float3 BumpNormalW(float2 uv, float3 normalW, float3 tangentW) 
+{
+	float3 normalSample = normalTexture.Sample(textureSampler, uv).rgb;
+	float3 bumpNormalT = 2.0f * normalSample - 1.0f;
+
+	float3x3 TBN = float3x3(tangentW, cross(normalW, tangentW), normalW);
+	return mul(bumpNormalT, TBN);
+}
+void DirectionalLightContribution(Material mat, DirectionalLight light, float3 normalW, float3 toEyeW, float glossiness, out float4 ambient, out float4 diffuse, out float4 specular)
 {
 	// default values
 	ambient = float4(0.f, 0.f, 0.f, 0.f);
@@ -189,17 +129,17 @@ void DirectionalLightContribution(Material mat, DirectionalLight light, float3 n
 		diffuse += Kd * mat.diffuse * light.diffuse;
 
 		// specular component
-		float3 halfVectorW = normalize(toLightW + toEyeW);                   
-		float Ks = pow(max(dot(halfVectorW, normalW), 0.f), mat.specular.w); 
+		float3 halfVectorW = normalize(toLightW + toEyeW);
+		float Ks = pow(max(dot(halfVectorW, normalW), 0.f), glossiness);
+		//float Ks = pow(max(dot(halfVectorW, normalW), 0.f), mat.specular.w);
 		specular += Ks * mat.specular * light.specular;
 	}
 }
 
 
 
-void PointLightContribution(Material mat, PointLight light, float3 posW, float3 normalW, float3 toEyeW, out float4 ambient, out float4 diffuse, out float4 specular)
+void PointLightContribution(Material mat, PointLight light, float3 posW, float3 normalW, float3 toEyeW, float glossiness, out float4 ambient, out float4 diffuse, out float4 specular)
 {
->>>>>>> master
 
 	// default values
 	ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -222,11 +162,7 @@ void PointLightContribution(Material mat, PointLight light, float3 posW, float3 
 
 	// diffuse factor
 	float Kd = dot(toLightW, normalW);
-<<<<<<< HEAD
 
-=======
- 
->>>>>>> master
 	[flatten]
 	if (Kd > 0.0f)
 	{
@@ -234,13 +170,8 @@ void PointLightContribution(Material mat, PointLight light, float3 posW, float3 
 		diffuse = Kd * mat.diffuse * light.diffuse;
 
 		// specular component
-<<<<<<< HEAD
 		float3 halfVectorW = normalize(toLightW + toEyeW);
-		float Ks = pow(max(dot(halfVectorW, normalW), 0.f), mat.specular.w);
-=======
-		float3 halfVectorW = normalize(toLightW + toEyeW);                  
-		float Ks = pow(max(dot(halfVectorW, normalW), 0.f), mat.specular.w); 
->>>>>>> master
+		float Ks = pow(max(dot(halfVectorW, normalW), 0.f), glossiness);
 		specular = Ks * mat.specular * light.specular;
 	}
 
@@ -249,73 +180,14 @@ void PointLightContribution(Material mat, PointLight light, float3 posW, float3 
 
 	// attenuation
 	float attenuationFactor = 1.0f / dot(light.attenuation, float3(1.0f, distance, distance*distance));
-<<<<<<< HEAD
 	ambient *= falloff;
 	diffuse *= attenuationFactor * falloff;
-=======
-	ambient  *= falloff;
-	diffuse  *= attenuationFactor * falloff;
->>>>>>> master
 	specular *= attenuationFactor * falloff;
 
 }
 
-<<<<<<< HEAD
-void SpotLightContribution(Material mat,SpotLight light, float3 normalW, float3 toEyeW, float3 posW, out float4 ambient, out float4 diffuse, out float4 specular)
-
+void SpotLightContribution(Material mat, SpotLight light, float3 posW, float3 normalW, float3 toEyeW, float glossiness, out float4 ambient, out float4 diffuse, out float4 specular)
 {
-	/*
-	ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
-	diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
-	specular = float4(0.0f, 0.0f, 0.0f, 0.0f);
-
-	float3 toLightW = light.posW - posW;
-
-	[flatten]
-	if (length(toLightW) < light.range)
-	{
-		//calcolo distanza dalla luce: solo se la distanza è minore del range
-		float distance = length(toLightW);
-		toLightW = normalize(toLightW);
-
-		//coefficiente di fallOff
-		float Kfs = max(dot(-toLightW, light.dirW), 0.0f);
-
-		//componente ambientale solo entro un certo range
-		ambient += mat.ambient *light.ambient;
-		float attenuation = light.attenuation.x + light.attenuation.y * distance + light.attenuation.z * pow(distance, 2);
-		[flatten]
-		if (attenuation >= 1.0f) {
-			ambient /= attenuation;
-		}
-		[flatten]
-		if (Kfs < light.spot)
-		{
-
-			float Kd = dot(toLightW, float3(normalW.x, normalW.y, normalW.z));
-			[flatten]
-			if (Kd > 0.0f)
-			{
-				diffuse += Kfs * Kd * light.diffuse *mat.diffuse;
-				float3 halfVectorW = normalize(toLightW + toEyeW);
-				float Ks = pow(max(dot(halfVectorW, float3(normalW.x, normalW.y, normalW.z)), 0.0f), mat.specular.w);
-				specular += Kfs * Ks *mat.specular* light.specular;
-				[flatten]
-				if (attenuation >= 1.0f) {
-					diffuse /= attenuation;
-					specular /= attenuation;
-				}
-
-			}
-		}
-	}
-	*/
-=======
-
-
-void SpotLightContribution(Material mat, SpotLight light, float3 posW, float3 normalW, float3 toEyeW, out float4 ambient, out float4 diffuse, out float4 specular)
-{
->>>>>>> master
 	// default values
 	ambient = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	diffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -324,21 +196,13 @@ void SpotLightContribution(Material mat, SpotLight light, float3 posW, float3 no
 	float3 toLightW = light.posW - posW;
 	float distance = length(toLightW);
 
-<<<<<<< HEAD
 	// early rejection
-=======
-	// ealry rejection
->>>>>>> master
 	if (distance > light.range)
 		return;
 
 	// now light dir is normalize 
 	toLightW /= distance;
-<<<<<<< HEAD
 
-=======
-	
->>>>>>> master
 	// ambient component
 	ambient = mat.ambient * light.ambient;
 
@@ -353,7 +217,7 @@ void SpotLightContribution(Material mat, SpotLight light, float3 posW, float3 no
 
 		// specular component
 		float3 halfVectorW = normalize(toLightW + toEyeW);
-		float Ks = pow(max(dot(halfVectorW, normalW), 0.f), mat.specular.w);
+		float Ks = pow(max(dot(halfVectorW, normalW), 0.f), glossiness);
 		specular = Ks * mat.specular * light.specular;
 
 	}
@@ -363,30 +227,11 @@ void SpotLightContribution(Material mat, SpotLight light, float3 posW, float3 no
 
 	// attenuation
 	float attenuationFactor = 1 / dot(light.attenuation, float3(1.0f, distance, distance*distance));
-<<<<<<< HEAD
 	ambient *= spot;
 	diffuse *= spot * attenuationFactor;
-=======
-	ambient  *= spot;
-	diffuse  *= spot * attenuationFactor;
->>>>>>> master
 	specular *= spot * attenuationFactor;
 }
 
-
-<<<<<<< HEAD
-float4 main(VertexOut pin) : SV_TARGET
-{
-	float3 posW = pin.posW.xyz;
-	float3 toEyeW = normalize(eyePosW - posW);
-	pin.normalW = normalize(pin.normalW);
-	float3 normalW = pin.normalW.xyz;
-
-
-	float4 totalAmbient = float4(0.0f, 0.0f, 0.0f, 0.0f);
-	float4 totalDiffuse = float4(0.0f, 0.0f, 0.0f, 0.0f);
-	float4 totalSpecular = float4(0.0f, 0.0f, 0.0f, 0.0f);
-=======
 
 
 
@@ -395,44 +240,40 @@ float4 main(VertexOut pin) : SV_TARGET
 	pin.normalW = normalize(pin.normalW);
 
 	float3 toEyeW = normalize(eyePosW - pin.posW);
-
+	float3 bumpedNormalW = float3(0.f, 0.f, 0.f);
+	//&& usesNormalMapTexture
+	if (useNormalTextureMap )
+	{
+		bumpedNormalW = BumpNormalW(pin.uv, pin.normalW, pin.tangentW);
+	}
+	else
+	{
+		bumpedNormalW = pin.normalW;
+	}
+	float glossSample = float(0.0f);
+	if (useGlossTextureMap)
+	{
+		glossSample = glossTexture.Sample(textureSampler, pin.uv).r;
+		glossSample = exp2(13.0 *(1.f - glossSample));
+	}
+	else
+	{
+		glossSample = material.specular.w;
+	}
+	
 
 	float4 totalAmbient = float4(0.f, 0.f, 0.f, 0.f);
 	float4 totalDiffuse = float4(0.f, 0.f, 0.f, 0.f);
 	float4 totalSpecular = float4(0.f, 0.f, 0.f, 0.f);
 
->>>>>>> master
 	float4 ambient;
 	float4 diffuse;
 	float4 specular;
 
-<<<<<<< HEAD
-	DirectionalLightContribution(material, dirLight, pin.normalW, toEyeW, ambient, diffuse, specular);
-	totalAmbient += ambient;
-	totalDiffuse += diffuse;
-	totalSpecular += specular;
 
-	PointLightContribution(material, pointLight, normalW, toEyeW, posW, ambient, diffuse, specular);
-	totalAmbient += ambient;
-	totalDiffuse += diffuse;
-	totalSpecular += specular;
-
-	SpotLightContribution(material, spotLight, normalW, toEyeW, posW, ambient, diffuse, specular);
-
-	totalAmbient += ambient;
-	totalDiffuse += diffuse;
-	totalSpecular += specular;
-
-	float4 finalColor = totalAmbient + totalDiffuse + totalSpecular;
-	finalColor.a = totalDiffuse.a;
-	return finalColor;
-
-}
-=======
-	
 	if (useDirLight)
 	{
-		DirectionalLightContribution(material, dirLight, pin.normalW, toEyeW, ambient, diffuse, specular);
+		DirectionalLightContribution(material, dirLight, bumpedNormalW, toEyeW, glossSample, ambient, diffuse, specular);
 		totalAmbient += ambient;
 		totalDiffuse += diffuse;
 		totalSpecular += specular;
@@ -440,25 +281,69 @@ float4 main(VertexOut pin) : SV_TARGET
 
 	if (usePointLight)
 	{
-		PointLightContribution(material, pointLight, pin.posW, pin.normalW, toEyeW, ambient, diffuse, specular);
+		PointLightContribution(material, pointLight0, pin.posW, bumpedNormalW, toEyeW, glossSample, ambient, diffuse, specular);
+		totalAmbient += ambient;
+		totalDiffuse += diffuse;
+		totalSpecular += specular;
+
+		PointLightContribution(material, pointLight1, pin.posW, bumpedNormalW, toEyeW, glossSample, ambient, diffuse, specular);
+		totalAmbient += ambient;
+		totalDiffuse += diffuse;
+		totalSpecular += specular;
+
+		PointLightContribution(material, pointLight2, pin.posW, pin.normalW, toEyeW, glossSample, ambient, diffuse, specular);
+		totalAmbient += ambient;
+		totalDiffuse += diffuse;
+		totalSpecular += specular;
+
+		PointLightContribution(material, pointLight3, pin.posW, pin.normalW, toEyeW, glossSample, ambient, diffuse, specular);
+		totalAmbient += ambient;
+		totalDiffuse += diffuse;
+		totalSpecular += specular;
+
+		PointLightContribution(material, pointLight4, pin.posW, pin.normalW, toEyeW, glossSample, ambient, diffuse, specular);
 		totalAmbient += ambient;
 		totalDiffuse += diffuse;
 		totalSpecular += specular;
 	}
-	
+
 	if (useSpotLight)
 	{
-		SpotLightContribution(material, spotLight, pin.posW, pin.normalW, toEyeW, ambient, diffuse, specular);
+		SpotLightContribution(material, spotLight0, pin.posW, pin.normalW, toEyeW, glossSample, ambient, diffuse, specular);
+		totalAmbient += ambient;
+		totalDiffuse += diffuse;
+		totalSpecular += specular;
+
+
+		SpotLightContribution(material, spotLight1, pin.posW, pin.normalW, toEyeW, glossSample, ambient, diffuse, specular);
+		totalAmbient += ambient;
+		totalDiffuse += diffuse;
+		totalSpecular += specular;
+
+		SpotLightContribution(material, spotLight2, pin.posW, pin.normalW, toEyeW, glossSample, ambient, diffuse, specular);
 		totalAmbient += ambient;
 		totalDiffuse += diffuse;
 		totalSpecular += specular;
 	}
-	
-
-	float4 finalColor = totalAmbient + totalDiffuse + totalSpecular;
+	float4 finalColor=float4(0.f, 0.f, 0.f, 0.f);
+	if (useColorTextureMap) 
+	{ 
+		//float4 movableDiffuseColor = float4(1.f, 1.f, 1.f, 1.f);
+		//movableDiffuseColor *
+		/*
+		if (usesTwoColorMapTextures) 
+		{
+			movableDiffuseColor = movableDiffuseTexture.Sample(textureSampler, pin.uvMotion);
+		}
+		*/
+		float4 diffuseColor = diffuseTexture.Sample(textureSampler, pin.uv);
+		finalColor =  diffuseColor * (totalAmbient + totalDiffuse) + totalSpecular;
+	}
+	else
+	{
+		finalColor = totalAmbient + totalDiffuse + totalSpecular;
+	}
 	finalColor.a = totalDiffuse.a;
-
 	return finalColor;
 
 }
->>>>>>> master

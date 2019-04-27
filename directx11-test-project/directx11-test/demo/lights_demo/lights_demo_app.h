@@ -1,27 +1,36 @@
 #pragma once
-<<<<<<< HEAD
+
 #include <application/directx_app.h>
+#include <input/mouse.h>
 #include <input/keyboard.h>
 #include <camera/spherical_camera.h>
 #include <mesh/mesh_generator.h>
+#include <mesh/mesh_format.h>
 
-using namespace xtest::mesh;
-namespace xtest
-{
+
+namespace xtest {
 	namespace demo {
 
-		
+
+		/*
+			Use F1, F2, F3 key to switch on/off each light individually
+			Use Spacebar to pause lights motion
+			Use F key to reframe the camera to the origin
+			Use right mouse button to pan the view, left mouse button to rotate and mouse wheel to zoom in/out
+		*/
 
 		class LightsDemoApp : public application::DirectxApp, public input::MouseListener, public input::KeyboardListener
 		{
-
 		public:
+
+
 			struct Material
 			{
 				DirectX::XMFLOAT4 ambient;
 				DirectX::XMFLOAT4 diffuse;
 				DirectX::XMFLOAT4 specular;
 			};
+
 			struct DirectionalLight
 			{
 				DirectX::XMFLOAT4 ambient;
@@ -30,6 +39,7 @@ namespace xtest
 				DirectX::XMFLOAT3 dirW;
 				float _explicit_pad_;
 			};
+
 			struct PointLight
 			{
 				DirectX::XMFLOAT4 ambient;
@@ -40,6 +50,7 @@ namespace xtest
 				DirectX::XMFLOAT3 attenuation;
 				float _explicit_pad_;
 			};
+
 			struct SpotLight
 			{
 				DirectX::XMFLOAT4 ambient;
@@ -52,31 +63,105 @@ namespace xtest
 				DirectX::XMFLOAT3 attenuation;
 				float _explicit_pad_;
 			};
-			/*
-			struct VertexIn
-			{
-				DirectX::XMFLOAT3 pos;
-				float _explicit_pad_1_;
-				DirectX::XMFLOAT3 normalL;
-				float _explicit_pad_2_;
-			};
-			*/
 
 			struct PerObjectCB
 			{
 				DirectX::XMFLOAT4X4 W;
-				DirectX::XMFLOAT4X4 W_Inv_Transp;
+				DirectX::XMFLOAT4X4 W_inverseTraspose;
 				DirectX::XMFLOAT4X4 WVP;
 				Material material;
 			};
+			/*
+			struct PerObjectTextureCB 
+			{
+				int32 usesNormalMapTexture;
+				int32 usesTwoColorMapTextures;
+				int32 _explicit_pad_1_;
+				int32 _explicit_pad_2_;
+			};*/
+			
+
 			struct PerFrameCB
 			{
 				DirectionalLight dirLight;
-				PointLight pointLight;
-				SpotLight spotLight;
+				PointLight pointLight0;
+				PointLight pointLight1;
+				PointLight pointLight2;
+				PointLight pointLight3;
+				PointLight pointLight4;
+				SpotLight spotLight0;
+				SpotLight spotLight1;
+				SpotLight spotLight2;
 				DirectX::XMFLOAT3 eyePosW;
 				float _explicit_pad_;
 			};
+			/*
+			struct PerFrameTextureCB 
+			{
+				DirectX::XMFLOAT4X4 texCoordMatrix;
+			};
+			*/
+
+			struct RarelyChangedCB
+			{
+				int32 useDirLight;
+				int32 usePointLight;
+				int32 useSpotLight;
+				int32 _explicit_pad_;
+			};
+
+			struct RarelyChangedTextureCB
+			{
+				int32 useColorTextureMap;
+				int32 useNormalTextureMap;
+				int32 useGlossTextureMap;
+				int32 _explicit_pad_;
+			};
+	
+
+			struct Renderable
+			{
+				mesh::MeshData mesh;
+				DirectX::XMFLOAT4X4 W;
+				Material material;
+				Microsoft::WRL::ComPtr<ID3D11Buffer> d3dPerObjectCB;
+				//Microsoft::WRL::ComPtr<ID3D11Buffer> d3dPerObjectTextureCB;
+
+				Microsoft::WRL::ComPtr<ID3D11Buffer> d3dVertexBuffer;
+				Microsoft::WRL::ComPtr<ID3D11Buffer> d3dIndexBuffer;
+				Microsoft::WRL::ComPtr<ID3D11Resource> d3dResourceDiffText;
+				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> d3dShaderResourceViewDiffText;
+				//Microsoft::WRL::ComPtr<ID3D11Resource> d3dResourceMotionDiffText;
+				//Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> d3dShaderResourceViewMotionDiffText;
+				Microsoft::WRL::ComPtr<ID3D11Resource> d3dResourceNormalMapText;
+				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> d3dShaderResourceViewNormalMapText;
+				Microsoft::WRL::ComPtr<ID3D11Resource> d3dResourceGlossMapText;
+				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> d3dShaderResourceViewGlossMapText;
+			};
+
+			
+			struct GPFRenderable
+			{
+				struct ShapeAttributes
+				{
+					Material material;
+					Microsoft::WRL::ComPtr<ID3D11Buffer> d3dPerObjectCB;
+					//Microsoft::WRL::ComPtr<ID3D11Buffer> d3dPerObjectTextureCB;
+					Microsoft::WRL::ComPtr<ID3D11Resource> d3dResourceDiffText;
+					Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> d3dShaderResourceViewDiffText;
+					Microsoft::WRL::ComPtr<ID3D11Resource> d3dResourceNormalMapText;
+					Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> d3dShaderResourceViewNormalMapText;
+					Microsoft::WRL::ComPtr<ID3D11Resource> d3dResourceGlossMapText;
+					Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> d3dShaderResourceViewGlossMapText;
+				};
+
+				mesh::GPFMesh mesh;
+				std::map<std::string, ShapeAttributes> shapeAttributeMapByName;
+				DirectX::XMFLOAT4X4 W;
+				Microsoft::WRL::ComPtr<ID3D11Buffer> d3dVertexBuffer;
+				Microsoft::WRL::ComPtr<ID3D11Buffer> d3dIndexBuffer;
+			};
+
 
 			LightsDemoApp(HINSTANCE instance, const application::WindowSettings& windowSettings, const application::DirectxSettings& directxSettings, uint32 fps = 60);
 			~LightsDemoApp();
@@ -85,6 +170,7 @@ namespace xtest
 			LightsDemoApp(const LightsDemoApp&) = delete;
 			LightsDemoApp& operator=(LightsDemoApp&&) = delete;
 			LightsDemoApp& operator=(const LightsDemoApp&) = delete;
+
 
 			virtual void Init() override;
 			virtual void OnResized() override;
@@ -98,264 +184,49 @@ namespace xtest
 		private:
 
 			void InitMatrices();
-			void InitLights();
-			void InitMaterials();
 			void InitShaders();
-			void InitBuffers();
+			void InitRenderable();
+			void InitSamplerState();
+			void InitLights();
+			void InitTexturesControls();
 			void InitRasterizerState();
 
-
-			DirectX::XMFLOAT4X4 m_worldMatrixPlane;
-			DirectX::XMFLOAT4X4 m_worldMatrixTorus;
-			DirectX::XMFLOAT4X4 m_worldMatrixBox;
-			DirectX::XMFLOAT4X4 m_worldMatrixSphere;
 
 			DirectX::XMFLOAT4X4 m_viewMatrix;
 			DirectX::XMFLOAT4X4 m_projectionMatrix;
 
 			camera::SphericalCamera m_camera;
 
-			Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBufferPlane;
-			Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBufferPlane;
-			Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBufferTorus;
-			Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBufferTorus;
-			Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBufferBox;
-			Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBufferBox;
-			Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBufferSphere;
-			Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBufferSphere;
-			//-----------------------------------------------------
-			Microsoft::WRL::ComPtr<ID3D11Buffer> m_vsConstantBufferPlane;
-			Microsoft::WRL::ComPtr<ID3D11Buffer> m_vsConstantBufferTorus;
-			Microsoft::WRL::ComPtr<ID3D11Buffer> m_vsConstantBufferSphere;
-			Microsoft::WRL::ComPtr<ID3D11Buffer> m_vsConstantBufferBox;
+			DirectionalLight m_dirLight;
+			std::vector<PointLight> m_pointLights;
+			std::vector<SpotLight> m_spotLights;
 
-			Microsoft::WRL::ComPtr<ID3D11Buffer> m_psConstantBufferLights;
+			RarelyChangedCB m_lightsControl;
+			bool m_isLightControlDirty;
+			bool m_stopLights;
 
-			//----------OBJECT MATERIALS 
-			//DirectX::XMFLOAT4 color_plane = { 0.0f,0.502f,0.0f,1.0f }; //green
-			DirectX::XMFLOAT4 mat_plane_rgba_ambient;
-			DirectX::XMFLOAT4 mat_plane_rgba_diffuse;
-			DirectX::XMFLOAT4 mat_plane_rgba_specular;
+			RarelyChangedTextureCB m_texturesControl;
+			bool m_isTexturesControlDirty;
 
-			DirectX::XMFLOAT4 mat_torus_rgba_ambient;
-			DirectX::XMFLOAT4 mat_torus_rgba_diffuse;
-			DirectX::XMFLOAT4 mat_torus_rgba_specular;
+			Renderable m_sphere;
+			Renderable m_plane;
+			Renderable m_torus;
+			Renderable m_box;
+			GPFRenderable m_crate;
 
-			DirectX::XMFLOAT4 mat_sphere_rgba_ambient;
-			DirectX::XMFLOAT4 mat_sphere_rgba_diffuse;
-			DirectX::XMFLOAT4 mat_sphere_rgba_specular;
-
-			DirectX::XMFLOAT4 mat_box_rgba_ambient;
-			DirectX::XMFLOAT4 mat_box_rgba_diffuse;
-			DirectX::XMFLOAT4 mat_box_rgba_specular;
-
-			Material mat_plane;
-			Material mat_torus;
-
-			Material mat_sphere;  //orange-red
-			Material mat_box; //tomato
-
-			//----LIGHTS   YEAH
-			DirectX::XMFLOAT4 color_dirLight_ambient;
-			DirectX::XMFLOAT4 color_dirLight_diffuse;
-			DirectX::XMFLOAT4 color_dirLight_specular;
-			DirectX::XMFLOAT4 color_pointLight_ambient;
-			DirectX::XMFLOAT4 color_pointLigh_diffuse;
-			DirectX::XMFLOAT4 color_pointLight_specular;
-			DirectX::XMFLOAT4 color_spotLight_ambient;
-			DirectX::XMFLOAT4 color_spotLight_diffuse;
-			DirectX::XMFLOAT4 color_spotLight_specular;
-
-			DirectX::XMFLOAT3 dirSpotLight;
-			DirectX::XMFLOAT3 eyePosW;
-
-			
-			DirectionalLight myDirectionalLight; // colors ---- direction -------- padding float
-			PointLight myPointLight; // colors --------position ------- range ------- attenuation ---- padding float
-			SpotLight mySpotLight;// colors --------position ------- range -------direction ----------- spot dimension (angle, radians)---------  attenuation ---- padding float
-			float _explicit_pad_{ 0.0f };
-			//PerFrameCB myPerFrameCB = { myDirectionalLight ,myPointLight,mySpotLight,0.0f };
+			Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dPerFrameCB;
+			//Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dPerFrameTextureCB;
+			Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dRarelyChangedCB;
+			Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dRarelyChangedTextureCB;
 
 			Microsoft::WRL::ComPtr<ID3D11VertexShader> m_vertexShader;
 			Microsoft::WRL::ComPtr<ID3D11PixelShader> m_pixelShader;
+			Microsoft::WRL::ComPtr<ID3D11SamplerState> m_textureSamplerState;
+
 			Microsoft::WRL::ComPtr<ID3D11InputLayout> m_inputLayout;
 			Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_rasterizerState;
-		};
-	}
-}
-=======
 
-#include <application/directx_app.h>
-#include <input/mouse.h>
-#include <input/keyboard.h>
-#include <camera/spherical_camera.h>
-#include <mesh/mesh_generator.h>
-#include <mesh/mesh_format.h>
-
-
-namespace xtest {
-namespace demo {
-
-
-	/*
-		Use F1, F2, F3 key to switch on/off each light individually
-		Use Spacebar to pause lights motion
-		Use F key to reframe the camera to the origin
-		Use right mouse button to pan the view, left mouse button to rotate and mouse wheel to zoom in/out
-	*/
-
-	class LightsDemoApp : public application::DirectxApp, public input::MouseListener, public input::KeyboardListener
-	{
-	public:
-
-
-		struct Material
-		{
-			DirectX::XMFLOAT4 ambient;
-			DirectX::XMFLOAT4 diffuse;
-			DirectX::XMFLOAT4 specular;
 		};
 
-		struct DirectionalLight
-		{
-			DirectX::XMFLOAT4 ambient;
-			DirectX::XMFLOAT4 diffuse;
-			DirectX::XMFLOAT4 specular;
-			DirectX::XMFLOAT3 dirW;
-			float _explicit_pad_;
-		};
-
-		struct PointLight
-		{
-			DirectX::XMFLOAT4 ambient;
-			DirectX::XMFLOAT4 diffuse;
-			DirectX::XMFLOAT4 specular;
-			DirectX::XMFLOAT3 posW;
-			float range;
-			DirectX::XMFLOAT3 attenuation;
-			float _explicit_pad_;
-		};
-
-		struct SpotLight
-		{
-			DirectX::XMFLOAT4 ambient;
-			DirectX::XMFLOAT4 diffuse;
-			DirectX::XMFLOAT4 specular;
-			DirectX::XMFLOAT3 posW;
-			float range;
-			DirectX::XMFLOAT3 dirW;
-			float spot;
-			DirectX::XMFLOAT3 attenuation;
-			float _explicit_pad_;
-		};
-
-		struct PerObjectCB
-		{
-			DirectX::XMFLOAT4X4 W;
-			DirectX::XMFLOAT4X4 W_inverseTraspose;
-			DirectX::XMFLOAT4X4 WVP;
-			Material material;
-		};
-
-		struct PerFrameCB
-		{
-			DirectionalLight dirLight;
-			PointLight pointLight;
-			SpotLight spotLight;
-			DirectX::XMFLOAT3 eyePosW;
-			float _explicit_pad_;
-		};
-
-		struct RarelyChangedCB
-		{
-			int32 useDirLight;
-			int32 usePointLight;
-			int32 useSpotLight;
-			int32 _explicit_pad_;
-		};
-
-
-		struct Renderable
-		{
-			mesh::MeshData mesh;
-			DirectX::XMFLOAT4X4 W;
-			Material material;
-			Microsoft::WRL::ComPtr<ID3D11Buffer> d3dPerObjectCB;
-			Microsoft::WRL::ComPtr<ID3D11Buffer> d3dVertexBuffer;
-			Microsoft::WRL::ComPtr<ID3D11Buffer> d3dIndexBuffer;
-		};
-
-
-		struct GPFRenderable
-		{
-			struct ShapeAttributes
-			{
-				Material material;
-				Microsoft::WRL::ComPtr<ID3D11Buffer> d3dPerObjectCB;
-			};
-
-			mesh::GPFMesh mesh;
-			std::map<std::string, ShapeAttributes> shapeAttributeMapByName;
-			DirectX::XMFLOAT4X4 W;
-			Microsoft::WRL::ComPtr<ID3D11Buffer> d3dVertexBuffer;
-			Microsoft::WRL::ComPtr<ID3D11Buffer> d3dIndexBuffer;
-		};
-
-
-		LightsDemoApp(HINSTANCE instance, const application::WindowSettings& windowSettings, const application::DirectxSettings& directxSettings, uint32 fps = 60);
-		~LightsDemoApp();
-
-		LightsDemoApp(LightsDemoApp&&) = delete;
-		LightsDemoApp(const LightsDemoApp&) = delete;
-		LightsDemoApp& operator=(LightsDemoApp&&) = delete;
-		LightsDemoApp& operator=(const LightsDemoApp&) = delete;
-
-
-		virtual void Init() override;
-		virtual void OnResized() override;
-		virtual void UpdateScene(float deltaSeconds) override;
-		virtual void RenderScene() override;
-
-		virtual void OnWheelScroll(input::ScrollStatus scroll) override;
-		virtual void OnMouseMove(const DirectX::XMINT2& movement, const DirectX::XMINT2& currentPos) override;
-		virtual void OnKeyStatusChange(input::Key key, const input::KeyStatus& status) override;
-
-	private:
-
-		void InitMatrices();
-		void InitShaders();
-		void InitRenderable();
-		void InitLights();
-		void InitRasterizerState();
-
-
-		DirectX::XMFLOAT4X4 m_viewMatrix;
-		DirectX::XMFLOAT4X4 m_projectionMatrix;
-
-		camera::SphericalCamera m_camera;
-		
-		DirectionalLight m_dirLight;
-		SpotLight m_spotLight;
-		PointLight m_pointLight;
-		RarelyChangedCB m_lightsControl;
-		bool m_isLightControlDirty;
-		bool m_stopLights;
-
-		Renderable m_sphere;
-		Renderable m_plane;
-		GPFRenderable m_crate;
-		
-		Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dPerFrameCB;
-		Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dRarelyChangedCB;
-		Microsoft::WRL::ComPtr<ID3D11VertexShader> m_vertexShader;
-		Microsoft::WRL::ComPtr<ID3D11PixelShader> m_pixelShader;
-		Microsoft::WRL::ComPtr<ID3D11InputLayout> m_inputLayout;
-		Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_rasterizerState;
-
-	};
-
-} // demo
+	} // demo
 } // xtest
-
-
->>>>>>> master

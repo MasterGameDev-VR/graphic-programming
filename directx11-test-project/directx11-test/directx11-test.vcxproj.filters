@@ -1,282 +1,84 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="application">
-      <UniqueIdentifier>{07946c59-6fa9-4589-81a8-6f5bcb9760e4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="application\resources">
-      <UniqueIdentifier>{1bd6e9f2-123d-446c-8928-6d0884be08d3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="time">
-      <UniqueIdentifier>{8020e758-cad3-4830-879c-06a53187b95d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="math">
-      <UniqueIdentifier>{be94f99d-5a37-4959-9293-beec89952f45}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="common">
-      <UniqueIdentifier>{e18e8148-4d9a-43ef-a2b8-b23efb49e7ee}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="input">
-      <UniqueIdentifier>{947d87ef-8cfe-439d-87ce-8c142718961b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="demo">
-      <UniqueIdentifier>{360a45ec-f540-4f9e-bdfd-9ef460abc755}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="demo\box_demo">
-      <UniqueIdentifier>{fc9923e0-7bdf-422c-8ce6-22e3a49e7acb}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="file">
-      <UniqueIdentifier>{56f040da-8bd4-493e-8fde-382f9f408492}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="mesh">
-      <UniqueIdentifier>{803e4ab5-718b-456d-a43e-af848c11e037}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="camera">
-      <UniqueIdentifier>{c7d884de-a817-42ef-b968-3a1c1a2b2fec}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="demo\lights_demo">
-      <UniqueIdentifier>{b8bba18c-6161-4a4b-8cf1-465afa800812}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="service">
-      <UniqueIdentifier>{bc56cb19-8bf0-4f00-8bb1-a3b8fd5b3021}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="external_libs">
-      <UniqueIdentifier>{5e4aff38-c33c-4dfe-adb1-f095c6b904f1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="application\resources\data">
-      <UniqueIdentifier>{fc3576d5-4245-4893-b821-375cc5c0e9ec}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="external_libs\tiny_obj_laoder">
-      <UniqueIdentifier>{04806977-1a85-4e8f-ab7c-d1950c923f14}</UniqueIdentifier>
-    </Filter>
-<<<<<<< HEAD
-    <Filter Include="mesh\render">
-      <UniqueIdentifier>{c5e18eac-473d-4b22-a80d-83d5596b1906}</UniqueIdentifier>
-=======
-    <Filter Include="demo\textures_demo">
-      <UniqueIdentifier>{25f43c5a-8ec0-4717-b18d-715cb0ddb92a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="external_libs\directxtk">
-      <UniqueIdentifier>{2b35d0b8-0e59-4c7e-91c5-aa1249fee502}</UniqueIdentifier>
->>>>>>> master
-    </Filter>
+    <FxCompile Include="demo\box_demo\box_demo_PS.hlsl" />
+    <FxCompile Include="demo\box_demo\box_demo_VS.hlsl" />
+    <FxCompile Include="demo\lights_demo\lights_demo_PS.hlsl" />
+    <FxCompile Include="demo\lights_demo\lights_demo_VS.hlsl" />
+    <FxCompile Include="demo\textures_demo\textures_demo_PS.hlsl" />
+    <FxCompile Include="demo\textures_demo\textures_demo_VS.hlsl" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="application\resources\Resource.h">
-      <Filter>application\resources</Filter>
-    </ClInclude>
+    <ClCompile Include="application\directx_app.cpp" />
+    <ClCompile Include="application\windows_app.cpp" />
+    <ClCompile Include="camera\spherical_camera.cpp" />
+    <ClCompile Include="common\assert.cpp" />
+    <ClCompile Include="demo\box_demo\box_demo_app.cpp" />
+    <ClCompile Include="demo\lights_demo\lights_demo_app.cpp" />
+    <ClCompile Include="demo\textures_demo\textures_demo_app.cpp" />
+    <ClCompile Include="external_libs\directxtk\DDSTextureLoader.cpp" />
+    <ClCompile Include="external_libs\directxtk\WICTextureLoader.cpp" />
+    <ClCompile Include="external_libs\tiny_obj_loader\tiny_obj_loader.cc" />
+    <ClCompile Include="file\binary_file.cpp" />
+    <ClCompile Include="file\file_utils.cpp" />
+    <ClCompile Include="input\keyboard.cpp" />
+    <ClCompile Include="input\mouse.cpp" />
+    <ClCompile Include="math\math_utils.cpp" />
+    <ClCompile Include="mesh\mesh_format.cpp" />
+    <ClCompile Include="mesh\mesh_generator.cpp" />
+    <ClCompile Include="render\directx_backend.cpp" />
+    <ClCompile Include="service\locator.cpp" />
+    <ClCompile Include="time\timer.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="time\time_point.cpp" />
+    <ClCompile Include="time\time_span.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="application\directx_app.h" />
+    <ClInclude Include="application\directx_settings.h" />
+    <ClInclude Include="application\windows_app.h" />
+    <ClInclude Include="camera\spherical_camera.h" />
+    <ClInclude Include="common\assert.h" />
+    <ClInclude Include="common\common_macros.h" />
+    <ClInclude Include="common\int_types.h" />
+    <ClInclude Include="demo\box_demo\box_demo_app.h" />
+    <ClInclude Include="demo\lights_demo\lights_demo_app.h" />
+    <ClInclude Include="demo\textures_demo\textures_demo_app.h" />
+    <ClInclude Include="external_libs\directxtk\dds.h" />
+    <ClInclude Include="external_libs\directxtk\DDSTextureLoader.h" />
+    <ClInclude Include="external_libs\directxtk\DirectXHelpers.h" />
+    <ClInclude Include="external_libs\directxtk\LoaderHelpers.h" />
+    <ClInclude Include="external_libs\directxtk\pch.h" />
+    <ClInclude Include="external_libs\directxtk\PlatformHelpers.h" />
+    <ClInclude Include="external_libs\directxtk\WICTextureLoader.h" />
+    <ClInclude Include="external_libs\tiny_obj_loader\tiny_obj_loader.h" />
+    <ClInclude Include="file\binary_file.h" />
+    <ClInclude Include="file\file_utils.h" />
+    <ClInclude Include="input\keyboard.h" />
+    <ClInclude Include="input\mouse.h" />
+    <ClInclude Include="math\math_utils.h" />
+    <ClInclude Include="mesh\mesh_format.h" />
+    <ClInclude Include="mesh\mesh_generator.h" />
+    <ClInclude Include="render\directx_backend.h" />
+    <ClInclude Include="render\render_macros.h" />
+    <ClInclude Include="service\locator.h" />
+    <ClInclude Include="time\timer.h" />
+    <ClInclude Include="application\window_settings.h" />
+    <ClInclude Include="application\resources\Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="application\directx_app.h">
-      <Filter>application</Filter>
-    </ClInclude>
-    <ClInclude Include="application\window_settings.h">
-      <Filter>application</Filter>
-    </ClInclude>
-    <ClInclude Include="time\timer.h">
-      <Filter>time</Filter>
-    </ClInclude>
-    <ClInclude Include="application\directx_settings.h">
-      <Filter>application</Filter>
-    </ClInclude>
-    <ClInclude Include="render\render_macros.h">
-      <Filter>mesh\render</Filter>
-    </ClInclude>
-    <ClInclude Include="render\directx_backend.h">
-      <Filter>mesh\render</Filter>
-    </ClInclude>
-    <ClInclude Include="math\math_utils.h">
-      <Filter>math</Filter>
-    </ClInclude>
-    <ClInclude Include="common\assert.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="time\time_point.h">
-      <Filter>time</Filter>
-    </ClInclude>
-    <ClInclude Include="time\time_span.h">
-      <Filter>time</Filter>
-    </ClInclude>
-    <ClInclude Include="application\windows_app.h">
-      <Filter>application</Filter>
-    </ClInclude>
-    <ClInclude Include="common\common_macros.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="input\keyboard.h">
-      <Filter>input</Filter>
-    </ClInclude>
-    <ClInclude Include="input\mouse.h">
-      <Filter>input</Filter>
-    </ClInclude>
-    <ClInclude Include="demo\box_demo\box_demo_app.h">
-      <Filter>demo\box_demo</Filter>
-    </ClInclude>
-    <ClInclude Include="file\file_utils.h">
-      <Filter>file</Filter>
-    </ClInclude>
-    <ClInclude Include="file\binary_file.h">
-      <Filter>file</Filter>
-    </ClInclude>
-    <ClInclude Include="mesh\mesh_generator.h">
-      <Filter>mesh</Filter>
-    </ClInclude>
-    <ClInclude Include="common\int_types.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="camera\spherical_camera.h">
-      <Filter>camera</Filter>
-    </ClInclude>
-    <ClInclude Include="service\locator.h">
-      <Filter>service</Filter>
-    </ClInclude>
-    <ClInclude Include="external_libs\tiny_obj_loader\tiny_obj_loader.h">
-      <Filter>external_libs\tiny_obj_laoder</Filter>
-    </ClInclude>
-    <ClInclude Include="mesh\mesh_format.h">
-      <Filter>mesh</Filter>
-    </ClInclude>
-<<<<<<< HEAD
-    <ClInclude Include="demo\lights_demo\lights_demo_app.h" />
-=======
-    <ClInclude Include="demo\textures_demo\textures_demo_app.h">
-      <Filter>demo\textures_demo</Filter>
-    </ClInclude>
-    <ClInclude Include="external_libs\directxtk\dds.h">
-      <Filter>external_libs\directxtk</Filter>
-    </ClInclude>
-    <ClInclude Include="external_libs\directxtk\DDSTextureLoader.h">
-      <Filter>external_libs\directxtk</Filter>
-    </ClInclude>
-    <ClInclude Include="external_libs\directxtk\DirectXHelpers.h">
-      <Filter>external_libs\directxtk</Filter>
-    </ClInclude>
-    <ClInclude Include="external_libs\directxtk\LoaderHelpers.h">
-      <Filter>external_libs\directxtk</Filter>
-    </ClInclude>
-    <ClInclude Include="external_libs\directxtk\pch.h">
-      <Filter>external_libs\directxtk</Filter>
-    </ClInclude>
-    <ClInclude Include="external_libs\directxtk\PlatformHelpers.h">
-      <Filter>external_libs\directxtk</Filter>
-    </ClInclude>
-    <ClInclude Include="external_libs\directxtk\WICTextureLoader.h">
-      <Filter>external_libs\directxtk</Filter>
-    </ClInclude>
->>>>>>> master
+    <ClInclude Include="time\time_point.h" />
+    <ClInclude Include="time\time_span.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="stdafx.cpp" />
-    <ClCompile Include="application\directx_app.cpp">
-      <Filter>application</Filter>
-    </ClCompile>
-    <ClCompile Include="time\timer.cpp">
-      <Filter>time</Filter>
-    </ClCompile>
-    <ClCompile Include="render\directx_backend.cpp">
-      <Filter>mesh\render</Filter>
-    </ClCompile>
-    <ClCompile Include="math\math_utils.cpp">
-      <Filter>math</Filter>
-    </ClCompile>
-    <ClCompile Include="common\assert.cpp">
-      <Filter>common</Filter>
-    </ClCompile>
-    <ClCompile Include="time\time_span.cpp">
-      <Filter>time</Filter>
-    </ClCompile>
-    <ClCompile Include="time\time_point.cpp">
-      <Filter>time</Filter>
-    </ClCompile>
-    <ClCompile Include="application\windows_app.cpp">
-      <Filter>application</Filter>
-    </ClCompile>
-    <ClCompile Include="input\keyboard.cpp">
-      <Filter>input</Filter>
-    </ClCompile>
-    <ClCompile Include="input\mouse.cpp">
-      <Filter>input</Filter>
-    </ClCompile>
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="demo\box_demo\box_demo_app.cpp">
-      <Filter>demo\box_demo</Filter>
-    </ClCompile>
-    <ClCompile Include="file\file_utils.cpp">
-      <Filter>file</Filter>
-    </ClCompile>
-    <ClCompile Include="file\binary_file.cpp">
-      <Filter>file</Filter>
-    </ClCompile>
-    <ClCompile Include="mesh\mesh_generator.cpp">
-      <Filter>mesh</Filter>
-    </ClCompile>
-    <ClCompile Include="camera\spherical_camera.cpp">
-      <Filter>camera</Filter>
-    </ClCompile>
-    <ClCompile Include="service\locator.cpp">
-      <Filter>service</Filter>
-    </ClCompile>
-    <ClCompile Include="external_libs\tiny_obj_loader\tiny_obj_loader.cc">
-      <Filter>external_libs\tiny_obj_laoder</Filter>
-    </ClCompile>
-    <ClCompile Include="mesh\mesh_format.cpp">
-      <Filter>mesh</Filter>
-    </ClCompile>
-<<<<<<< HEAD
-    <ClCompile Include="demo\lights_demo\lights_demo_app.cpp" />
-=======
-    <ClCompile Include="demo\textures_demo\textures_demo_app.cpp">
-      <Filter>demo\textures_demo</Filter>
-    </ClCompile>
-    <ClCompile Include="external_libs\directxtk\DDSTextureLoader.cpp">
-      <Filter>external_libs\directxtk</Filter>
-    </ClCompile>
-    <ClCompile Include="external_libs\directxtk\WICTextureLoader.cpp">
-      <Filter>external_libs\directxtk</Filter>
-    </ClCompile>
->>>>>>> master
+    <ResourceCompile Include="application\resources\directx11-test.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="application\resources\small.ico">
-      <Filter>application\resources</Filter>
-    </Image>
-    <Image Include="application\resources\directx11-test.ico">
-      <Filter>application\resources</Filter>
-    </Image>
+    <Image Include="application\resources\directx11-test.ico" />
+    <Image Include="application\resources\small.ico" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="application\resources\directx11-test.rc">
-      <Filter>application\resources</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="demo\box_demo\box_demo_PS.hlsl">
-      <Filter>demo\box_demo</Filter>
-    </FxCompile>
-    <FxCompile Include="demo\box_demo\box_demo_VS.hlsl">
-      <Filter>demo\box_demo</Filter>
-    </FxCompile>
-<<<<<<< HEAD
-    <FxCompile Include="demo\lights_demo\lights_demo_VS.hlsl" />
-    <FxCompile Include="demo\lights_demo\lights_demo_PS.hlsl" />
-=======
-    <FxCompile Include="demo\lights_demo\lights_demo_VS.hlsl">
-      <Filter>demo\lights_demo</Filter>
-    </FxCompile>
-    <FxCompile Include="demo\lights_demo\lights_demo_PS.hlsl">
-      <Filter>demo\lights_demo</Filter>
-    </FxCompile>
-    <FxCompile Include="demo\textures_demo\textures_demo_PS.hlsl">
-      <Filter>demo\textures_demo</Filter>
-    </FxCompile>
-    <FxCompile Include="demo\textures_demo\textures_demo_VS.hlsl">
-      <Filter>demo\textures_demo</Filter>
-    </FxCompile>
->>>>>>> master
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="math\math_utils.inl">
-      <Filter>math</Filter>
-    </None>
+    <None Include="math\math_utils.inl" />
   </ItemGroup>
 </Project>

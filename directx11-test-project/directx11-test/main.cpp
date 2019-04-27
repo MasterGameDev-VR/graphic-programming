@@ -1,9 +1,6 @@
 #include "stdafx.h"
 #include <demo/box_demo/box_demo_app.h>
-<<<<<<< HEAD
 #include <demo/DrawCalls/threeDC.h>
-=======
->>>>>>> master
 #include <demo/lights_demo/lights_demo_app.h>
 
 
@@ -26,8 +23,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	DirectxSettings directxSettings;
 	directxSettings.showFrameStats = true;
-	
-<<<<<<< HEAD
+
 	/*
 	typedef xtest::demo::BoxDemoApp TestApp;
 =======

@@ -181,12 +181,12 @@ xtest::mesh::MeshData xtest::mesh::GenerateTorus(float sliceRadius, float torusR
 			XMVECTOR vertexRadiusVec = vertexPositionVec - centerSliceVec;
 			XMStoreFloat3(&vertex.normal, XMVector3Normalize(vertexRadiusVec));
 
-			vertex.tangentU.x = 0.0f;
+			vertex.tangentU.x = - sinf(angleTorus);
 			vertex.tangentU.y = 0.0f;
-			vertex.tangentU.z = 0.0f;
+			vertex.tangentU.z = cosf(angleTorus);
 
-			vertex.uv.x = 0.0f;
-			vertex.uv.y = 0.0f;
+			vertex.uv.x = angleTorus / XM_2PI;
+			vertex.uv.y = angleSlice / XM_2PI;
 
 			mesh.vertices.push_back(vertex);
 		}
@@ -205,21 +205,25 @@ xtest::mesh::MeshData xtest::mesh::GenerateTorus(float sliceRadius, float torusR
 				if (sliceIndex == sliceDivisions - 1)
 				{
 					mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex);
-					mesh.indices.push_back(0*sliceDivisions + sliceIndex);
 					mesh.indices.push_back(torusIndex*sliceDivisions + 0);
+					mesh.indices.push_back(0 * sliceDivisions + sliceIndex);
+
 
 					mesh.indices.push_back(0 * sliceDivisions + sliceIndex);
-					mesh.indices.push_back(0*sliceDivisions + 0);
 					mesh.indices.push_back(torusIndex*sliceDivisions + 0);
+					mesh.indices.push_back(0 * sliceDivisions + 0);
+
 					break;
 				}
 				mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex);
-				mesh.indices.push_back(0*sliceDivisions + sliceIndex);
 				mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex + 1);
+				mesh.indices.push_back(0 * sliceDivisions + sliceIndex);
+
 
 				mesh.indices.push_back(0 * sliceDivisions + sliceIndex);
-				mesh.indices.push_back(0*sliceDivisions + sliceIndex+1);
 				mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex + 1);
+				mesh.indices.push_back(0 * sliceDivisions + sliceIndex + 1);
+
 			}
 			break;
 		}
@@ -229,21 +233,25 @@ xtest::mesh::MeshData xtest::mesh::GenerateTorus(float sliceRadius, float torusR
 			if (sliceIndex == sliceDivisions - 1) 
 			{
 				mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex);
-				mesh.indices.push_back((torusIndex + 1)*sliceDivisions + sliceIndex);
 				mesh.indices.push_back(torusIndex*sliceDivisions + 0);
+				mesh.indices.push_back((torusIndex + 1)*sliceDivisions + sliceIndex);
+
 
 				mesh.indices.push_back((torusIndex + 1)*sliceDivisions + sliceIndex);
-				mesh.indices.push_back((torusIndex + 1)*sliceDivisions + 0);
 				mesh.indices.push_back(torusIndex*sliceDivisions + 0);
+				mesh.indices.push_back((torusIndex + 1)*sliceDivisions + 0);
+
 				break;
 			}
 			mesh.indices.push_back(torusIndex*sliceDivisions+ sliceIndex);
-			mesh.indices.push_back((torusIndex+1)*sliceDivisions + sliceIndex);
 			mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex+1);
+			mesh.indices.push_back((torusIndex + 1)*sliceDivisions + sliceIndex);
+
 
 			mesh.indices.push_back((torusIndex + 1)*sliceDivisions + sliceIndex);
-			mesh.indices.push_back((torusIndex + 1)*sliceDivisions + sliceIndex+1);
 			mesh.indices.push_back(torusIndex*sliceDivisions + sliceIndex + 1);
+			mesh.indices.push_back((torusIndex + 1)*sliceDivisions + sliceIndex + 1);
+
 		}
 	}
 	return mesh;
