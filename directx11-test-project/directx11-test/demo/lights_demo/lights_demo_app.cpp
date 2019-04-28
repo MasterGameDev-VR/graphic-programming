@@ -376,7 +376,7 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		// geo
 		m_box.mesh = mesh::GenerateBox(4.f, 5.f, 6.f);
 		// W
-		XMStoreFloat4x4(&m_box.W, XMMatrixTranslation(9.f, 6.f, 8.f));
+		XMStoreFloat4x4(&m_box.W, XMMatrixTranslation(2.f, 4.f, -6.f));
 		// material
 		m_box.material.ambient = { 0.15f, 0.15f, 0.15f, 1.f };
 		m_box.material.diffuse = { 0.52f, 0.52f, 0.52f, 1.f };
@@ -621,8 +621,8 @@ void LightsDemoApp::InitLights()
 		spotLight.specular = { 0.1f, 0.1f, 0.9f, 1.0f };
 		//XMVECTOR posW = XMVectorSet(5.f*cosf(XM_2PI / 3 * (i + 1)), 5.f, 5.f*sinf(XM_2PI / 3 * (i + 1)), 1.f);
 		//XMStoreFloat3(&spotLight.posW, posW);
-		spotLight.posW = XMFLOAT3(20.f*cosf(XM_2PI / 3 * (i + 1)), 35.f, 20.f*sinf(XM_2PI / 3 * (i + 1)));
-		spotLight.range = 70.f;
+		spotLight.posW = XMFLOAT3(22.f*cosf(XM_2PI / 3 * (i + 1)), 9.f, 22.f*sinf(XM_2PI / 3 * (i + 1)));
+		spotLight.range = 200.f;
 		XMVECTOR dirW = XMVector3Normalize(XMVectorSet(0.f, 0.5f, 0.f, 1.f) - XMVectorSet(spotLight.posW.x, spotLight.posW.y, spotLight.posW.z,1.0f));
 		XMStoreFloat3(&spotLight.dirW, dirW);
 		spotLight.spot = 20.f;
@@ -1034,8 +1034,8 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 		perFrameCB->pointLight3 = m_pointLights[3];
 		perFrameCB->pointLight4 = m_pointLights[4];
 		perFrameCB->spotLight0 = m_spotLights[0];
-		perFrameCB->spotLight0 = m_spotLights[1];
-		perFrameCB->spotLight0 = m_spotLights[2];
+		perFrameCB->spotLight1 = m_spotLights[1];
+		perFrameCB->spotLight2 = m_spotLights[2];
 
 		perFrameCB->eyePosW = m_camera.GetPosition();
 		perFrameCB->translateValue += 0.005f;

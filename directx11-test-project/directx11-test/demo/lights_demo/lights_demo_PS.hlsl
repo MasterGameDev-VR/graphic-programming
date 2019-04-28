@@ -332,6 +332,7 @@ float4 main(VertexOut pin) : SV_TARGET
 		if (usesTwoColorMapTextures) 
 		{
 			pin.uvMotion.x+=translateValue;
+			pin.uvMotion.y += translateValue;
 			movableDiffuseColor = movableDiffuseTexture.Sample(textureSampler, pin.uvMotion);
 		}
 		finalColor = (movableDiffuseColor + diffuseColor) * (totalAmbient + totalDiffuse) + totalSpecular;
