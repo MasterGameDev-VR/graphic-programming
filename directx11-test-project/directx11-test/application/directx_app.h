@@ -44,6 +44,7 @@ namespace application {
 
 		time::Timer m_timer;
 		Microsoft::WRL::ComPtr<ID3D11Device> m_d3dDevice;
+		Microsoft::WRL::ComPtr<ID3DUserDefinedAnnotation> m_d3dAnnotation;
 		Microsoft::WRL::ComPtr<ID3D11DeviceContext> m_d3dContext;
 		Microsoft::WRL::ComPtr<IDXGISwapChain> m_swapChain;
 		Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_backBufferView;
