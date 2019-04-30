@@ -1,27 +1,39 @@
 #include "stdafx.h"
 #include "lights_demo_app.h"
 #include <file/file_utils.h>
+#include <math/math_utils.h>
 #include <service/locator.h>
-#include <mesh/mesh_generator.h>
+
 
 using namespace DirectX;
 using namespace xtest;
-using namespace mesh;
+
 using xtest::demo::LightsDemoApp;
 using Microsoft::WRL::ComPtr;
-
-typedef std::map<std::string, Microsoft::WRL::ComPtr<ID3D11Buffer>> CostantBuffersMap;
-typedef std::map<std::string, xtest::mesh::GPFMesh::MeshDescriptor> MeshDescriptorMap;
 
 LightsDemoApp::LightsDemoApp(HINSTANCE instance,
 	const application::WindowSettings& windowSettings,
 	const application::DirectxSettings& directxSettings,
 	uint32 fps /*=60*/)
 	: application::DirectxApp(instance, windowSettings, directxSettings, fps)
+	, m_viewMatrix()
+	, m_projectionMatrix()
+	, m_camera(math::ToRadians(68.f), math::ToRadians(135.f), 7.f, { 0.f, 0.f, 0.f }, { 0.f, 1.f, 0.f }, { math::ToRadians(4.f), math::ToRadians(175.f) }, { 3.f, 25.f })
+	, m_dirLight()
+	, m_spotLight()
+	, m_pointLight()
+	, m_sphere()
+	, m_plane()
+	, m_crate()
+	, m_lightsControl()
+	, m_isLightControlDirty(true)
+	, m_stopLights(false)
+	, m_d3dPerFrameCB(nullptr)
+	, m_d3dRarelyChangedCB(nullptr)
 	, m_vertexShader(nullptr)
 	, m_pixelShader(nullptr)
 	, m_inputLayout(nullptr)
-	, m_camera(math::ToRadians(90.f), math::ToRadians(30.f), 10.f, { 0.f, 0.f, 0.f }, { 0.f, 1.f, 0.f }, { math::ToRadians(5.f), math::ToRadians(175.f) }, { 3.f, 25.f })
+	, m_rasterizerState(nullptr)	
 {}
 
 
@@ -35,21 +47,19 @@ void LightsDemoApp::Init()
 
 	m_d3dAnnotation->BeginEvent(L"init-demo");
 
-	InitLights();
-	InitMeshes();
 	InitMatrices();
 	InitShaders();
-	InitBuffers();
+	InitRenderable();
+	InitLights();
 	InitRasterizerState();
 
 	service::Locator::GetMouse()->AddListener(this);
-	service::Locator::GetKeyboard()->AddListener(this, { input::Key::F });
-	// TODO altri pulsanti per accendere e spegnere le luci
+	service::Locator::GetKeyboard()->AddListener(this, { input::Key::F, input::Key::F1, input::Key::F2, input::Key::F3, input::Key::space_bar });
 
 	m_d3dAnnotation->EndEvent();
 }
 
-// Initializing matrices
+
 void LightsDemoApp::InitMatrices()
 {
 	// view matrix
@@ -62,139 +72,7 @@ void LightsDemoApp::InitMatrices()
 	}
 }
 
-// Initializing meshes
-void LightsDemoApp::InitMeshes()
-{
-	// Sphere
-	Model sphere;
-	sphere.Data = GenerateSphere(1.f, 12, 12);
-	sphere.VerticesCount = sphere.Data.vertices.size();
-	sphere.IndicesCount = sphere.Data.indices.size();
-	XMStoreFloat4x4(&sphere.WorldMatrix, XMMatrixIdentity() * XMMatrixTranslation(-2.0f, 0.f, -2.0f));
-	sphere.rotationSpeed = math::ToRadians(180.0f);
-	sphere.material.ambient = DirectX::XMFLOAT4(0.5f, 0.1f, 0.1f, 0.0f);
-	sphere.material.diffuse = DirectX::XMFLOAT4(1.0f, 0.3f, 0.3f, 0.0f);
-	sphere.material.specular = DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-	m_models["sphere"] = sphere;
 
-	// Box 	
-	Model box;
-	box.Data = GenerateBox(2.0f, 2.0f, 2.0f);
-	box.VerticesCount = box.Data.vertices.size();
-	box.IndicesCount = box.Data.indices.size();
-	XMStoreFloat4x4(&box.WorldMatrix, XMMatrixIdentity());
-	box.rotationSpeed = math::ToRadians(90.0f);
-	box.material.ambient = DirectX::XMFLOAT4(1.5f, 1.5f, 0.5f, 0.0f);
-	box.material.diffuse = DirectX::XMFLOAT4(0.8f, 0.8f, 0.1f, 0.0f);
-	box.material.specular = DirectX::XMFLOAT4(0.1f, 0.1f, 0.1f, 0.1f);
-	m_models["box"] = box;
-
-	// Plane
-	Model plane;
-	plane.Data = GeneratePlane(15.f, 15.f, 2, 2);
-	plane.VerticesCount = plane.Data.vertices.size();
-	plane.IndicesCount = plane.Data.indices.size();
-	XMStoreFloat4x4(&plane.WorldMatrix, XMMatrixIdentity() * XMMatrixTranslation(0.f, -1.0f, 0.f));
-	plane.rotationSpeed = math::ToRadians(0.f);
-	plane.material.ambient = DirectX::XMFLOAT4(0.5f, 0.5f, 1.f, 0.0f);
-	plane.material.diffuse = DirectX::XMFLOAT4(0.1f, 0.1f, 0.1f, 0.0f);
-	plane.material.specular = DirectX::XMFLOAT4(0.5f, 0.5f, 0.5f, 10.f);
-	m_models["plane"] = plane;
-
-	// Torus
-	Model torus;
-	torus.Data = GenerateTorus(2.0f, 1.2f, 14, 14);
-	torus.VerticesCount = torus.Data.vertices.size();
-	torus.IndicesCount = torus.Data.indices.size();
-	XMStoreFloat4x4(&torus.WorldMatrix, XMMatrixIdentity() * XMMatrixTranslation(-4.25f, -0.5f, 4.25f));
-	torus.rotationSpeed = math::ToRadians(0.0f);
-	torus.material.ambient = DirectX::XMFLOAT4(0.3f, 0.3f, 0.3f, 0.0f);
-	torus.material.diffuse = DirectX::XMFLOAT4(0.5f, 1.5f, 0.5f, 0.0f);
-	torus.material.specular = DirectX::XMFLOAT4(0.1f, 0.1f, 0.1f, 0.1f);
-	m_models["torus"] = torus;
-
-	// Crate
-	m_crate.Data = file::ReadGPF(std::wstring(GetRootDir()).append(L"\\3d-objects\\crate.gpf"));
-	m_crate.VerticesCount = m_crate.Data.meshData.vertices.size();
-	m_crate.IndicesCount = m_crate.Data.meshData.indices.size();
-	XMStoreFloat4x4(&m_crate.ScaleMatrix, XMMatrixIdentity() * XMMatrixScaling(0.5f, 0.5f, 0.5f));
-	XMStoreFloat4x4(&m_crate.WorldMatrix, XMMatrixIdentity() * XMMatrixRotationY(math::ToRadians(45.f)) * XMMatrixScaling(0.01f, 0.01f, 0.01f) * XMMatrixTranslation(4.25f, -1.0f, -4.25f));
-	m_crate.rotationSpeed = math::ToRadians(0.0f);
-	// Crate materials
-	{
-		// bottom_1
-		Material bottom_1;
-		bottom_1.ambient = DirectX::XMFLOAT4(0.3f, 0.2f, 0.1f, 0.0f);
-		bottom_1.diffuse = DirectX::XMFLOAT4(0.1f, 0.2f, 0.3f, 0.0f);
-		bottom_1.specular = DirectX::XMFLOAT4(10.5f, 0.5f, 0.5f, 10.f);
-		m_crate.materials["bottom_1"] = bottom_1;
-
-		// top_2
-		Material top_2;
-		top_2.ambient = DirectX::XMFLOAT4(0.3f, 0.2f, 0.1f, 0.0f);
-		top_2.diffuse = DirectX::XMFLOAT4(0.1f, 0.2f, 0.3f, 0.0f);
-		top_2.specular = DirectX::XMFLOAT4(0.5f, 0.5f, 10.5f, 10.5f);
-		m_crate.materials["top_2"] = top_2;
-
-		// metal_pieces_3
-		Material metal_pieces_3;
-		metal_pieces_3.ambient = DirectX::XMFLOAT4(0.6f, 0.4f, 0.5f, 0.0f);
-		metal_pieces_3.diffuse = DirectX::XMFLOAT4(0.2f, 0.2f, 0.2f, 0.0f);
-		metal_pieces_3.specular = DirectX::XMFLOAT4(10.0f, 10.0f, 10.0f, 10.0f);
-		m_crate.materials["metal_pieces_3"] = metal_pieces_3;
-		
-		// top_handles_4
-		Material top_handles_4;
-		top_handles_4.ambient = DirectX::XMFLOAT4(0.3f, 0.3f, 0.3f, 0.0f);
-		top_handles_4.diffuse = DirectX::XMFLOAT4(0.5f, 0.5f, 0.5f, 0.0f);
-		top_handles_4.specular = DirectX::XMFLOAT4(0.5f, 10.5f, 0.5f, 10.f);
-		m_crate.materials["top_handles_4"] = top_handles_4;
-
-		// handles_8
-		Material handles_8;
-		handles_8.ambient = DirectX::XMFLOAT4(0.3f, 0.3f, 0.3f, 0.0f);
-		handles_8.diffuse = DirectX::XMFLOAT4(0.5f, 0.5f, 0.5f, 0.0f);
-		handles_8.specular = DirectX::XMFLOAT4(0.5f, 10.5f, 0.5f, 10.0f);
-		m_crate.materials["handles_8"] = handles_8;
-	}
-}
-
-
-// Initializing lights
-void LightsDemoApp::InitLights()
-{
-	// Directional light
-	m_directionalLight.ambient = DirectX::XMFLOAT4(0.2f, 0.2f, 0.2f, 0.0f);
-	m_directionalLight.diffuse = DirectX::XMFLOAT4(0.2f, 0.2f, 0.2f, 0.0f);
-	m_directionalLight.specular = DirectX::XMFLOAT4(0.2f, 0.2f, 0.2f, 0.0f);
-	m_directionalLight.dirW = DirectX::XMFLOAT3(-1.f, -0.5f, 0.f);
-	XMVECTOR direction = XMLoadFloat3(&m_directionalLight.dirW);
-	direction = XMVector3Normalize(direction);
-	XMStoreFloat3(&m_directionalLight.dirW, direction);
-
-	// Point light
-	m_pointLight.ambient = DirectX::XMFLOAT4(0.2f, 0.2f, 0.2f, 0.0f);
-	m_pointLight.diffuse = DirectX::XMFLOAT4(1.0f, 0.3f, 0.3f, 0.0f);
-	m_pointLight.specular = DirectX::XMFLOAT4(0.2f, 0.2f, 0.2f, 0.0f);
-	m_pointLight.posW = DirectX::XMFLOAT3(-4.25f, -0.5f, 4.25f);
-	m_pointLight.range = 1.5f;
-	m_pointLight.attenuation = DirectX::XMFLOAT3(0.0f, 0.25f, 0.2f);
-
-	// Spot light
-	m_spotLight.ambient = DirectX::XMFLOAT4(0.4f, 0.4f, 0.4f, 0.0f);
-	m_spotLight.diffuse = DirectX::XMFLOAT4(0.3f, 0.3f, 0.3f, 0.0f);
-	m_spotLight.specular = DirectX::XMFLOAT4(0.2f, 0.2f, 0.2f, 0.0f);
-	m_spotLight.posW = DirectX::XMFLOAT3(1.0f, 2.5f, -1.25f);
-	m_spotLight.range = 4.5f;
-	m_spotLight.dirW = DirectX::XMFLOAT3(1.0f, -1.0f, -1.0f);
-	direction = XMLoadFloat3(&m_spotLight.dirW);
-	direction = XMVector3Normalize(direction);
-	XMStoreFloat3(&m_spotLight.dirW, direction);
-	m_spotLight.spot = 2.0f;
-	m_spotLight.attenuation = DirectX::XMFLOAT3(0.0f, 0.1f, 0.0f);
-}
-
-// Initializing shaders
 void LightsDemoApp::InitShaders()
 {
 	// read pre-compiled shaders' bytecode
@@ -207,106 +85,292 @@ void LightsDemoApp::InitShaders()
 	XTEST_D3D_CHECK(m_d3dDevice->CreateVertexShader(vsByteCode.Data(), vsByteCode.ByteSize(), nullptr, &m_vertexShader));
 	XTEST_D3D_CHECK(m_d3dDevice->CreatePixelShader(psByteCode.Data(), psByteCode.ByteSize(), nullptr, &m_pixelShader));
 
-	// create the input layout, it must match the Vertex Shader HLSL input format
+
+	// create the input layout, it must match the Vertex Shader HLSL input format:
+	//	struct VertexIn
+	// 	{
+	// 		float3 posL : POSITION;
+	// 		float3 normalL : NORMAL;
+	// 	};
 	D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(MeshData::Vertex, normal), D3D11_INPUT_PER_VERTEX_DATA, 0 }
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(mesh::MeshData::Vertex, normal), D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
 	XTEST_D3D_CHECK(m_d3dDevice->CreateInputLayout(vertexDesc, 2, vsByteCode.Data(), vsByteCode.ByteSize(), &m_inputLayout));
+
+
+	// perFrameCB
+	D3D11_BUFFER_DESC perFrameCBDesc;
+	perFrameCBDesc.Usage = D3D11_USAGE_DYNAMIC;
+	perFrameCBDesc.ByteWidth = sizeof(PerFrameCB);
+	perFrameCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	perFrameCBDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	perFrameCBDesc.MiscFlags = 0;
+	perFrameCBDesc.StructureByteStride = 0;
+	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perFrameCBDesc, nullptr, &m_d3dPerFrameCB));
 }
 
 
-void LightsDemoApp::InitBuffers()
+void xtest::demo::LightsDemoApp::InitRenderable()
 {
-	// Shapes
-	for (ModelsMap::iterator it = m_models.begin();  it != m_models.end(); it++) {
-		// Vertices
+
+	// plane
+	{
+		// geo
+		m_plane.mesh = mesh::GeneratePlane(50.f, 50.f, 50, 50);
+
+
+		// W
+		XMStoreFloat4x4(&m_plane.W, XMMatrixIdentity());
+
+
+		// material
+		m_plane.material.ambient  = { 0.15f, 0.15f, 0.15f, 1.f };
+		m_plane.material.diffuse  = { 0.52f, 0.52f, 0.52f, 1.f };
+		m_plane.material.specular = { 0.8f, 0.8f, 0.8f, 190.0f };
+
+
+		// perObjectCB
+		D3D11_BUFFER_DESC perObjectCBDesc;
+		perObjectCBDesc.Usage = D3D11_USAGE_DYNAMIC;
+		perObjectCBDesc.ByteWidth = sizeof(PerObjectCB);
+		perObjectCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		perObjectCBDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		perObjectCBDesc.MiscFlags = 0;
+		perObjectCBDesc.StructureByteStride = 0;
+		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &m_plane.d3dPerObjectCB));
+
+
+		// vertex buffer
 		D3D11_BUFFER_DESC vertexBufferDesc;
 		vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-		vertexBufferDesc.ByteWidth = UINT(sizeof(MeshData::Vertex) * it->second.VerticesCount);
+		vertexBufferDesc.ByteWidth = UINT(sizeof(mesh::MeshData::Vertex) * m_plane.mesh.vertices.size());
 		vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 		vertexBufferDesc.CPUAccessFlags = 0;
 		vertexBufferDesc.MiscFlags = 0;
 		vertexBufferDesc.StructureByteStride = 0;
 
 		D3D11_SUBRESOURCE_DATA vertexInitData;
-		vertexInitData.pSysMem = &it->second.Data.vertices[0];
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexInitData, &it->second.VertexBuffer));
+		vertexInitData.pSysMem = &m_plane.mesh.vertices[0];
+		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexInitData, &m_plane.d3dVertexBuffer));
 
-		// Indices
+
+		// index buffer
 		D3D11_BUFFER_DESC indexBufferDesc;
 		indexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-		indexBufferDesc.ByteWidth = UINT(sizeof(uint32) * it->second.IndicesCount);
+		indexBufferDesc.ByteWidth = UINT(sizeof(uint32) * m_plane.mesh.indices.size());
 		indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 		indexBufferDesc.CPUAccessFlags = 0;
 		indexBufferDesc.MiscFlags = 0;
 		indexBufferDesc.StructureByteStride = 0;
 
 		D3D11_SUBRESOURCE_DATA indexInitdata;
-		indexInitdata.pSysMem = &it->second.Data.indices[0];
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &it->second.IndexBuffer));
-
-		// constant buffer to update the Vertex Shader "PerObjectCB" constant buffer
-		D3D11_BUFFER_DESC vsConstantBufferDesc;
-		vsConstantBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-		vsConstantBufferDesc.ByteWidth = sizeof(PerObjectCB);
-		vsConstantBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		vsConstantBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		vsConstantBufferDesc.MiscFlags = 0;
-		vsConstantBufferDesc.StructureByteStride = 0;
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vsConstantBufferDesc, nullptr, &it->second.ConstantBuffer));
+		indexInitdata.pSysMem = &m_plane.mesh.indices[0];
+		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &m_plane.d3dIndexBuffer));
 	}
 
-	// Crate
-	D3D11_BUFFER_DESC vertexBufferDesc;
-	vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	vertexBufferDesc.ByteWidth = sizeof(xtest::mesh::MeshData::Vertex) * m_crate.Data.meshData.vertices.size();
-	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	vertexBufferDesc.CPUAccessFlags = 0;
-	vertexBufferDesc.MiscFlags = 0;
-	vertexBufferDesc.StructureByteStride = 0;
 
-	D3D11_SUBRESOURCE_DATA vertexInitData;
-	vertexInitData.pSysMem = m_crate.Data.meshData.vertices.data();
-	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexInitData, &m_crate.VertexBuffer));
+	// sphere
+	{
 
-	D3D11_BUFFER_DESC indexBufferDesc;
-	indexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-	indexBufferDesc.ByteWidth = sizeof(uint32) * m_crate.Data.meshData.indices.size();
-	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	indexBufferDesc.CPUAccessFlags = 0;
-	indexBufferDesc.MiscFlags = 0;
-	indexBufferDesc.StructureByteStride = 0;
+		//geo
+		m_sphere.mesh = mesh::GenerateSphere(1.f, 40, 40); // mesh::GenerateBox(2, 2, 2);
 
-	D3D11_SUBRESOURCE_DATA indexInitdata;
-	indexInitdata.pSysMem = m_crate.Data.meshData.indices.data();
-	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &m_crate.IndexBuffer));
 
-	for (MeshDescriptorMap::iterator it = m_crate.Data.meshDescriptorMapByName.begin(); it != m_crate.Data.meshDescriptorMapByName.end(); it++) {
-		Microsoft::WRL::ComPtr<ID3D11Buffer> vsConstantBuffer;
+		// W
+		XMStoreFloat4x4(&m_sphere.W,XMMatrixTranslation(-4.f, 1.f, 0.f));
 
-		D3D11_BUFFER_DESC vsConstantBufferDesc;
-		vsConstantBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-		vsConstantBufferDesc.ByteWidth = sizeof(PerObjectCB);
-		vsConstantBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		vsConstantBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		vsConstantBufferDesc.MiscFlags = 0;
-		vsConstantBufferDesc.StructureByteStride = 0;
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vsConstantBufferDesc, nullptr, &vsConstantBuffer));
+		// material
+		m_sphere.material.ambient = { 0.7f, 0.1f, 0.1f, 1.0f };
+		m_sphere.material.diffuse = { 0.81f, 0.15f, 0.15f, 1.0f };
+		m_sphere.material.specular = { 0.7f, 0.7f, 0.7f, 40.0f };
 
-		m_crate.ConstantBuffers[it->first] = vsConstantBuffer;
+
+		// perObjectCB
+		D3D11_BUFFER_DESC perObjectCBDesc;
+		perObjectCBDesc.Usage = D3D11_USAGE_DYNAMIC;
+		perObjectCBDesc.ByteWidth = sizeof(PerObjectCB);
+		perObjectCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		perObjectCBDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		perObjectCBDesc.MiscFlags = 0;
+		perObjectCBDesc.StructureByteStride = 0;
+		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &m_sphere.d3dPerObjectCB));
+
+
+		// vertex buffer
+		D3D11_BUFFER_DESC vertexBufferDesc;
+		vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+		vertexBufferDesc.ByteWidth = UINT(sizeof(mesh::MeshData::Vertex) * m_sphere.mesh.vertices.size());
+		vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+		vertexBufferDesc.CPUAccessFlags = 0;
+		vertexBufferDesc.MiscFlags = 0;
+		vertexBufferDesc.StructureByteStride = 0;
+
+		D3D11_SUBRESOURCE_DATA vertexInitData;
+		vertexInitData.pSysMem = &m_sphere.mesh.vertices[0];
+		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexInitData, &m_sphere.d3dVertexBuffer));
+
+
+		// index buffer
+		D3D11_BUFFER_DESC indexBufferDesc;
+		indexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+		indexBufferDesc.ByteWidth = UINT(sizeof(uint32) * m_sphere.mesh.indices.size());
+		indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+		indexBufferDesc.CPUAccessFlags = 0;
+		indexBufferDesc.MiscFlags = 0;
+		indexBufferDesc.StructureByteStride = 0;
+
+		D3D11_SUBRESOURCE_DATA indexInitdata;
+		indexInitdata.pSysMem = &m_sphere.mesh.indices[0];
+		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &m_sphere.d3dIndexBuffer));
 	}
 
-	// Lights
-	D3D11_BUFFER_DESC lightsBufferDesc;
-	lightsBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	lightsBufferDesc.ByteWidth = sizeof(PerFrameCB);
-	lightsBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	lightsBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	lightsBufferDesc.MiscFlags = 0;
-	lightsBufferDesc.StructureByteStride = 0;
-	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&lightsBufferDesc, nullptr, &m_lightsBuffer));
+
+	// crate
+	{
+
+		//geo
+		std::wstring targetFile = GetRootDir().append(LR"(\3d-objects\crate.gpf)");
+
+		{
+			mesh::GPFMesh gpfMesh = file::ReadGPF(targetFile);
+			m_crate.mesh = std::move(gpfMesh);
+		}
+		
+		// W
+		XMStoreFloat4x4(&m_crate.W, XMMatrixMultiply(XMMatrixScaling(0.01f, 0.01f, 0.01f), XMMatrixTranslation(0.f, 0.f, 0.f)));
+
+
+		//bottom material
+		Material& bottomMat = m_crate.shapeAttributeMapByName["bottom_1"].material;
+		bottomMat.ambient = { 0.8f, 0.3f, 0.1f, 1.0f };
+		bottomMat.diffuse = { 0.94f, 0.40f, 0.14f, 1.0f };
+		bottomMat.specular = { 0.94f, 0.40f, 0.14f, 30.0f };
+
+		//top material
+		Material& topMat = m_crate.shapeAttributeMapByName["top_2"].material;
+		topMat.ambient = { 0.8f, 0.8f, 0.8f, 1.0f };
+		topMat.diffuse = { 0.9f, 0.9f, 0.9f, 1.0f };
+		topMat.specular = { 0.9f, 0.9f, 0.9f, 550.0f };
+
+		//top handles material
+		Material& topHandleMat = m_crate.shapeAttributeMapByName["top_handles_4"].material;
+		topHandleMat.ambient = { 0.3f, 0.3f, 0.3f, 1.0f };
+		topHandleMat.diffuse = { 0.4f, 0.4f, 0.4f, 1.0f };
+		topHandleMat.specular = { 0.9f, 0.9f, 0.9f, 120.0f };
+
+		//handle material
+		Material& handleMat = m_crate.shapeAttributeMapByName["handles_8"].material;
+		handleMat.ambient = { 0.5f, 0.5f, 0.1f, 1.0f };
+		handleMat.diffuse = { 0.67f, 0.61f, 0.1f, 1.0f };
+		handleMat.specular = { 0.67f, 0.61f, 0.1f, 200.0f };
+
+		//metal material
+		Material& metalPiecesMat = m_crate.shapeAttributeMapByName["metal_pieces_3"].material;
+		metalPiecesMat.ambient = { 0.3f, 0.3f, 0.3f, 1.0f };
+		metalPiecesMat.diffuse = { 0.4f, 0.4f, 0.4f, 1.0f };
+		metalPiecesMat.specular = { 0.4f, 0.4f, 0.4f, 520.0f };
+
+
+
+		for (const auto& namePairWithDesc : m_crate.mesh.meshDescriptorMapByName)
+		{
+			ComPtr<ID3D11Buffer> d3dPerObjectCB;
+
+			// perObjectCBs
+			D3D11_BUFFER_DESC perObjectCBDesc;
+			perObjectCBDesc.Usage = D3D11_USAGE_DYNAMIC;
+			perObjectCBDesc.ByteWidth = sizeof(PerObjectCB);
+			perObjectCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+			perObjectCBDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+			perObjectCBDesc.MiscFlags = 0;
+			perObjectCBDesc.StructureByteStride = 0;
+			XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &d3dPerObjectCB));
+
+			m_crate.shapeAttributeMapByName[namePairWithDesc.first].d3dPerObjectCB = d3dPerObjectCB;
+		}
+			   		 
+
+		// vertex buffer
+		D3D11_BUFFER_DESC vertexBufferDesc;
+		vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+		vertexBufferDesc.ByteWidth = UINT(sizeof(mesh::MeshData::Vertex) * m_crate.mesh.meshData.vertices.size());
+		vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+		vertexBufferDesc.CPUAccessFlags = 0;
+		vertexBufferDesc.MiscFlags = 0;
+		vertexBufferDesc.StructureByteStride = 0;
+
+		D3D11_SUBRESOURCE_DATA vertexInitData;
+		vertexInitData.pSysMem = &m_crate.mesh.meshData.vertices[0];
+		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexInitData, &m_crate.d3dVertexBuffer));
+
+
+		// index buffer
+		D3D11_BUFFER_DESC indexBufferDesc;
+		indexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+		indexBufferDesc.ByteWidth = UINT(sizeof(uint32) * m_crate.mesh.meshData.indices.size());
+		indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+		indexBufferDesc.CPUAccessFlags = 0;
+		indexBufferDesc.MiscFlags = 0;
+		indexBufferDesc.StructureByteStride = 0;
+
+		D3D11_SUBRESOURCE_DATA indexInitdata;
+		indexInitdata.pSysMem = &m_crate.mesh.meshData.indices[0];
+		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &m_crate.d3dIndexBuffer));
+	}
+
+}
+
+
+void LightsDemoApp::InitLights()
+{
+	m_dirLight.ambient  = { 0.16f, 0.18f, 0.18f, 1.f };
+	m_dirLight.diffuse  = {0.4f* 0.87f,0.4f* 0.90f,0.4f* 0.94f, 1.f };
+	m_dirLight.specular = { 0.87f, 0.90f, 0.94f, 1.f };
+	XMVECTOR dirLightDirection = XMVector3Normalize(-XMVectorSet(5.f, 3.f, 5.f, 0.f));
+	XMStoreFloat3(&m_dirLight.dirW, dirLightDirection);
+
+
+	m_pointLight.ambient = { 0.18f, 0.04f, 0.16f, 1.0f };
+	m_pointLight.diffuse = { 0.94f, 0.23f, 0.87f, 1.0f };
+	m_pointLight.specular = { 0.94f, 0.23f, 0.87f, 1.0f };
+	m_pointLight.posW = { -5.f, 2.f, 5.f };
+	m_pointLight.range = 15.f;
+	m_pointLight.attenuation = { 0.0f, 0.2f, 0.f };
+
+
+	m_spotLight.ambient  = { 0.018f, 0.018f, 0.18f, 1.0f };
+	m_spotLight.diffuse  = { 0.1f, 0.1f, 0.9f, 1.0f };
+	m_spotLight.specular = { 0.1f, 0.1f, 0.9f, 1.0f };
+	XMVECTOR posW = XMVectorSet(5.f, 5.f, -5.f, 1.f);
+	XMStoreFloat3(&m_spotLight.posW, posW);
+	m_spotLight.range = 50.f;
+	XMVECTOR dirW = XMVector3Normalize( XMVectorSet(-4.f, 1.f, 0.f, 1.f) -  posW);
+	XMStoreFloat3(&m_spotLight.dirW, dirW);
+	m_spotLight.spot = 40.f;
+	m_spotLight.attenuation = { 0.0f, 0.125f, 0.f };
+
+	
+	m_lightsControl.useDirLight = true;
+	m_lightsControl.usePointLight = true;
+	m_lightsControl.useSpotLight = true;
+
+
+	// RarelyChangedCB
+	{
+		D3D11_BUFFER_DESC rarelyChangedCB;
+		rarelyChangedCB.Usage = D3D11_USAGE_DYNAMIC;
+		rarelyChangedCB.ByteWidth = sizeof(RarelyChangedCB);
+		rarelyChangedCB.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		rarelyChangedCB.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		rarelyChangedCB.MiscFlags = 0;
+		rarelyChangedCB.StructureByteStride = 0;
+
+		D3D11_SUBRESOURCE_DATA lightControlData;
+		lightControlData.pSysMem = &m_lightsControl;
+		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&rarelyChangedCB, &lightControlData, &m_d3dRarelyChangedCB));
+	}
 }
 
 
@@ -344,7 +408,7 @@ void LightsDemoApp::OnWheelScroll(input::ScrollStatus scroll)
 }
 
 
-void xtest::demo::LightsDemoApp::OnMouseMove(const DirectX::XMINT2& movement, const DirectX::XMINT2& currentPos)
+void LightsDemoApp::OnMouseMove(const DirectX::XMINT2& movement, const DirectX::XMINT2& currentPos)
 {
 	XTEST_UNUSED_VAR(currentPos);
 
@@ -370,17 +434,36 @@ void xtest::demo::LightsDemoApp::OnMouseMove(const DirectX::XMINT2& movement, co
 		XMStoreFloat3(&panTranslation, XMVectorAdd(xPanTranslation, yPanTranslation));
 		m_camera.TranslatePivotBy(panTranslation);
 	}
+
 }
 
 
 void LightsDemoApp::OnKeyStatusChange(input::Key key, const input::KeyStatus& status)
 {
-	XTEST_ASSERT(key == input::Key::F); // the only key registered for this listener
 
-	// re-frame the cube when F key is pressed
-	if (status.isDown)
+	// re-frame F key is pressed
+	if (key == input::Key::F && status.isDown)
 	{
 		m_camera.SetPivot({ 0.f, 0.f, 0.f });
+	}
+	else if (key == input::Key::F1 && status.isDown)
+	{
+		m_lightsControl.useDirLight = !m_lightsControl.useDirLight;
+		m_isLightControlDirty = true;
+	}
+	else if (key == input::Key::F2 && status.isDown)
+	{
+		m_lightsControl.usePointLight = !m_lightsControl.usePointLight;
+		m_isLightControlDirty = true;
+	}
+	else if (key == input::Key::F3 && status.isDown)
+	{
+		m_lightsControl.useSpotLight = !m_lightsControl.useSpotLight;
+		m_isLightControlDirty = true;
+	}
+	else if (key == input::Key::space_bar && status.isDown)
+	{
+		m_stopLights = !m_stopLights;
 	}
 }
 
@@ -389,80 +472,150 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 {
 	XTEST_UNUSED_VAR(deltaSeconds);
 
+	
+	// create the model-view-projection matrix
+	XMMATRIX V = m_camera.GetViewMatrix();
+	XMStoreFloat4x4(&m_viewMatrix, V);
+
+	// create projection matrix
+	XMMATRIX P = XMLoadFloat4x4(&m_projectionMatrix);
+	
+	
+
 	m_d3dAnnotation->BeginEvent(L"update-constant-buffer");
 
-	XMMATRIX viewMatrix = m_camera.GetViewMatrix();
-	XMStoreFloat4x4(&m_viewMatrix, m_camera.GetViewMatrix());
-	XMMATRIX projectionMatrix = XMLoadFloat4x4(&m_projectionMatrix);
+
+	// plane PerObjectCB
 	{
-		// load the constant buffer data in the gpu
-		for (ModelsMap::iterator it = m_models.begin(); it != m_models.end(); it++) {
-			XMMATRIX worldMatrix = XMLoadFloat4x4(&it->second.WorldMatrix);
-			XMMATRIX rotation = XMMatrixRotationY(it->second.rotationSpeed * deltaSeconds);
-			worldMatrix *= rotation;
-			XMStoreFloat4x4(&it->second.WorldMatrix, worldMatrix);
-			XMMATRIX W_inverseTranspose = XMMatrixInverse(nullptr, worldMatrix);
-			XMMATRIX WVP = worldMatrix * viewMatrix * projectionMatrix;
+		XMMATRIX W = XMLoadFloat4x4(&m_plane.W);
+		XMMATRIX WVP = W*V*P;
 
-			D3D11_MAPPED_SUBRESOURCE mappedResource;
-			ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-				
-			// disable gpu access
-			XTEST_D3D_CHECK(m_d3dContext->Map(it->second.ConstantBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
-			PerObjectCB* constantBufferData = reinterpret_cast<PerObjectCB*>(mappedResource.pData);
-
-			// update the data
-			XMStoreFloat4x4(&constantBufferData->W, XMMatrixTranspose(worldMatrix));
-			XMStoreFloat4x4(&constantBufferData->W_inverseTranspose, W_inverseTranspose);
-			XMStoreFloat4x4(&constantBufferData->WVP, XMMatrixTranspose(WVP));
-			constantBufferData->material = it->second.material;
-
-			// enable gpu access
-			m_d3dContext->Unmap(it->second.ConstantBuffer.Get(), 0);
-		}
-	}
-	{
-		// Crate
-		XMMATRIX worldMatrix = XMLoadFloat4x4(&m_crate.WorldMatrix);
-		// XMMATRIX scale = XMLoadFloat4x4(&m_crate.ScaleMatrix);
-		// XMMATRIX rotation = XMMatrixRotationY(m_crate.rotationSpeed * deltaSeconds);
-		// worldMatrix *= scale;
-		// worldMatrix *= rotation;
-		XMMATRIX W_inverseTranspose = XMMatrixInverse(nullptr, worldMatrix);
-		XMStoreFloat4x4(&m_crate.WorldMatrix, worldMatrix);
-		XMMATRIX WVP = worldMatrix * viewMatrix * projectionMatrix;
-		for (CostantBuffersMap::iterator it = m_crate.ConstantBuffers.begin(); it != m_crate.ConstantBuffers.end(); it++) {
-			D3D11_MAPPED_SUBRESOURCE mappedResource;
-			ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-
-			// disable gpu access
-			XTEST_D3D_CHECK(m_d3dContext->Map(it->second.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
-			PerObjectCB* constantBufferData = reinterpret_cast<PerObjectCB*>(mappedResource.pData);
-
-			//update the data
-			XMStoreFloat4x4(&constantBufferData->W, XMMatrixTranspose(worldMatrix));
-			XMStoreFloat4x4(&constantBufferData->W_inverseTranspose, W_inverseTranspose);
-			XMStoreFloat4x4(&constantBufferData->WVP, XMMatrixTranspose(WVP));
-			constantBufferData->material = m_crate.materials[it->first];
-
-			// enable gpu access
-			m_d3dContext->Unmap(it->second.Get(), 0);
-		}
-	}
-
-	{
-		// Lights
 		D3D11_MAPPED_SUBRESOURCE mappedResource;
 		ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-		XTEST_D3D_CHECK(m_d3dContext->Map(m_lightsBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
-		PerFrameCB* constantBufferData = (PerFrameCB*)mappedResource.pData;
-		constantBufferData->directionalLight = m_directionalLight;
-		constantBufferData->pointLight = m_pointLight;
-		constantBufferData->spotLight = m_spotLight;
-		constantBufferData->eyePosW = m_camera.GetPosition();
-		m_d3dContext->Unmap(m_lightsBuffer.Get(), 0);
+
+		// disable gpu access
+		XTEST_D3D_CHECK(m_d3dContext->Map(m_plane.d3dPerObjectCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
+		PerObjectCB* perObjectCB = (PerObjectCB*)mappedResource.pData;
+
+		//update the data
+		XMStoreFloat4x4(&perObjectCB->W, XMMatrixTranspose(W));
+		XMStoreFloat4x4(&perObjectCB->WVP, XMMatrixTranspose(WVP));
+		XMStoreFloat4x4(&perObjectCB->W_inverseTraspose, XMMatrixInverse(nullptr, W));
+		perObjectCB->material = m_plane.material;
+
+		// enable gpu access
+		m_d3dContext->Unmap(m_plane.d3dPerObjectCB.Get(), 0);
 	}
-	
+
+
+	// sphere PerObjectCB
+	{
+		XMMATRIX W = XMLoadFloat4x4(&m_sphere.W);
+		XMMATRIX WVP = W*V*P;
+
+		D3D11_MAPPED_SUBRESOURCE mappedResource;
+		ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+
+		// disable gpu access
+		XTEST_D3D_CHECK(m_d3dContext->Map(m_sphere.d3dPerObjectCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
+		PerObjectCB* perObjectCB = (PerObjectCB*)mappedResource.pData;
+
+		//update the data
+		XMStoreFloat4x4(&perObjectCB->W, XMMatrixTranspose(W));
+		XMStoreFloat4x4(&perObjectCB->WVP, XMMatrixTranspose(WVP));
+		XMStoreFloat4x4(&perObjectCB->W_inverseTraspose, XMMatrixInverse(nullptr, W));
+		perObjectCB->material = m_sphere.material;
+
+		// enable gpu access
+		m_d3dContext->Unmap(m_sphere.d3dPerObjectCB.Get(), 0);
+	}
+
+
+	// crate PerObjectCB
+	{
+		XMMATRIX W = XMLoadFloat4x4(&m_crate.W);
+		XMMATRIX WVP = W*V*P;
+
+		for (const auto& namePairWithDesc : m_crate.mesh.meshDescriptorMapByName)
+		{
+			const std::string& shapeName = namePairWithDesc.first;
+		
+
+			D3D11_MAPPED_SUBRESOURCE mappedResource;
+			ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+
+			// disable gpu access
+			XTEST_D3D_CHECK(m_d3dContext->Map(m_crate.shapeAttributeMapByName[shapeName].d3dPerObjectCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
+			PerObjectCB* perObjectCB = (PerObjectCB*)mappedResource.pData;
+
+			//update the data
+			XMStoreFloat4x4(&perObjectCB->W, XMMatrixTranspose(W));
+			XMStoreFloat4x4(&perObjectCB->WVP, XMMatrixTranspose(WVP));
+			XMStoreFloat4x4(&perObjectCB->W_inverseTraspose, XMMatrixInverse(nullptr, W));
+			perObjectCB->material = m_crate.shapeAttributeMapByName[shapeName].material;
+
+			// enable gpu access
+			m_d3dContext->Unmap(m_crate.shapeAttributeMapByName[shapeName].d3dPerObjectCB.Get(), 0);
+		
+		}
+	}
+
+
+	// PerFrameCB
+	{
+
+		if (!m_stopLights)
+		{
+			XMMATRIX R = XMMatrixRotationY(math::ToRadians(30.f) * deltaSeconds);
+			XMStoreFloat3(&m_pointLight.posW, XMVector3Transform(XMLoadFloat3(&m_pointLight.posW), R));
+
+			R = XMMatrixRotationAxis(XMVectorSet(-1.f, 0.f, 1.f, 1.f), math::ToRadians(10.f) * deltaSeconds);
+			XMStoreFloat3(&m_dirLight.dirW, XMVector3Transform(XMLoadFloat3(&m_dirLight.dirW), R));
+		}
+
+		D3D11_MAPPED_SUBRESOURCE mappedResource;
+		ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+
+		// disable gpu access
+		XTEST_D3D_CHECK(m_d3dContext->Map(m_d3dPerFrameCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
+		PerFrameCB* perFrameCB = (PerFrameCB*)mappedResource.pData;
+
+		//update the data
+		perFrameCB->dirLight = m_dirLight;
+		perFrameCB->spotLight = m_spotLight;
+		perFrameCB->pointLight = m_pointLight;
+		perFrameCB->eyePosW = m_camera.GetPosition();
+
+		// enable gpu access
+		m_d3dContext->Unmap(m_d3dPerFrameCB.Get(), 0);
+	}
+
+
+	// RarelyChangedCB
+	{
+		if (m_isLightControlDirty)
+		{
+			D3D11_MAPPED_SUBRESOURCE mappedResource;
+			ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+
+			// disable gpu access
+			XTEST_D3D_CHECK(m_d3dContext->Map(m_d3dRarelyChangedCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
+			RarelyChangedCB* rarelyChangedCB = (RarelyChangedCB*)mappedResource.pData;
+
+			//update the data
+			rarelyChangedCB->useDirLight = m_lightsControl.useDirLight;
+			rarelyChangedCB->usePointLight = m_lightsControl.usePointLight;
+			rarelyChangedCB->useSpotLight = m_lightsControl.useSpotLight;
+
+			// enable gpu access
+			m_d3dContext->Unmap(m_d3dRarelyChangedCB.Get(), 0);
+
+			m_d3dContext->PSSetConstantBuffers(2, 1, m_d3dRarelyChangedCB.GetAddressOf());
+			m_isLightControlDirty = false;
+
+		}
+	}
+
 	m_d3dAnnotation->EndEvent();
 }
 
@@ -473,7 +626,7 @@ void LightsDemoApp::RenderScene()
 
 	// clear the frame
 	m_d3dContext->ClearDepthStencilView(m_depthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
-	m_d3dContext->ClearRenderTargetView(m_backBufferView.Get(), DirectX::Colors::Black);
+	m_d3dContext->ClearRenderTargetView(m_backBufferView.Get(), DirectX::Colors::DarkGray);
 
 	// set the shaders and the input layout
 	m_d3dContext->RSSetState(m_rasterizerState.Get());
@@ -481,49 +634,67 @@ void LightsDemoApp::RenderScene()
 	m_d3dContext->VSSetShader(m_vertexShader.Get(), nullptr, 0);
 	m_d3dContext->PSSetShader(m_pixelShader.Get(), nullptr, 0);
 
-	UINT bufferRegister = 1;
-	m_d3dContext->PSSetConstantBuffers(bufferRegister, 1, m_lightsBuffer.GetAddressOf());
-
-	// Shapes
-	for (ModelsMap::iterator it = m_models.begin(); it != m_models.end(); it++) {
-
-		// bind the constant data to the vertex shader
-		bufferRegister = 0;
-		m_d3dContext->VSSetConstantBuffers(bufferRegister, 1, it->second.ConstantBuffer.GetAddressOf());
-		m_d3dContext->PSSetConstantBuffers(bufferRegister, 1, it->second.ConstantBuffer.GetAddressOf());
-
-		// set what to draw
-		UINT stride = sizeof(MeshData::Vertex);
-		UINT offset = 0;
-		m_d3dContext->IASetVertexBuffers(0, 1, it->second.VertexBuffer.GetAddressOf(), &stride, &offset);
-		m_d3dContext->IASetIndexBuffer(it->second.IndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-		m_d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-		// draw
-		m_d3dContext->DrawIndexed(it->second.IndicesCount, 0, 0);
-	}
-
-	// Crate
-	// set what to draw
-	UINT stride = sizeof(MeshData::Vertex);
-	UINT offset = 0;
-	m_d3dContext->IASetVertexBuffers(0, 1, m_crate.VertexBuffer.GetAddressOf(), &stride, &offset);
-	m_d3dContext->IASetIndexBuffer(m_crate.IndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+	m_d3dContext->PSSetConstantBuffers(1, 1, m_d3dPerFrameCB.GetAddressOf());
 	m_d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	for (CostantBuffersMap::iterator it = m_crate.ConstantBuffers.begin(); it != m_crate.ConstantBuffers.end(); it++) {
+	// draw plane
+	{
 		// bind the constant data to the vertex shader
-		bufferRegister = 0;
-		m_d3dContext->VSSetConstantBuffers(bufferRegister, 1, it->second.GetAddressOf());
-		m_d3dContext->PSSetConstantBuffers(bufferRegister, 1, it->second.GetAddressOf());
-		// draw with offsets
-		m_d3dContext->DrawIndexed(m_crate.Data.meshDescriptorMapByName[it->first].indexCount, 
-								m_crate.Data.meshDescriptorMapByName[it->first].indexOffset, 
-								m_crate.Data.meshDescriptorMapByName[it->first].vertexOffset);
+		m_d3dContext->VSSetConstantBuffers(0, 1, m_plane.d3dPerObjectCB.GetAddressOf());
+		m_d3dContext->PSSetConstantBuffers(0, 1, m_plane.d3dPerObjectCB.GetAddressOf());
+
+		// set what to draw
+		UINT stride = sizeof(mesh::MeshData::Vertex);
+		UINT offset = 0;
+		m_d3dContext->IASetVertexBuffers(0, 1, m_plane.d3dVertexBuffer.GetAddressOf(), &stride, &offset);
+		m_d3dContext->IASetIndexBuffer(m_plane.d3dIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+
+		m_d3dContext->DrawIndexed(UINT(m_plane.mesh.indices.size()), 0, 0);
 	}
 
-	// present the frame
+	
+	// draw sphere
+	{
+		// bind the constant data to the vertex shader
+		m_d3dContext->VSSetConstantBuffers(0, 1, m_sphere.d3dPerObjectCB.GetAddressOf());
+		m_d3dContext->PSSetConstantBuffers(0, 1, m_sphere.d3dPerObjectCB.GetAddressOf());
+
+		// set what to draw
+		UINT stride = sizeof(mesh::MeshData::Vertex);
+		UINT offset = 0;
+		m_d3dContext->IASetVertexBuffers(0, 1, m_sphere.d3dVertexBuffer.GetAddressOf(), &stride, &offset);
+		m_d3dContext->IASetIndexBuffer(m_sphere.d3dIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+
+		m_d3dContext->DrawIndexed(UINT(m_sphere.mesh.indices.size()), 0, 0);
+	}
+
+	
+	// draw crate
+	{
+		// set what to draw
+		UINT stride = sizeof(mesh::MeshData::Vertex);
+		UINT offset = 0;
+		m_d3dContext->IASetVertexBuffers(0, 1, m_crate.d3dVertexBuffer.GetAddressOf(), &stride, &offset);
+		m_d3dContext->IASetIndexBuffer(m_crate.d3dIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+
+		for (const auto& namePairWithDesc : m_crate.mesh.meshDescriptorMapByName)
+		{
+			const std::string& shapeName = namePairWithDesc.first;
+			const mesh::GPFMesh::MeshDescriptor& meshDesc = m_crate.mesh.meshDescriptorMapByName[shapeName];
+
+			// bind the constant data to the vertex shader
+ 			m_d3dContext->VSSetConstantBuffers(0, 1, m_crate.shapeAttributeMapByName[shapeName].d3dPerObjectCB.GetAddressOf());
+ 			m_d3dContext->PSSetConstantBuffers(0, 1, m_crate.shapeAttributeMapByName[shapeName].d3dPerObjectCB.GetAddressOf());
+
+			// draw
+			m_d3dContext->DrawIndexed(meshDesc.indexCount, meshDesc.indexOffset, meshDesc.vertexOffset);
+		}
+		
+	}
+
+	
 	XTEST_D3D_CHECK(m_swapChain->Present(0, 0));
 
 	m_d3dAnnotation->EndEvent();
 }
+

@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include <demo/box_demo/box_demo_app.h>
 #include <demo/lights_demo/lights_demo_app.h>
 
 

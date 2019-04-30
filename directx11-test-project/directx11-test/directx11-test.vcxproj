@@ -111,6 +111,14 @@
     <ClInclude Include="common\int_types.h" />
     <ClInclude Include="demo\box_demo\box_demo_app.h" />
     <ClInclude Include="demo\lights_demo\lights_demo_app.h" />
+    <ClInclude Include="demo\textures_demo\textures_demo_app.h" />
+    <ClInclude Include="external_libs\directxtk\dds.h" />
+    <ClInclude Include="external_libs\directxtk\DDSTextureLoader.h" />
+    <ClInclude Include="external_libs\directxtk\DirectXHelpers.h" />
+    <ClInclude Include="external_libs\directxtk\LoaderHelpers.h" />
+    <ClInclude Include="external_libs\directxtk\pch.h" />
+    <ClInclude Include="external_libs\directxtk\PlatformHelpers.h" />
+    <ClInclude Include="external_libs\directxtk\WICTextureLoader.h" />
     <ClInclude Include="external_libs\tiny_obj_loader\tiny_obj_loader.h" />
     <ClInclude Include="file\binary_file.h" />
     <ClInclude Include="file\file_utils.h" />
@@ -137,6 +145,9 @@
     <ClCompile Include="common\assert.cpp" />
     <ClCompile Include="demo\box_demo\box_demo_app.cpp" />
     <ClCompile Include="demo\lights_demo\lights_demo_app.cpp" />
+    <ClCompile Include="demo\textures_demo\textures_demo_app.cpp" />
+    <ClCompile Include="external_libs\directxtk\DDSTextureLoader.cpp" />
+    <ClCompile Include="external_libs\directxtk\WICTextureLoader.cpp" />
     <ClCompile Include="external_libs\tiny_obj_loader\tiny_obj_loader.cc" />
     <ClCompile Include="file\binary_file.cpp" />
     <ClCompile Include="file\file_utils.cpp" />
@@ -178,6 +189,14 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="demo\lights_demo\lights_demo_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\textures_demo\textures_demo_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\textures_demo\textures_demo_VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>
