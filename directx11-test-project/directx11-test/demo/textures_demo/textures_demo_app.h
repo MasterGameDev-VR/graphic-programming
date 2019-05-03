@@ -14,6 +14,7 @@ namespace xtest {
 
 		/*
 			Use F1, F2, F3 key to switch on/off each light individually
+			Use F4, F5, F6 key to switch on/off each texture mapping type
 			Use Spacebar to pause lights motion
 			Use F key to reframe the camera to the origin
 			Use right mouse button to pan the view, left mouse button to rotate and mouse wheel to zoom in/out
@@ -69,7 +70,11 @@ namespace xtest {
 				DirectX::XMFLOAT4X4 W;
 				DirectX::XMFLOAT4X4 W_inverseTraspose;
 				DirectX::XMFLOAT4X4 WVP;
+				DirectX::XMFLOAT4X4 TexcoordMatrix;
 				Material material;
+				DirectX::XMFLOAT4X4 MovingTexcoordMatrix;
+				int32 hasMovingTexture;
+				DirectX::XMFLOAT3 _explicit_pad_;
 			};
 
 			struct PerFrameCB
@@ -86,36 +91,33 @@ namespace xtest {
 				int32 useDirLight;
 				int32 usePointLight;
 				int32 useSpotLight;
-				int32 _explicit_pad_;
+				int32 useDiffuseTexture;
+				int32 useNormalTexture;
+				int32 useGlossTexture;
+				int32 _explicit_pad_1_;
+				int32 _explicit_pad_2_;
 			};
-
 
 			struct Renderable
 			{
 				mesh::MeshData mesh;
 				DirectX::XMFLOAT4X4 W;
+				DirectX::XMFLOAT4X4 textureMatrix;
+				DirectX::XMFLOAT4X4 movingTextureMatrix;
 				Material material;
 				Microsoft::WRL::ComPtr<ID3D11Buffer> d3dPerObjectCB;
 				Microsoft::WRL::ComPtr<ID3D11Buffer> d3dVertexBuffer;
 				Microsoft::WRL::ComPtr<ID3D11Buffer> d3dIndexBuffer;
+				Microsoft::WRL::ComPtr<ID3D11Resource> texture;
+				Microsoft::WRL::ComPtr<ID3D11Resource> movingTexture;
+				Microsoft::WRL::ComPtr<ID3D11Resource> normalMap;
+				Microsoft::WRL::ComPtr<ID3D11Resource> glossMap;
+				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> textureView;
+				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> movingTextureView;
+				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> normalMapView;
+				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> glossMapView;
+				bool hasMovingTexture;
 			};
-
-
-			struct GPFRenderable
-			{
-				struct ShapeAttributes
-				{
-					Material material;
-					Microsoft::WRL::ComPtr<ID3D11Buffer> d3dPerObjectCB;
-				};
-
-				mesh::GPFMesh mesh;
-				std::map<std::string, ShapeAttributes> shapeAttributeMapByName;
-				DirectX::XMFLOAT4X4 W;
-				Microsoft::WRL::ComPtr<ID3D11Buffer> d3dVertexBuffer;
-				Microsoft::WRL::ComPtr<ID3D11Buffer> d3dIndexBuffer;
-			};
-
 
 			TexturesDemoApp(HINSTANCE instance, const application::WindowSettings& windowSettings, const application::DirectxSettings& directxSettings, uint32 fps = 60);
 			~TexturesDemoApp();
@@ -138,6 +140,7 @@ namespace xtest {
 		private:
 
 			void InitMatrices();
+			void InitTextures();
 			void InitShaders();
 			void InitRenderable();
 			void InitLights();
@@ -152,14 +155,15 @@ namespace xtest {
 			DirectionalLight m_dirLight;
 			SpotLight m_spotLight;
 			std::array<PointLight, 5> m_pointLights;
-			RarelyChangedCB m_lightsControl;
-			bool m_isLightControlDirty;
+			RarelyChangedCB m_controls;
+			bool m_isControlsDirty;
 			bool m_stopLights;
 
-			Renderable m_sphere;
-			Renderable m_plane;
-			GPFRenderable m_crate;
+			std::vector<Renderable> m_renderables;
 
+			// Texture
+			Microsoft::WRL::ComPtr<ID3D11SamplerState> m_textureSampler;
+			
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dPerFrameCB;
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_d3dRarelyChangedCB;
 			Microsoft::WRL::ComPtr<ID3D11VertexShader> m_vertexShader;

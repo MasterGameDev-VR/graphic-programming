@@ -293,6 +293,16 @@ xtest::mesh::MeshData xtest::mesh::GenerateTorus(float radius, float ringRadius,
 			XMVECTOR centerPosition = XMLoadFloat3(&center.position);
 			XMStoreFloat3(&vertex.normal, XMVector3Normalize(position - centerPosition));
 
+			// Partial derivative of P with respect to theta
+			vertex.tangentU.x = -ringRadius * cosf(phi) * cosf(theta) + center.position.x;
+			vertex.tangentU.y = 0.0f;
+			vertex.tangentU.z = ringRadius * sinf(phi) * cosf(theta) + center.position.z;						
+			XMVECTOR tangentU = XMLoadFloat3(&vertex.tangentU);
+			XMStoreFloat3(&vertex.tangentU, XMVector3Normalize(tangentU));
+			
+			vertex.uv.x = theta / XM_2PI;
+			vertex.uv.y = phi / XM_PI;
+
 			mesh.vertices.push_back(vertex);
 		}
 	}
