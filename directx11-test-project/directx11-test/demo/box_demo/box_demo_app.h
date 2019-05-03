@@ -1,20 +1,18 @@
 #pragma once
 
 #include <application/directx_app.h>
+#include <input/keyboard.h>
+#include <camera/spherical_camera.h>
 
 namespace xtest {
 namespace demo {
 
-	class BoxDemoApp : public application::DirectxApp
+	class BoxDemoApp : public application::DirectxApp, public input::MouseListener, public input::KeyboardListener
 	{
 	public:
-		struct VertexOut {
-			DirectX::XMFLOAT4 posH;
-			DirectX::XMFLOAT4 color;
-		};
 
 		struct VertexIn {
-			DirectX::XMFLOAT3 posL;
+			DirectX::XMFLOAT3 pos;
 			DirectX::XMFLOAT4 color;
 		};
 
@@ -37,6 +35,9 @@ namespace demo {
 		virtual void UpdateScene(float deltaSeconds) override;
 		virtual void RenderScene() override;
 
+		virtual void OnWheelScroll(input::ScrollStatus scroll) override;
+		virtual void OnMouseMove(const DirectX::XMINT2& movement, const DirectX::XMINT2& currentPos) override;
+		virtual void OnKeyStatusChange(input::Key key, const input::KeyStatus& status) override;
 
 	private:
 
@@ -49,6 +50,7 @@ namespace demo {
 		DirectX::XMFLOAT4X4 m_worldMatrix;
 		DirectX::XMFLOAT4X4 m_projectionMatrix;
 
+		camera::SphericalCamera m_camera;
 
 		Microsoft::WRL::ComPtr<ID3D11Buffer> m_vertexBuffer;
 		Microsoft::WRL::ComPtr<ID3D11Buffer> m_indexBuffer;

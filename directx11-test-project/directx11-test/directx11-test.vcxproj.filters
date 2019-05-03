@@ -37,6 +37,27 @@
     <Filter Include="camera">
       <UniqueIdentifier>{c7d884de-a817-42ef-b968-3a1c1a2b2fec}</UniqueIdentifier>
     </Filter>
+    <Filter Include="demo\lights_demo">
+      <UniqueIdentifier>{b8bba18c-6161-4a4b-8cf1-465afa800812}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="service">
+      <UniqueIdentifier>{bc56cb19-8bf0-4f00-8bb1-a3b8fd5b3021}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external_libs">
+      <UniqueIdentifier>{5e4aff38-c33c-4dfe-adb1-f095c6b904f1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="application\resources\data">
+      <UniqueIdentifier>{fc3576d5-4245-4893-b821-375cc5c0e9ec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external_libs\tiny_obj_laoder">
+      <UniqueIdentifier>{04806977-1a85-4e8f-ab7c-d1950c923f14}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="demo\textures_demo">
+      <UniqueIdentifier>{25f43c5a-8ec0-4717-b18d-715cb0ddb92a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external_libs\directxtk">
+      <UniqueIdentifier>{2b35d0b8-0e59-4c7e-91c5-aa1249fee502}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\resources\Resource.h">
@@ -104,6 +125,42 @@
     <ClInclude Include="camera\spherical_camera.h">
       <Filter>camera</Filter>
     </ClInclude>
+    <ClInclude Include="demo\lights_demo\lights_demo_app.h">
+      <Filter>demo\lights_demo</Filter>
+    </ClInclude>
+    <ClInclude Include="service\locator.h">
+      <Filter>service</Filter>
+    </ClInclude>
+    <ClInclude Include="external_libs\tiny_obj_loader\tiny_obj_loader.h">
+      <Filter>external_libs\tiny_obj_laoder</Filter>
+    </ClInclude>
+    <ClInclude Include="mesh\mesh_format.h">
+      <Filter>mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="demo\textures_demo\textures_demo_app.h">
+      <Filter>demo\textures_demo</Filter>
+    </ClInclude>
+    <ClInclude Include="external_libs\directxtk\dds.h">
+      <Filter>external_libs\directxtk</Filter>
+    </ClInclude>
+    <ClInclude Include="external_libs\directxtk\DDSTextureLoader.h">
+      <Filter>external_libs\directxtk</Filter>
+    </ClInclude>
+    <ClInclude Include="external_libs\directxtk\DirectXHelpers.h">
+      <Filter>external_libs\directxtk</Filter>
+    </ClInclude>
+    <ClInclude Include="external_libs\directxtk\LoaderHelpers.h">
+      <Filter>external_libs\directxtk</Filter>
+    </ClInclude>
+    <ClInclude Include="external_libs\directxtk\pch.h">
+      <Filter>external_libs\directxtk</Filter>
+    </ClInclude>
+    <ClInclude Include="external_libs\directxtk\PlatformHelpers.h">
+      <Filter>external_libs\directxtk</Filter>
+    </ClInclude>
+    <ClInclude Include="external_libs\directxtk\WICTextureLoader.h">
+      <Filter>external_libs\directxtk</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -153,6 +210,27 @@
     <ClCompile Include="camera\spherical_camera.cpp">
       <Filter>camera</Filter>
     </ClCompile>
+    <ClCompile Include="demo\lights_demo\lights_demo_app.cpp">
+      <Filter>demo\lights_demo</Filter>
+    </ClCompile>
+    <ClCompile Include="service\locator.cpp">
+      <Filter>service</Filter>
+    </ClCompile>
+    <ClCompile Include="external_libs\tiny_obj_loader\tiny_obj_loader.cc">
+      <Filter>external_libs\tiny_obj_laoder</Filter>
+    </ClCompile>
+    <ClCompile Include="mesh\mesh_format.cpp">
+      <Filter>mesh</Filter>
+    </ClCompile>
+    <ClCompile Include="demo\textures_demo\textures_demo_app.cpp">
+      <Filter>demo\textures_demo</Filter>
+    </ClCompile>
+    <ClCompile Include="external_libs\directxtk\DDSTextureLoader.cpp">
+      <Filter>external_libs\directxtk</Filter>
+    </ClCompile>
+    <ClCompile Include="external_libs\directxtk\WICTextureLoader.cpp">
+      <Filter>external_libs\directxtk</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="application\resources\small.ico">
@@ -173,6 +251,18 @@
     </FxCompile>
     <FxCompile Include="demo\box_demo\box_demo_VS.hlsl">
       <Filter>demo\box_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\lights_demo\lights_demo_VS.hlsl">
+      <Filter>demo\lights_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\lights_demo\lights_demo_PS.hlsl">
+      <Filter>demo\lights_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\textures_demo\textures_demo_PS.hlsl">
+      <Filter>demo\textures_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\textures_demo\textures_demo_VS.hlsl">
+      <Filter>demo\textures_demo</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include <demo/box_demo/box_demo_app.h>
+#include <demo/textures_demo/textures_demo_app.h>
 
 
 using namespace xtest::application;
@@ -15,19 +16,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(nCmdShow);
 
 	WindowSettings windowSettings;
-//	windowSettings.width = 1920;
-//	windowSettings.height = 1080;
-	//windowSettings.width = 1768;
-	//windowSettings.height = 992;
-	windowSettings.width = 1024;
-	windowSettings.height = 768;
+	windowSettings.width = 1280;
+	windowSettings.height = 720;
 	windowSettings.fullScreen = false;
 
 	DirectxSettings directxSettings;
 	directxSettings.showFrameStats = true;
 	
 
-	typedef xtest::demo::BoxDemoApp TestApp;
+	typedef xtest::demo::TextureDemoApp TestApp;
 
 	TestApp app(hInstance, windowSettings, directxSettings);
 	app.Init();
