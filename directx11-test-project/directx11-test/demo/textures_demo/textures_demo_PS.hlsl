@@ -309,18 +309,18 @@ float4 main(VertexOut pin) : SV_TARGET
 	}
 	
 	float4 diffuseColor = 1.0f;
-	if(useDiffuseTexture) 
+	if (useDiffuseTexture)
+	{
 		diffuseColor = diffuseTexture.Sample(textureSampler, pin.uv);
-
-	float4 finalColor = diffuseColor * (totalAmbient + totalDiffuse) + totalSpecular;
-
-	if (HasMovingTexture) {
-		float4 movingDiffuseColor = movingDiffuseTexture.Sample(textureSampler, pin.uvMov);
-		finalColor += movingDiffuseColor * (totalAmbient + totalDiffuse);
+		if (HasMovingTexture) 
+		{
+			diffuseColor += movingDiffuseTexture.Sample(textureSampler, pin.uvMov);
+		}
 	}
-		
+	
+	float4 finalColor = diffuseColor * (totalAmbient + totalDiffuse) + totalSpecular;
+	
 	finalColor.a = totalDiffuse.a;
 
 	return finalColor;
-
 }
