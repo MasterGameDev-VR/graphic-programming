@@ -41,7 +41,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	
 	typedef xtest::demo::LightsDemoApp MyTestApp;
 	MyTestApp myApp(hInstance, windowSettings, directxSettings);
-
 	myApp.Init();
 	myApp.Run();
 	

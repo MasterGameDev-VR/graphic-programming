@@ -239,6 +239,8 @@ namespace xtest {
 			Microsoft::WRL::ComPtr<ID3D11InputLayout> m_inputLayout;
 			Microsoft::WRL::ComPtr<ID3D11RasterizerState> m_rasterizerState;
 
+			std::wstring m_rootString;
+
 		};
 
 	} // demo

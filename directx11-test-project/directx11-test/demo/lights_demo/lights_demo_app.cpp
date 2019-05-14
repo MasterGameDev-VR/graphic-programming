@@ -42,7 +42,12 @@ LightsDemoApp::LightsDemoApp(HINSTANCE instance,
 	, m_pixelShader(nullptr)
 	, m_inputLayout(nullptr)
 	, m_rasterizerState(nullptr)
-{}
+	, m_rootString(GetRootDir())
+{
+	if (std::wstring::npos != m_rootString.find(L"builds\\x64\\Debug", 74)) {
+		m_rootString = m_rootString.erase(74, m_rootString.length());
+	}
+}
 
 
 LightsDemoApp::~LightsDemoApp()
@@ -205,22 +210,20 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		D3D11_SUBRESOURCE_DATA indexInitdata;
 		indexInitdata.pSysMem = &m_plane.mesh.indices[0];
 		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &m_plane.d3dIndexBuffer));
-
-		//diffuseTexture
-		wchar_t* diffTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\ground\\ground_color.png";
+		
+		std::wstring diffTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\ground\\ground_color.png");
+		diffTextFileNameStr.insert(0, m_rootString);
+		std::wstring normalMapTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\ground\\ground_norm.png");
+		normalMapTextFileNameStr.insert(0, m_rootString);
+		std::wstring glossMapTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\ground\\ground_gloss.png");
+		glossMapTextFileNameStr.insert(0, m_rootString);
 		//discard explicit creation
 		//XTEST_D3D_CHECK(CreateWICTextureFromFileEx(m_d3dDevice.Get(),m_d3dContext.Get(), diffTextFileName,0,D3D11_USAGE_DYNAMIC,D3D11_BIND_SHADER_RESOURCE,D3D11_CPU_ACCESS_WRITE,D3D11_RESOURCE_MISC_TILED,0,&m_plane.d3dResourceDiffText, &m_plane.d3dShaderResourceViewDiffText));
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName,&m_plane.d3dResourceDiffText, &m_plane.d3dShaderResourceViewDiffText,0Ui64));
-		
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileNameStr.data(),&m_plane.d3dResourceDiffText, &m_plane.d3dShaderResourceViewDiffText,0Ui64));
 		//normal map Texture
-		wchar_t* normalMapTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\ground\\ground_norm.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileName, &m_plane.d3dResourceNormalMapText, &m_plane.d3dShaderResourceViewNormalMapText, 0Ui64));
-
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileNameStr.data(), &m_plane.d3dResourceNormalMapText, &m_plane.d3dShaderResourceViewNormalMapText, 0Ui64));
 		//gloss map Texture
-		wchar_t* glossMapTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\ground\\ground_gloss.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName, &m_plane.d3dResourceGlossMapText, &m_plane.d3dShaderResourceViewGlossMapText, 0Ui64));
-
-
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileNameStr.data(), &m_plane.d3dResourceGlossMapText, &m_plane.d3dShaderResourceViewGlossMapText, 0Ui64));
 	}
 
 
@@ -279,23 +282,25 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		indexInitdata.pSysMem = &m_sphere.mesh.indices[0];
 		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &m_sphere.d3dIndexBuffer));
 
+		std::wstring diffTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_color.png");
+		diffTextFileNameStr.insert(0, m_rootString);
+		std::wstring normalMapTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_norm.png");
+		normalMapTextFileNameStr.insert(0, m_rootString);
+		std::wstring glossMapTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_gloss.png");
+		glossMapTextFileNameStr.insert(0, m_rootString);
+		std::wstring motionDiffTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\sci-fi\\sci_fi_color.png");
+		motionDiffTextFileNameStr.insert(0, m_rootString);
 
 		//diffuseTexture
-		wchar_t* diffTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_color.png";
 		//discard explicit creation
 		//XTEST_D3D_CHECK(CreateWICTextureFromFileEx(m_d3dDevice.Get(),m_d3dContext.Get(), diffTextFileName,0,D3D11_USAGE_DYNAMIC,D3D11_BIND_SHADER_RESOURCE,D3D11_CPU_ACCESS_WRITE,D3D11_RESOURCE_MISC_TILED,0,&m_plane.d3dResourceDiffText, &m_plane.d3dShaderResourceViewDiffText));
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName, &m_sphere.d3dResourceDiffText, &m_sphere.d3dShaderResourceViewDiffText, 0Ui64));
-
-
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileNameStr.data(), &m_sphere.d3dResourceDiffText, &m_sphere.d3dShaderResourceViewDiffText, 0Ui64));
 		//normal map Texture
-		wchar_t* normalMapTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_norm.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileName, &m_sphere.d3dResourceNormalMapText, &m_sphere.d3dShaderResourceViewNormalMapText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileNameStr.data(), &m_sphere.d3dResourceNormalMapText, &m_sphere.d3dShaderResourceViewNormalMapText, 0Ui64));
 		//gloss map Texture
-		wchar_t* glossMapTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_gloss.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName, &m_sphere.d3dResourceGlossMapText, &m_sphere.d3dShaderResourceViewGlossMapText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileNameStr.data(), &m_sphere.d3dResourceGlossMapText, &m_sphere.d3dShaderResourceViewGlossMapText, 0Ui64));
 		//motion color Texture - diffuse
-		wchar_t* motionDiffTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\sci-fi\\sci_fi_color.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), motionDiffTextFileName, &m_sphere.d3dResourceMotionDiffText, &m_sphere.d3dShaderResourceViewMotionDiffText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), motionDiffTextFileNameStr.data(), &m_sphere.d3dResourceMotionDiffText, &m_sphere.d3dShaderResourceViewMotionDiffText, 0Ui64));
 
 	}
 	// torus
@@ -352,22 +357,26 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		indexInitdata.pSysMem = &m_torus.mesh.indices[0];
 		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &m_torus.d3dIndexBuffer));
 
+		std::wstring diffTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\jeans\\jeans_color.png");
+		diffTextFileNameStr.insert(0, m_rootString);
+		std::wstring normalMapTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\jeans\\jeans_norm.png");
+		normalMapTextFileNameStr.insert(0, m_rootString);
+		std::wstring glossMapTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\jeans\\jeans_gloss.png");
+		glossMapTextFileNameStr.insert(0, m_rootString);
+		std::wstring motionDiffTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\twine\\twine_color.png");
+		motionDiffTextFileNameStr.insert(0, m_rootString);
+
 
 		//diffuseTexture
-		wchar_t* diffTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\jeans\\jeans_color.png";
 		//discard explicit creation
 		//XTEST_D3D_CHECK(CreateWICTextureFromFileEx(m_d3dDevice.Get(),m_d3dContext.Get(), diffTextFileName,0,D3D11_USAGE_DYNAMIC,D3D11_BIND_SHADER_RESOURCE,D3D11_CPU_ACCESS_WRITE,D3D11_RESOURCE_MISC_TILED,0,&m_plane.d3dResourceDiffText, &m_plane.d3dShaderResourceViewDiffText));
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName, &m_torus.d3dResourceDiffText, &m_torus.d3dShaderResourceViewDiffText, 0Ui64));
-
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileNameStr.data(), &m_torus.d3dResourceDiffText, &m_torus.d3dShaderResourceViewDiffText, 0Ui64));
 		//normal map Texture
-		wchar_t* normalMapTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\jeans\\jeans_norm.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileName, &m_torus.d3dResourceNormalMapText, &m_torus.d3dShaderResourceViewNormalMapText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileNameStr.data(), &m_torus.d3dResourceNormalMapText, &m_torus.d3dShaderResourceViewNormalMapText, 0Ui64));
 		//gloss map Texture
-		wchar_t* glossMapTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\jeans\\jeans_gloss.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName, &m_torus.d3dResourceGlossMapText, &m_torus.d3dShaderResourceViewGlossMapText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileNameStr.data(), &m_torus.d3dResourceGlossMapText, &m_torus.d3dShaderResourceViewGlossMapText, 0Ui64));
 		//motion color Texture - diffuse
-		wchar_t* motionDiffTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\twine\\twine_color.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), motionDiffTextFileName, &m_torus.d3dResourceMotionDiffText, &m_torus.d3dShaderResourceViewMotionDiffText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), motionDiffTextFileNameStr.data(), &m_torus.d3dResourceMotionDiffText, &m_torus.d3dShaderResourceViewMotionDiffText, 0Ui64));
 
 		
 	}
@@ -420,20 +429,24 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		indexInitdata.pSysMem = &m_box.mesh.indices[0];
 		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &m_box.d3dIndexBuffer));
 
+		std::wstring diffTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\wet-stone\\wet_stone_color.png");
+		diffTextFileNameStr.insert(0, m_rootString);
+		std::wstring normalMapTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\wet-stone\\wet_stone_norm.png");
+		normalMapTextFileNameStr.insert(0, m_rootString);
+		std::wstring glossMapTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\wet-stone\\wet_stone_gloss.png");
+		glossMapTextFileNameStr.insert(0, m_rootString);
+
 
 		//diffuseTexture
-		wchar_t* diffTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\wet-stone\\wet_stone_color.png";
 		//discard explicit creation
 		//XTEST_D3D_CHECK(CreateWICTextureFromFileEx(m_d3dDevice.Get(),m_d3dContext.Get(), diffTextFileName,0,D3D11_USAGE_DYNAMIC,D3D11_BIND_SHADER_RESOURCE,D3D11_CPU_ACCESS_WRITE,D3D11_RESOURCE_MISC_TILED,0,&m_plane.d3dResourceDiffText, &m_plane.d3dShaderResourceViewDiffText));
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName, &m_box.d3dResourceDiffText, &m_box.d3dShaderResourceViewDiffText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileNameStr.data(), &m_box.d3dResourceDiffText, &m_box.d3dShaderResourceViewDiffText, 0Ui64));
 
 		//normal map Texture
-		wchar_t* normalMapTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\wet-stone\\wet_stone_norm.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileName, &m_box.d3dResourceNormalMapText, &m_box.d3dShaderResourceViewNormalMapText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileNameStr.data(), &m_box.d3dResourceNormalMapText, &m_box.d3dShaderResourceViewNormalMapText, 0Ui64));
 
 		//gloss map Texture
-		wchar_t* glossMapTextFileName = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\wet-stone\\wet_stone_gloss.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName, &m_box.d3dResourceGlossMapText, &m_box.d3dShaderResourceViewGlossMapText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileNameStr.data(), &m_box.d3dResourceGlossMapText, &m_box.d3dShaderResourceViewGlossMapText, 0Ui64));
 
 	}
 
@@ -459,16 +472,20 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		bottomMat.ambient = { 0.8f, 0.3f, 0.1f, 1.0f };
 		bottomMat.diffuse = { 0.94f, 0.40f, 0.14f, 1.0f };
 		bottomMat.specular = { 0.94f, 0.40f, 0.14f, 30.0f };
+
+		std::wstring diffTextFileName_bottomStr(L"directx11-test\\application\\resources\\data\\3d-objects\\wood\\wood_color.png");
+		diffTextFileName_bottomStr.insert(0, m_rootString);
+		std::wstring normalMapTextFileName_bottomStr(L"directx11-test\\application\\resources\\data\\3d-objects\\wood\\wood_norm.png");
+		normalMapTextFileName_bottomStr.insert(0, m_rootString);
+		std::wstring glossMapTextFileName_bottomStr(L"directx11-test\\application\\resources\\data\\3d-objects\\wood\\wood_gloss.png");
+		glossMapTextFileName_bottomStr.insert(0, m_rootString);
 		
 		//diffuseTexture
-		wchar_t* diffTextFileName_bottom = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\wood\\wood_color.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName_bottom, &m_crate.shapeAttributeMapByName["bottom_1"].d3dResourceDiffText , &m_crate.shapeAttributeMapByName["bottom_1"].d3dShaderResourceViewDiffText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName_bottomStr.data(), &m_crate.shapeAttributeMapByName["bottom_1"].d3dResourceDiffText , &m_crate.shapeAttributeMapByName["bottom_1"].d3dShaderResourceViewDiffText, 0Ui64));
      	//normal map Texture
-		wchar_t* normalMapTextFileName_bottom = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\wood\\wood_norm.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileName_bottom, &m_crate.shapeAttributeMapByName["bottom_1"].d3dResourceNormalMapText, &m_crate.shapeAttributeMapByName["bottom_1"].d3dShaderResourceViewNormalMapText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileName_bottomStr.data(), &m_crate.shapeAttributeMapByName["bottom_1"].d3dResourceNormalMapText, &m_crate.shapeAttributeMapByName["bottom_1"].d3dShaderResourceViewNormalMapText, 0Ui64));
 		//gloss map Texture
-		wchar_t* glossMapTextFileName_bottom = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\wood\\wood_gloss.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName_bottom, &m_crate.shapeAttributeMapByName["bottom_1"].d3dResourceGlossMapText, &m_crate.shapeAttributeMapByName["bottom_1"].d3dShaderResourceViewGlossMapText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName_bottomStr.data(), &m_crate.shapeAttributeMapByName["bottom_1"].d3dResourceGlossMapText, &m_crate.shapeAttributeMapByName["bottom_1"].d3dShaderResourceViewGlossMapText, 0Ui64));
 
 
 		//top material
@@ -476,31 +493,42 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		topMat.ambient = { 0.8f, 0.8f, 0.8f, 1.0f };
 		topMat.diffuse = { 0.9f, 0.9f, 0.9f, 1.0f };
 		topMat.specular = { 0.9f, 0.9f, 0.9f, 550.0f };
+
+		std::wstring diffTextFileName_topStr(L"directx11-test\\application\\resources\\data\\3d-objects\\fabric\\fabric_color.png");
+		diffTextFileName_topStr.insert(0, m_rootString);
+		std::wstring normalMapTextFileName_topStr(L"directx11-test\\application\\resources\\data\\3d-objects\\fabric\\fabric_norm.png");
+		normalMapTextFileName_topStr.insert(0, m_rootString);
+		std::wstring glossMapTextFileName_topStr(L"directx11-test\\application\\resources\\data\\3d-objects\\fabric\\fabric_gloss.png");
+		glossMapTextFileName_topStr.insert(0, m_rootString);
+
 		
 		//diffuseTexture
-		wchar_t* diffTextFileName_top = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\fabric\\fabric_color.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName_top, &m_crate.shapeAttributeMapByName["top_2"].d3dResourceDiffText, &m_crate.shapeAttributeMapByName["top_2"].d3dShaderResourceViewDiffText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName_topStr.data(), &m_crate.shapeAttributeMapByName["top_2"].d3dResourceDiffText, &m_crate.shapeAttributeMapByName["top_2"].d3dShaderResourceViewDiffText, 0Ui64));
 		//normal map Texture
-		wchar_t* normalMapTextFileName_top = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\fabric\\fabric_norm.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileName_top, &m_crate.shapeAttributeMapByName["top_2"].d3dResourceNormalMapText, &m_crate.shapeAttributeMapByName["top_2"].d3dShaderResourceViewNormalMapText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileName_topStr.data(), &m_crate.shapeAttributeMapByName["top_2"].d3dResourceNormalMapText, &m_crate.shapeAttributeMapByName["top_2"].d3dShaderResourceViewNormalMapText, 0Ui64));
 		//gloss map Texture
-		wchar_t* glossMapTextFileName_top = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\fabric\\fabric_gloss.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName_top, &m_crate.shapeAttributeMapByName["top_2"].d3dResourceGlossMapText, &m_crate.shapeAttributeMapByName["top_2"].d3dShaderResourceViewGlossMapText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName_topStr.data(), &m_crate.shapeAttributeMapByName["top_2"].d3dResourceGlossMapText, &m_crate.shapeAttributeMapByName["top_2"].d3dShaderResourceViewGlossMapText, 0Ui64));
 
 		//top handles material
 		Material& topHandleMat = m_crate.shapeAttributeMapByName["top_handles_4"].material;
 		topHandleMat.ambient = { 0.3f, 0.3f, 0.3f, 1.0f };
 		topHandleMat.diffuse = { 0.4f, 0.4f, 0.4f, 1.0f };
 		topHandleMat.specular = { 0.9f, 0.9f, 0.9f, 120.0f };
+
+		std::wstring diffTextFileName_top_handlesStr(L"directx11-test\\application\\resources\\data\\3d-objects\\plastic-cover\\plastic_cover_color.png");
+		diffTextFileName_top_handlesStr.insert(0, m_rootString);
+		std::wstring normalMapTextFileName_top_handlesStr(L"directx11-test\\application\\resources\\data\\3d-objects\\plastic-cover\\plastic_cover_norm.png");
+		normalMapTextFileName_top_handlesStr.insert(0, m_rootString);
+		std::wstring glossMapTextFileName_top_handlesStr(L"directx11-test\\application\\resources\\data\\3d-objects\\plastic-cover\\plastic_cover_gloss.png");
+		glossMapTextFileName_top_handlesStr.insert(0, m_rootString);
+
+
 		//diffuseTexture
-		wchar_t* diffTextFileName_top_handles = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\plastic-cover\\plastic_cover_color.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName_top_handles, &m_crate.shapeAttributeMapByName["top_handles_4"].d3dResourceDiffText, &m_crate.shapeAttributeMapByName["top_handles_4"].d3dShaderResourceViewDiffText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName_top_handlesStr.data(), &m_crate.shapeAttributeMapByName["top_handles_4"].d3dResourceDiffText, &m_crate.shapeAttributeMapByName["top_handles_4"].d3dShaderResourceViewDiffText, 0Ui64));
 		//normal map Texture
-		wchar_t* normalMapTextFileName_top_handles = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\plastic-cover\\plastic_cover_norm.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileName_top_handles, &m_crate.shapeAttributeMapByName["top_handles_4"].d3dResourceNormalMapText, &m_crate.shapeAttributeMapByName["top_handles_4"].d3dShaderResourceViewNormalMapText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileName_top_handlesStr.data(), &m_crate.shapeAttributeMapByName["top_handles_4"].d3dResourceNormalMapText, &m_crate.shapeAttributeMapByName["top_handles_4"].d3dShaderResourceViewNormalMapText, 0Ui64));
 		//gloss map Texture
-		wchar_t* glossMapTextFileName_top_handles = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\plastic-cover\\plastic_cover_gloss.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName_top_handles, &m_crate.shapeAttributeMapByName["top_handles_4"].d3dResourceGlossMapText, &m_crate.shapeAttributeMapByName["top_handles_4"].d3dShaderResourceViewGlossMapText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName_top_handlesStr.data(), &m_crate.shapeAttributeMapByName["top_handles_4"].d3dResourceGlossMapText, &m_crate.shapeAttributeMapByName["top_handles_4"].d3dShaderResourceViewGlossMapText, 0Ui64));
 
 
 		//handle material
@@ -509,14 +537,19 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		handleMat.diffuse = { 0.67f, 0.61f, 0.1f, 1.0f };
 		handleMat.specular = { 0.67f, 0.61f, 0.1f, 200.0f };
 
-		wchar_t* diffTextFileName_handles = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_color.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName_handles, &m_crate.shapeAttributeMapByName["handles_8"].d3dResourceDiffText, &m_crate.shapeAttributeMapByName["handles_8"].d3dShaderResourceViewDiffText, 0Ui64));
+		std::wstring diffTextFileName_handlesStr(L"directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_color.png");
+		diffTextFileName_handlesStr.insert(0, m_rootString);
+		std::wstring normalMapTextFileName_handlesStr(L"directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_norm.png");
+		normalMapTextFileName_handlesStr.insert(0, m_rootString);
+		std::wstring glossMapTextFileName_handlesStr(L"directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_gloss.png");
+		glossMapTextFileName_handlesStr.insert(0, m_rootString);
+
+
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName_handlesStr.data(), &m_crate.shapeAttributeMapByName["handles_8"].d3dResourceDiffText, &m_crate.shapeAttributeMapByName["handles_8"].d3dShaderResourceViewDiffText, 0Ui64));
 		//normal map Texture
-		wchar_t* normalMapTextFileName_handles = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_norm.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileName_handles, &m_crate.shapeAttributeMapByName["handles_8"].d3dResourceNormalMapText, &m_crate.shapeAttributeMapByName["handles_8"].d3dShaderResourceViewNormalMapText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileName_handlesStr.data(), &m_crate.shapeAttributeMapByName["handles_8"].d3dResourceNormalMapText, &m_crate.shapeAttributeMapByName["handles_8"].d3dShaderResourceViewNormalMapText, 0Ui64));
 		//gloss map Texture
-		wchar_t* glossMapTextFileName_handles = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_gloss.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName_handles, &m_crate.shapeAttributeMapByName["handles_8"].d3dResourceGlossMapText, &m_crate.shapeAttributeMapByName["handles_8"].d3dShaderResourceViewGlossMapText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName_handlesStr.data(), &m_crate.shapeAttributeMapByName["handles_8"].d3dResourceGlossMapText, &m_crate.shapeAttributeMapByName["handles_8"].d3dShaderResourceViewGlossMapText, 0Ui64));
 
 
 		//metal material
@@ -525,15 +558,18 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		metalPiecesMat.diffuse = { 0.4f, 0.4f, 0.4f, 1.0f };
 		metalPiecesMat.specular = { 0.4f, 0.4f, 0.4f, 520.0f };
 
+		std::wstring diffTextFileName_metal_pStr(L"directx11-test\\application\\resources\\data\\3d-objects\\twine\\twine_color.png");
+		diffTextFileName_metal_pStr.insert(0, m_rootString);
+		std::wstring normalMapTextFileName_metal_pStr(L"directx11-test\\application\\resources\\data\\3d-objects\\twine\\twine_norm.png");
+		normalMapTextFileName_metal_pStr.insert(0, m_rootString);
+		std::wstring glossMapTextFileName_metal_pStr(L"directx11-test\\application\\resources\\data\\3d-objects\\twine\\twine_gloss.png");
+		glossMapTextFileName_metal_pStr.insert(0, m_rootString);
 
-		wchar_t* diffTextFileName_metal_p = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\twine\\twine_color.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName_metal_p, &m_crate.shapeAttributeMapByName["metal_pieces_3"].d3dResourceDiffText, &m_crate.shapeAttributeMapByName["metal_pieces_3"].d3dShaderResourceViewDiffText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName_metal_pStr.data(), &m_crate.shapeAttributeMapByName["metal_pieces_3"].d3dResourceDiffText, &m_crate.shapeAttributeMapByName["metal_pieces_3"].d3dShaderResourceViewDiffText, 0Ui64));
 		//normal map Texture
-		wchar_t* normalMapTextFileName_metal_p = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\twine\\twine_norm.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileName_metal_p, &m_crate.shapeAttributeMapByName["metal_pieces_3"].d3dResourceNormalMapText, &m_crate.shapeAttributeMapByName["metal_pieces_3"].d3dShaderResourceViewNormalMapText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileName_metal_pStr.data(), &m_crate.shapeAttributeMapByName["metal_pieces_3"].d3dResourceNormalMapText, &m_crate.shapeAttributeMapByName["metal_pieces_3"].d3dShaderResourceViewNormalMapText, 0Ui64));
 		//gloss map Texture
-		wchar_t* glossMapTextFileName_metal_p = L"D:\\graphic_programming_Colombo\\graphic-programming\\directx11-test-project\\directx11-test\\application\\resources\\data\\3d-objects\\twine\\twine_gloss.png";
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName_metal_p, &m_crate.shapeAttributeMapByName["metal_pieces_3"].d3dResourceGlossMapText, &m_crate.shapeAttributeMapByName["metal_pieces_3"].d3dShaderResourceViewGlossMapText, 0Ui64));
+		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName_metal_pStr.data(), &m_crate.shapeAttributeMapByName["metal_pieces_3"].d3dResourceGlossMapText, &m_crate.shapeAttributeMapByName["metal_pieces_3"].d3dShaderResourceViewGlossMapText, 0Ui64));
 
 
 		//then, we populate the shapeAttributeMapByName with many constant buffers, one for each of the crate's parts
