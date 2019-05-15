@@ -2,6 +2,8 @@
 #include "directx_app.h"
 #include <render/render_macros.h>
 #include <render/directx_backend.h>
+#include <service/locator.h>
+
 
 using xtest::application::DirectxApp;
 using xtest::application::WindowSettings;
@@ -21,6 +23,7 @@ DirectxApp::DirectxApp(HINSTANCE instance, const WindowSettings& windowSettings,
 	, m_directxSettings(directxSettings)
 	, m_isActive(true)
 	, m_fixedRenderingLoopFrequency(fps)
+	, m_resourceLoader()
 {}
 
 
@@ -28,6 +31,10 @@ void DirectxApp::Init()
 {
 	WindowsApp::Init();
 	InitDirectX();
+
+	service::Locator::ProvideD3DDevice(m_d3dDevice.Get());
+	service::Locator::ProvideD3DContext(m_d3dContext.Get());
+	service::Locator::ProvideResourceLoader(&m_resourceLoader);
 }
 
 
@@ -76,7 +83,7 @@ void DirectxApp::InitDirectX()
 	swapDesc.BufferDesc.Width = modes[0].Width;
 	swapDesc.BufferDesc.Height = modes[0].Height;
 	swapDesc.BufferDesc.RefreshRate = modes[0].RefreshRate; // mode with the faster refresh rate
-	swapDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	swapDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 	swapDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	swapDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 	swapDesc.SampleDesc.Count = 1;   //no MSAA
@@ -141,16 +148,15 @@ void DirectxApp::CreateDepthStencilBuffer()
 
 void DirectxApp::SetViewport(uint32 x, uint32 y, uint32 width, uint32 height)
 {
-	D3D11_VIEWPORT viewportDesc;
-	viewportDesc.TopLeftX = FLOAT(x);
-	viewportDesc.TopLeftY = FLOAT(y);
-	viewportDesc.Width = FLOAT(width);
-	viewportDesc.Height = FLOAT(height);
-	viewportDesc.MinDepth = 0.f;
-	viewportDesc.MaxDepth = 1.f;
+	m_viewport.TopLeftX = FLOAT(x);
+	m_viewport.TopLeftY = FLOAT(y);
+	m_viewport.Width = FLOAT(width);
+	m_viewport.Height = FLOAT(height);
+	m_viewport.MinDepth = 0.f;
+	m_viewport.MaxDepth = 1.f;
 
 	// set the viewport to the rasterizer stage
-	m_d3dContext->RSSetViewports(1, &viewportDesc);
+	m_d3dContext->RSSetViewports(1, &m_viewport);
 }
 
 

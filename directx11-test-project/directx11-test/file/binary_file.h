@@ -9,6 +9,7 @@ namespace file {
 	{
 		// the only way to create a non-empty BinaryFile
 		friend std::future<BinaryFile> ReadBinaryFile(std::wstring filePath);
+		friend class ResourceLoader;
 
 	public:
 

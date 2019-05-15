@@ -1,0 +1,37 @@
+{
+	"bottom_1": {
+		"ambient": [0.15, 0.15, 0.15, 1.0],
+		"diffuse": [0.5, 0.5, 0.5, 1.0],
+		"diffuseMap": "textures\\bottom_color.png",
+		"glossMap": "textures\\bottom_gloss.png",
+		"normalMap": "textures\\bottom_norm.png",
+		"specular": [0.2, 0.2, 0.2, 1.0]
+	},
+
+	"handles_6": {
+		"ambient": [0.15, 0.15, 0.15, 1.0],
+		"diffuse": [0.5, 0.5, 0.5, 1.0],
+		"diffuseMap": "textures\\handles_color.png",
+		"glossMap": "textures\\handles_gloss.png",
+		"normalMap": "textures\\handles_norm.png",
+		"specular": [0.2, 0.2, 0.2, 1.0]
+	},
+
+	"metal_pieces_7": {
+		"ambient": [0.15, 0.15, 0.15, 1.0],
+		"diffuse": [0.5, 0.5, 0.5, 1.0],
+		"diffuseMap": "textures\\pieces_color.png",
+		"glossMap": "textures\\pieces_gloss.png",
+		"normalMap": "textures\\pieces_norm.png",
+		"specular": [0.2, 0.2, 0.2, 1.0]
+	},
+
+	"top_2": {
+		"ambient": [0.15, 0.15, 0.15, 1.0],
+		"diffuse": [0.5, 0.5, 0.5, 1.0],
+		"diffuseMap": "textures\\top_color.png",
+		"glossMap": "textures\\top_gloss.png",
+		"normalMap": "textures\\top_norm.png",
+		"specular": [0.2, 0.2, 0.2, 1.0]
+	}
+}

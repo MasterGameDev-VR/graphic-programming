@@ -58,6 +58,18 @@
     <Filter Include="external_libs\directxtk">
       <UniqueIdentifier>{2b35d0b8-0e59-4c7e-91c5-aa1249fee502}</UniqueIdentifier>
     </Filter>
+    <Filter Include="demo\shadow_demo">
+      <UniqueIdentifier>{336da058-234b-4cd1-b37c-605f3cf9b7c9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="render\shading">
+      <UniqueIdentifier>{21c1df66-d6a0-40f7-b512-39927c2d4f2d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external_libs\mikktspace">
+      <UniqueIdentifier>{36ab7ca3-6fc9-4064-9230-c4c511178e0b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="external_libs\nlohmann_json">
+      <UniqueIdentifier>{f9d4d471-b4c1-4161-acc0-6bd10998bc98}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\resources\Resource.h">
@@ -161,6 +173,69 @@
     <ClInclude Include="external_libs\directxtk\WICTextureLoader.h">
       <Filter>external_libs\directxtk</Filter>
     </ClInclude>
+    <ClInclude Include="demo\shadow_demo\shadow_demo_app.h">
+      <Filter>demo\shadow_demo</Filter>
+    </ClInclude>
+    <ClInclude Include="file\resource_loader.h">
+      <Filter>file</Filter>
+    </ClInclude>
+    <ClInclude Include="render\renderable.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="render\render_resource.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\shader.h">
+      <Filter>render\shading</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\vertex_shader.h">
+      <Filter>render\shading</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\cbuffer.h">
+      <Filter>render\shading</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\pixel_shader.h">
+      <Filter>render\shading</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\rasterizer_state.h">
+      <Filter>render\shading</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\vertex_input.h">
+      <Filter>render\shading</Filter>
+    </ClInclude>
+    <ClInclude Include="camera\camera.h">
+      <Filter>camera</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\common_types.h">
+      <Filter>render\shading</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\rasterizer_state_types.h">
+      <Filter>render\shading</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\render_pass.h">
+      <Filter>render\shading</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\vertex_input_types.h">
+      <Filter>render\shading</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\sampler.h">
+      <Filter>render\shading</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\sampler_types.h">
+      <Filter>render\shading</Filter>
+    </ClInclude>
+    <ClInclude Include="external_libs\mikktspace\mikktspace.h">
+      <Filter>external_libs\mikktspace</Filter>
+    </ClInclude>
+    <ClInclude Include="external_libs\nlohmann_json\json.hpp">
+      <Filter>external_libs\nlohmann_json</Filter>
+    </ClInclude>
+    <ClInclude Include="common\utils.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\render_pass_state.h">
+      <Filter>render\shading</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -230,6 +305,39 @@
     </ClCompile>
     <ClCompile Include="external_libs\directxtk\WICTextureLoader.cpp">
       <Filter>external_libs\directxtk</Filter>
+    </ClCompile>
+    <ClCompile Include="demo\shadow_demo\shadow_demo_app.cpp">
+      <Filter>demo\shadow_demo</Filter>
+    </ClCompile>
+    <ClCompile Include="file\resource_loader.cpp">
+      <Filter>file</Filter>
+    </ClCompile>
+    <ClCompile Include="render\renderable.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="render\shading\pixel_shader.cpp">
+      <Filter>render\shading</Filter>
+    </ClCompile>
+    <ClCompile Include="render\shading\shader.cpp">
+      <Filter>render\shading</Filter>
+    </ClCompile>
+    <ClCompile Include="render\shading\vertex_shader.cpp">
+      <Filter>render\shading</Filter>
+    </ClCompile>
+    <ClCompile Include="camera\camera.cpp">
+      <Filter>camera</Filter>
+    </ClCompile>
+    <ClCompile Include="render\shading\render_pass.cpp">
+      <Filter>render\shading</Filter>
+    </ClCompile>
+    <ClCompile Include="external_libs\mikktspace\mikktspace.c">
+      <Filter>external_libs\mikktspace</Filter>
+    </ClCompile>
+    <ClCompile Include="common\utils.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="render\shading\render_pass_state.cpp">
+      <Filter>render\shading</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

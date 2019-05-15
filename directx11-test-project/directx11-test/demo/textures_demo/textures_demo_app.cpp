@@ -3,10 +3,15 @@
 #include <file/file_utils.h>
 #include <math/math_utils.h>
 #include <service/locator.h>
+#include <render/shading/vertex_input_types.h>
+#include <render/shading/rasterizer_state_types.h>
+#include <render/shading/sampler_types.h>
 #include <external_libs/directxtk/WICTextureLoader.h>
+
 
 using namespace DirectX;
 using namespace xtest;
+using namespace xtest::render::shading;
 
 using xtest::demo::TexturesDemoApp;
 using Microsoft::WRL::ComPtr;
@@ -16,22 +21,15 @@ TexturesDemoApp::TexturesDemoApp(HINSTANCE instance,
 	const application::DirectxSettings& directxSettings,
 	uint32 fps /*=60*/)
 	: application::DirectxApp(instance, windowSettings, directxSettings, fps)
-	, m_viewMatrix()
-	, m_projectionMatrix()
-	, m_camera(math::ToRadians(68.f), math::ToRadians(135.f), 7.f, { 0.f, 0.f, 0.f }, { 0.f, 1.f, 0.f }, { math::ToRadians(4.f), math::ToRadians(175.f) }, { 3.f, 25.f })
-	, m_dirLight()
-	, m_spotLight()
-	, m_pointLights()
-	, m_renderables()
-	, m_controls()
-	, m_isControlsDirty(true)
+	, m_dirKeyLight()
+	, m_dirFillLight()
+	, m_pointLight()
+	, m_lightingControls()
+	, m_isLightingControlsDirty(true)
 	, m_stopLights(false)
-	, m_d3dPerFrameCB(nullptr)
-	, m_d3dRarelyChangedCB(nullptr)
-	, m_vertexShader(nullptr)
-	, m_pixelShader(nullptr)
-	, m_inputLayout(nullptr)
-	, m_rasterizerState(nullptr)
+	, m_camera(math::ToRadians(60.f), math::ToRadians(125.f), 5.f, { 0.f, 0.f, 0.f }, { 0.f, 1.f, 0.f }, { math::ToRadians(4.f), math::ToRadians(175.f) }, { 3.f, 25.f })
+	, m_objects()
+	, m_renderPass()
 {}
 
 
@@ -43,539 +41,146 @@ void TexturesDemoApp::Init()
 {
 	application::DirectxApp::Init();
 
-	m_d3dAnnotation->BeginEvent(L"init-demo");
+	m_camera.SetPerspectiveProjection(math::ToRadians(45.f), AspectRatio(), 1.f, 1000.f);
 
-	InitMatrices();
-	InitShaders();
-	InitRenderable();
-	InitTextures();
+	InitRenderTechnique();
+	InitRenderables();
 	InitLights();
-	InitRasterizerState();
 
 	service::Locator::GetMouse()->AddListener(this);
-	service::Locator::GetKeyboard()->AddListener(this, {input::Key::F, input::Key::F1, input::Key::F2, input::Key::F3,
-														input::Key::F4, input::Key::F5, input::Key::F6, input::Key::space_bar });
-
-	m_d3dAnnotation->EndEvent();
+	service::Locator::GetKeyboard()->AddListener(this, { input::Key::F, input::Key::F1, input::Key::F2, input::Key::F3, input::Key::space_bar });
 }
 
 
-void TexturesDemoApp::InitMatrices()
+void TexturesDemoApp::InitRenderTechnique()
 {
-	// view matrix
-	XMStoreFloat4x4(&m_viewMatrix, m_camera.GetViewMatrix());
+	file::ResourceLoader* loader = service::Locator::GetResourceLoader();
+	
+	std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\textures_demo_VS.cso")));
+	vertexShader->SetVertexInput(std::make_shared<MeshDataVertexInput>());
+	vertexShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectData>>());
 
-	// projection matrix
-	{
-		XMMATRIX P = XMMatrixPerspectiveFovLH(math::ToRadians(45.f), AspectRatio(), 1.f, 1000.f);
-		XMStoreFloat4x4(&m_projectionMatrix, P);
-	}
+	std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\textures_demo_PS.cso")));
+	pixelShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectData>>());
+	pixelShader->AddConstantBuffer(CBufferFrequency::per_frame, std::make_unique<CBuffer<PerFrameData>>());
+	pixelShader->AddConstantBuffer(CBufferFrequency::rarely_changed, std::make_unique<CBuffer<RarelyChangedData>>());
+	pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<AnisotropicSampler>());
+
+	m_renderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_backBufferView.Get(), m_depthBufferView.Get()));
+	m_renderPass.SetVertexShader(vertexShader);
+	m_renderPass.SetPixelShader(pixelShader);
+	m_renderPass.Init();
 }
 
 
-void TexturesDemoApp::InitTextures() 
+void TexturesDemoApp::InitRenderables()
 {
-	// Texture plane
+
+	//ground
 	{
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\tiles\\tiles_color.png").c_str(), m_renderables[0].texture.GetAddressOf(), m_renderables[0].textureView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\tiles\\tiles_norm.png").c_str(), m_renderables[0].normalMap.GetAddressOf(), m_renderables[0].normalMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\tiles\\tiles_gloss.png").c_str(), m_renderables[0].glossMap.GetAddressOf(), m_renderables[0].glossMapView.GetAddressOf()));
-	}
-	// Texture column 1
-	{
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\fabric\\fabric_color.png").c_str(), m_renderables[1].texture.GetAddressOf(), m_renderables[1].textureView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\jeans\\jeans_color.png").c_str(), m_renderables[1].movingTexture.GetAddressOf(), m_renderables[1].movingTextureView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\fabric\\fabric_norm.png").c_str(), m_renderables[1].normalMap.GetAddressOf(), m_renderables[1].normalMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\fabric\\fabric_gloss.png").c_str(), m_renderables[1].glossMap.GetAddressOf(), m_renderables[1].glossMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\fabric\\fabric_color.png").c_str(), m_renderables[2].texture.GetAddressOf(), m_renderables[2].textureView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\jeans\\jeans_color.png").c_str(), m_renderables[2].movingTexture.GetAddressOf(), m_renderables[2].movingTextureView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\fabric\\fabric_norm.png").c_str(), m_renderables[2].normalMap.GetAddressOf(), m_renderables[2].normalMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\fabric\\fabric_gloss.png").c_str(), m_renderables[2].glossMap.GetAddressOf(), m_renderables[2].glossMapView.GetAddressOf()));
-	}
-	// Texture column 2
-	{
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\lizard\\lizard_color.png").c_str(), m_renderables[3].texture.GetAddressOf(), m_renderables[3].textureView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\lizard\\lizard_norm.png").c_str(), m_renderables[3].normalMap.GetAddressOf(), m_renderables[3].normalMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\lizard\\lizard_gloss.png").c_str(), m_renderables[3].glossMap.GetAddressOf(), m_renderables[3].glossMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\lizard\\lizard_color.png").c_str(), m_renderables[4].texture.GetAddressOf(), m_renderables[4].textureView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\lizard\\lizard_norm.png").c_str(), m_renderables[4].normalMap.GetAddressOf(), m_renderables[4].normalMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\lizard\\lizard_gloss.png").c_str(), m_renderables[4].glossMap.GetAddressOf(), m_renderables[4].glossMapView.GetAddressOf()));
-	}
-	// Texture column 3
-	{
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\plastic-cover\\plastic_cover_color.png").c_str(), m_renderables[5].texture.GetAddressOf(), m_renderables[5].textureView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\plastic-cover\\plastic_cover_norm.png").c_str(), m_renderables[5].normalMap.GetAddressOf(), m_renderables[5].normalMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\plastic-cover\\plastic_cover_gloss.png").c_str(), m_renderables[5].glossMap.GetAddressOf(), m_renderables[5].glossMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\plastic-cover\\plastic_cover_color.png").c_str(), m_renderables[6].texture.GetAddressOf(), m_renderables[6].textureView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\plastic-cover\\plastic_cover_norm.png").c_str(), m_renderables[6].normalMap.GetAddressOf(), m_renderables[6].normalMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\plastic-cover\\plastic_cover_gloss.png").c_str(), m_renderables[6].glossMap.GetAddressOf(), m_renderables[6].glossMapView.GetAddressOf()));
-	}
-	// Texture column 4
-	{
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\twine\\twine_color.png").c_str(), m_renderables[7].texture.GetAddressOf(), m_renderables[7].textureView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\twine\\twine_norm.png").c_str(), m_renderables[7].normalMap.GetAddressOf(), m_renderables[7].normalMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\twine\\twine_gloss.png").c_str(), m_renderables[7].glossMap.GetAddressOf(), m_renderables[7].glossMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\twine\\twine_color.png").c_str(), m_renderables[8].texture.GetAddressOf(), m_renderables[8].textureView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\twine\\twine_norm.png").c_str(), m_renderables[8].normalMap.GetAddressOf(), m_renderables[8].normalMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\twine\\twine_gloss.png").c_str(), m_renderables[8].glossMap.GetAddressOf(), m_renderables[8].glossMapView.GetAddressOf()));
-	}
-	// Texture column 5
-	{
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\wet-stone\\wet_stone_color.png").c_str(), m_renderables[9].texture.GetAddressOf(), m_renderables[9].textureView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\wet-stone\\wet_stone_norm.png").c_str(), m_renderables[9].normalMap.GetAddressOf(), m_renderables[9].normalMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\wet-stone\\wet_stone_gloss.png").c_str(), m_renderables[9].glossMap.GetAddressOf(), m_renderables[9].glossMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\wet-stone\\wet_stone_color.png").c_str(), m_renderables[10].texture.GetAddressOf(), m_renderables[10].textureView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\wet-stone\\wet_stone_norm.png").c_str(), m_renderables[10].normalMap.GetAddressOf(), m_renderables[10].normalMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\wet-stone\\wet_stone_gloss.png").c_str(), m_renderables[10].glossMap.GetAddressOf(), m_renderables[10].glossMapView.GetAddressOf()));
-	}
-	// Texture column 6
-	{
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\wood\\wood_color.png").c_str(), m_renderables[11].texture.GetAddressOf(), m_renderables[11].textureView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\wood\\wood_norm.png").c_str(), m_renderables[11].normalMap.GetAddressOf(), m_renderables[11].normalMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\wood\\wood_gloss.png").c_str(), m_renderables[11].glossMap.GetAddressOf(), m_renderables[11].glossMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\wood\\wood_color.png").c_str(), m_renderables[12].texture.GetAddressOf(), m_renderables[12].textureView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\wood\\wood_norm.png").c_str(), m_renderables[12].normalMap.GetAddressOf(), m_renderables[12].normalMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\wood\\wood_gloss.png").c_str(), m_renderables[12].glossMap.GetAddressOf(), m_renderables[12].glossMapView.GetAddressOf()));
-	}
-	// Texture carpet
-	{
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\coat\\coat_color.png").c_str(), m_renderables[13].texture.GetAddressOf(), m_renderables[13].textureView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\coat\\coat_norm.png").c_str(), m_renderables[13].normalMap.GetAddressOf(), m_renderables[13].normalMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\coat\\coat_gloss.png").c_str(), m_renderables[13].glossMap.GetAddressOf(), m_renderables[13].glossMapView.GetAddressOf()));
+		mesh::MeshMaterial mat;
+		mat.ambient = { 0.15f, 0.15f, 0.15f, 1.f };
+		mat.diffuse = { 0.52f, 0.52f, 0.48f, 1.f };
+		mat.specular = { 0.5f, 0.5f, 0.5f, 1.f };
+		mat.diffuseMap = GetRootDir().append(LR"(\3d-objects\ground\ground_color.png)");
+		mat.normalMap = GetRootDir().append(LR"(\3d-objects\ground\ground_norm.png)");
+		mat.glossMap = GetRootDir().append(LR"(\3d-objects\ground\ground_gloss.png)");
+
+		render::Renderable plane(mesh::GeneratePlane(30.f, 30.f, 30, 30), mat);
+		plane.SetTransform(XMMatrixIdentity());
+		plane.SetTexcoordTransform(XMMatrixScaling(3.f, 3.f, 3.f));
+		plane.Init();
+		m_objects.push_back(plane);
 	}
 
-	// Texture torus
-	{
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\ground\\ground_color.png").c_str(), m_renderables[14].texture.GetAddressOf(), m_renderables[14].textureView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\ground\\ground_norm.png").c_str(), m_renderables[14].normalMap.GetAddressOf(), m_renderables[14].normalMapView.GetAddressOf()));
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), std::wstring(GetRootDir()).append(L"\\3d-objects\\ground\\ground_gloss.png").c_str(), m_renderables[14].glossMap.GetAddressOf(), m_renderables[14].glossMapView.GetAddressOf()));
-	}
-
-	// Sampler
-	{
-		D3D11_SAMPLER_DESC samplerDesc;
-		ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
-		samplerDesc.Filter = D3D11_FILTER_ANISOTROPIC;
-		samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-		samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-		samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-		samplerDesc.MaxAnisotropy = 16;
-		samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-		samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
-
-		XTEST_D3D_CHECK(m_d3dDevice->CreateSamplerState(&samplerDesc, &m_textureSampler));
-	}
-}
 
 
-void TexturesDemoApp::InitShaders()
-{
-	// read pre-compiled shaders' bytecode
-	std::future<file::BinaryFile> psByteCodeFuture = file::ReadBinaryFile(std::wstring(GetRootDir()).append(L"\\textures_demo_PS.cso"));
-	std::future<file::BinaryFile> vsByteCodeFuture = file::ReadBinaryFile(std::wstring(GetRootDir()).append(L"\\textures_demo_VS.cso"));
-
-	// future.get() can be called only once
-	file::BinaryFile vsByteCode = vsByteCodeFuture.get();
-	file::BinaryFile psByteCode = psByteCodeFuture.get();
-	XTEST_D3D_CHECK(m_d3dDevice->CreateVertexShader(vsByteCode.Data(), vsByteCode.ByteSize(), nullptr, &m_vertexShader));
-	XTEST_D3D_CHECK(m_d3dDevice->CreatePixelShader(psByteCode.Data(), psByteCode.ByteSize(), nullptr, &m_pixelShader));
-
-
-	// create the input layout, it must match the Vertex Shader HLSL input format:
-	//	struct VertexIn
-	// 	{
-	// 		float3 posL : POSITION;
-	// 		float3 normalL : NORMAL;
-	// 	};
-	D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
-	{
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(mesh::MeshData::Vertex, normal), D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(mesh::MeshData::Vertex, tangentU), D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(mesh::MeshData::Vertex, uv), D3D11_INPUT_PER_VERTEX_DATA, 0 }
+	// others objects
+	std::vector<std::wstring> textureBase = {
+		LR"(\3d-objects\lizard\lizard_)",
+		LR"(\3d-objects\twine\twine_)",
+		LR"(\3d-objects\ground\ground_)",
+		LR"(\3d-objects\plastic-cover\plastic_cover_)",
+		LR"(\3d-objects\fabric\fabric_)",
+		LR"(\3d-objects\tiles\tiles_)",
+		LR"(\3d-objects\wood\wood_)",
+		LR"(\3d-objects\fabric\fabric_)",
+		LR"(\3d-objects\wet-stone\wet_stone_)"
 	};
-	XTEST_D3D_CHECK(m_d3dDevice->CreateInputLayout(vertexDesc, 4, vsByteCode.Data(), vsByteCode.ByteSize(), &m_inputLayout));
 
-
-	// perFrameCB
-	D3D11_BUFFER_DESC perFrameCBDesc;
-	perFrameCBDesc.Usage = D3D11_USAGE_DYNAMIC;
-	perFrameCBDesc.ByteWidth = sizeof(PerFrameCB);
-	perFrameCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	perFrameCBDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	perFrameCBDesc.MiscFlags = 0;
-	perFrameCBDesc.StructureByteStride = 0;
-	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perFrameCBDesc, nullptr, &m_d3dPerFrameCB));
-}
-
-
-void xtest::demo::TexturesDemoApp::InitRenderable()
-{
-
-	// plane
+	const int rowCount = 3;
+	const int columnCount = 3;
+	for (unsigned row = 0; row < rowCount; row++)
 	{
-		// geo
-		Renderable plane;
-		plane.mesh = mesh::GeneratePlane(15.f, 15.f, 30, 30);
-
-		// W
-		XMStoreFloat4x4(&plane.W, XMMatrixIdentity());
-		XMStoreFloat4x4(&plane.textureMatrix, XMMatrixIdentity());
-
-		// material
-		plane.material.ambient = { 0.15f, 0.15f, 0.15f, 1.f };
-		plane.material.diffuse = { 0.52f, 0.52f, 0.52f, 1.f };
-		plane.material.specular = { 0.5f, 0.5f, 0.5f, 190.0f };
-
-		// perObjectCB
-		D3D11_BUFFER_DESC perObjectCBDesc;
-		perObjectCBDesc.Usage = D3D11_USAGE_DYNAMIC;
-		perObjectCBDesc.ByteWidth = sizeof(PerObjectCB);
-		perObjectCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		perObjectCBDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		perObjectCBDesc.MiscFlags = 0;
-		perObjectCBDesc.StructureByteStride = 0;
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &plane.d3dPerObjectCB));
-
-		// vertex buffer
-		D3D11_BUFFER_DESC vertexBufferDesc;
-		vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-		vertexBufferDesc.ByteWidth = UINT(sizeof(mesh::MeshData::Vertex) * plane.mesh.vertices.size());
-		vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-		vertexBufferDesc.CPUAccessFlags = 0;
-		vertexBufferDesc.MiscFlags = 0;
-		vertexBufferDesc.StructureByteStride = 0;
-
-		D3D11_SUBRESOURCE_DATA vertexInitData;
-		vertexInitData.pSysMem = &plane.mesh.vertices[0];
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexInitData, &plane.d3dVertexBuffer));
-		
-		// index buffer
-		D3D11_BUFFER_DESC indexBufferDesc;
-		indexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-		indexBufferDesc.ByteWidth = UINT(sizeof(uint32) * plane.mesh.indices.size());
-		indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-		indexBufferDesc.CPUAccessFlags = 0;
-		indexBufferDesc.MiscFlags = 0;
-		indexBufferDesc.StructureByteStride = 0;
-
-		D3D11_SUBRESOURCE_DATA indexInitdata;
-		indexInitdata.pSysMem = &plane.mesh.indices[0];
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &plane.d3dIndexBuffer));
-
-		m_renderables.push_back(plane);
-	}
-
-	// columns
-	for (unsigned int i = 0; i < 6; i++) {
+		for (unsigned column = 0; column < columnCount; column++)
 		{
-			// geo
-			Renderable column;
-			column.mesh = mesh::GenerateBox(1.0f, 2.0f, 1.0f);
 
-			// W
-			if (i == 0) 
+			float xPos = float(row * 8) - ((rowCount - 1) * 4);
+			float zPos = float(column * 8) - ((columnCount - 1) * 4);
+			int textureIndex = (columnCount * row) + column;
+
+			if (row == 1 && column == 1)
 			{
-				XMStoreFloat4x4(&column.W, XMMatrixTranslation(0.0f, 1.0f, 0.0f));				
-				XMStoreFloat4x4(&column.movingTextureMatrix, XMMatrixIdentity());
-				column.hasMovingTexture = true;
+
+				render::Renderable crate{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\crate\crate.gpf)"))) };
+				crate.SetTransform(XMMatrixTranslation(xPos, 0.f, zPos));
+				crate.Init();
+				m_objects.push_back(std::move(crate));
 			}
-			else 
+			else
 			{
-				float x = cos((DirectX::XM_PI * 2 / 5) * i) * 5.0f;
-				float y = 1.0f;
-				float z = sin((DirectX::XM_PI * 2 / 5) * i) * 5.0f;
-				XMStoreFloat4x4(&column.W, XMMatrixTranslation(x, y, z));
+				mesh::MeshMaterial mat;
+				mat.ambient = { 0.15f, 0.15f, 0.15f, 1.f };
+				mat.diffuse = { 0.52f, 0.52f, 0.52f, 1.f };
+				mat.specular = { 0.5f, 0.5f, 0.5f, 1.f };
+				mat.diffuseMap = GetRootDir().append(std::wstring(textureBase[textureIndex]).append(L"color.png"));
+				mat.normalMap = GetRootDir().append(std::wstring(textureBase[textureIndex]).append(L"norm.png"));
+				mat.glossMap = GetRootDir().append(std::wstring(textureBase[textureIndex]).append(L"gloss.png"));
+
+
+				render::Renderable sphere(mesh::GenerateSphere(1.f, 40, 40), mat);
+				sphere.SetTransform(XMMatrixTranslation(xPos, 2.5f, zPos));
+				sphere.SetTexcoordTransform(XMMatrixScaling(2.f, 2.f, 2.f));
+				sphere.Init();
+
+				render::Renderable box(mesh::GenerateBox(2.f, 2.f, 2.f), mat);
+				box.SetTransform(XMMatrixTranslation(xPos, 1.f, zPos));
+				box.SetTexcoordTransform(XMMatrixScaling(0.5f, 0.5f, 0.5f));
+				box.Init();
+
+				m_objects.push_back(sphere);
+				m_objects.push_back(box);
 			}
-			XMStoreFloat4x4(&column.textureMatrix, XMMatrixIdentity());
-
-			// material
-			column.material.ambient = { 0.7f, 0.7f, 0.7f, 1.0f };
-			column.material.diffuse = { 0.81f, 0.8f, 0.8f, 1.0f };
-			column.material.specular = { 0.7f, 0.7f, 0.7f, 60.0f };
-
-			// perObjectCB
-			D3D11_BUFFER_DESC perObjectCBDesc;
-			perObjectCBDesc.Usage = D3D11_USAGE_DYNAMIC;
-			perObjectCBDesc.ByteWidth = sizeof(PerObjectCB);
-			perObjectCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-			perObjectCBDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-			perObjectCBDesc.MiscFlags = 0;
-			perObjectCBDesc.StructureByteStride = 0;
-			XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &column.d3dPerObjectCB));
-
-			// vertex buffer
-			D3D11_BUFFER_DESC vertexBufferDesc;
-			vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-			vertexBufferDesc.ByteWidth = UINT(sizeof(mesh::MeshData::Vertex) * column.mesh.vertices.size());
-			vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-			vertexBufferDesc.CPUAccessFlags = 0;
-			vertexBufferDesc.MiscFlags = 0;
-			vertexBufferDesc.StructureByteStride = 0;
-
-			D3D11_SUBRESOURCE_DATA vertexInitData;
-			vertexInitData.pSysMem = &column.mesh.vertices[0];
-			XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexInitData, &column.d3dVertexBuffer));
-
-			// index buffer
-			D3D11_BUFFER_DESC indexBufferDesc;
-			indexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-			indexBufferDesc.ByteWidth = UINT(sizeof(uint32) * column.mesh.indices.size());
-			indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-			indexBufferDesc.CPUAccessFlags = 0;
-			indexBufferDesc.MiscFlags = 0;
-			indexBufferDesc.StructureByteStride = 0;
-
-			D3D11_SUBRESOURCE_DATA indexInitdata;
-			indexInitdata.pSysMem = &column.mesh.indices[0];
-			XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &column.d3dIndexBuffer));
-
-			m_renderables.push_back(column);
-		}
-
-		// sphere
-		{
-			//geo
-			Renderable sphere;
-			sphere.mesh = mesh::GenerateSphere(0.5f, 40, 40);
-
-			// W
-			if (i == 0) 
-			{
-				XMStoreFloat4x4(&sphere.W, XMMatrixTranslation(0.0f, 2.5f, 0.0f));
-				XMStoreFloat4x4(&sphere.movingTextureMatrix, XMMatrixIdentity());
-				sphere.hasMovingTexture = true;
-			}
-			else 
-			{
-				float x = cos((DirectX::XM_PI * 2 / 5) * i) * 5.0f;
-				float y = 2.5f;
-				float z = sin((DirectX::XM_PI * 2 / 5) * i) * 5.0f;
-				XMStoreFloat4x4(&sphere.W, XMMatrixTranslation(x, y, z));
-			}
-			XMStoreFloat4x4(&sphere.textureMatrix, XMMatrixIdentity());
-
-			// material
-			sphere.material.ambient = { 0.7f, 0.7f, 0.7f, 1.0f };
-			sphere.material.diffuse = { 0.81f, 0.8f, 0.8f, 1.0f };
-			sphere.material.specular = { 0.7f, 0.7f, 0.7f, 60.0f };
-
-			// perObjectCB
-			D3D11_BUFFER_DESC perObjectCBDesc;
-			perObjectCBDesc.Usage = D3D11_USAGE_DYNAMIC;
-			perObjectCBDesc.ByteWidth = sizeof(PerObjectCB);
-			perObjectCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-			perObjectCBDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-			perObjectCBDesc.MiscFlags = 0;
-			perObjectCBDesc.StructureByteStride = 0;
-			XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &sphere.d3dPerObjectCB));
-
-			// vertex buffer
-			D3D11_BUFFER_DESC vertexBufferDesc;
-			vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-			vertexBufferDesc.ByteWidth = UINT(sizeof(mesh::MeshData::Vertex) * sphere.mesh.vertices.size());
-			vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-			vertexBufferDesc.CPUAccessFlags = 0;
-			vertexBufferDesc.MiscFlags = 0;
-			vertexBufferDesc.StructureByteStride = 0;
-
-			D3D11_SUBRESOURCE_DATA vertexInitData;
-			vertexInitData.pSysMem = &sphere.mesh.vertices[0];
-			XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexInitData, &sphere.d3dVertexBuffer));
-
-			// index buffer
-			D3D11_BUFFER_DESC indexBufferDesc;
-			indexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-			indexBufferDesc.ByteWidth = UINT(sizeof(uint32) * sphere.mesh.indices.size());
-			indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-			indexBufferDesc.CPUAccessFlags = 0;
-			indexBufferDesc.MiscFlags = 0;
-			indexBufferDesc.StructureByteStride = 0;
-
-			D3D11_SUBRESOURCE_DATA indexInitdata;
-			indexInitdata.pSysMem = &sphere.mesh.indices[0];
-			XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &sphere.d3dIndexBuffer));
-
-			m_renderables.push_back(sphere);
 		}
 	}
 
-	// carpet
-	{
-		// geo
-		Renderable carpet;
-		carpet.mesh = mesh::GeneratePlane(12.0f, 12.0f, 30, 30);
-
-		// W
-		XMStoreFloat4x4(&carpet.W, XMMatrixTranslation(0.0f, 0.01f, 0.0f));
-		XMStoreFloat4x4(&carpet.textureMatrix, XMMatrixIdentity());
-
-		// material
-		carpet.material.ambient = { 0.5f, 0.15f, 0.15f, 1.f };
-		carpet.material.diffuse = { 0.92f, 0.22f, 0.22f, 1.f };
-		carpet.material.specular = { 0.01f, 0.01f, 0.01f, 190.0f };
-
-		// perObjectCB
-		D3D11_BUFFER_DESC perObjectCBDesc;
-		perObjectCBDesc.Usage = D3D11_USAGE_DYNAMIC;
-		perObjectCBDesc.ByteWidth = sizeof(PerObjectCB);
-		perObjectCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		perObjectCBDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		perObjectCBDesc.MiscFlags = 0;
-		perObjectCBDesc.StructureByteStride = 0;
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &carpet.d3dPerObjectCB));
-
-		// vertex buffer
-		D3D11_BUFFER_DESC vertexBufferDesc;
-		vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-		vertexBufferDesc.ByteWidth = UINT(sizeof(mesh::MeshData::Vertex) * carpet.mesh.vertices.size());
-		vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-		vertexBufferDesc.CPUAccessFlags = 0;
-		vertexBufferDesc.MiscFlags = 0;
-		vertexBufferDesc.StructureByteStride = 0;
-
-		D3D11_SUBRESOURCE_DATA vertexInitData;
-		vertexInitData.pSysMem = &carpet.mesh.vertices[0];
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexInitData, &carpet.d3dVertexBuffer));
-
-		// index buffer
-		D3D11_BUFFER_DESC indexBufferDesc;
-		indexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-		indexBufferDesc.ByteWidth = UINT(sizeof(uint32) * carpet.mesh.indices.size());
-		indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-		indexBufferDesc.CPUAccessFlags = 0;
-		indexBufferDesc.MiscFlags = 0;
-		indexBufferDesc.StructureByteStride = 0;
-
-		D3D11_SUBRESOURCE_DATA indexInitdata;
-		indexInitdata.pSysMem = &carpet.mesh.indices[0];
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &carpet.d3dIndexBuffer));
-
-		m_renderables.push_back(carpet);
-	}
-
-	// torus
-	{
-		// geo
-		Renderable torus;
-		torus.mesh = mesh::GenerateTorus(1.5f, 0.5f, 30, 30);
-
-		// W
-		XMStoreFloat4x4(&torus.W, XMMatrixTranslation(0.0f, 4.0f, 0.0f));
-		XMStoreFloat4x4(&torus.textureMatrix, XMMatrixIdentity());
-
-		// material
-		torus.material.ambient = { 0.4f, 1.0f, 0.4f, 1.f };
-		torus.material.diffuse = { 0.22f, 0.9f, 0.22f, 1.f };
-		torus.material.specular = { 0.6f, 1.0f, 0.6f, 190.0f };
-
-		// perObjectCB
-		D3D11_BUFFER_DESC perObjectCBDesc;
-		perObjectCBDesc.Usage = D3D11_USAGE_DYNAMIC;
-		perObjectCBDesc.ByteWidth = sizeof(PerObjectCB);
-		perObjectCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		perObjectCBDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		perObjectCBDesc.MiscFlags = 0;
-		perObjectCBDesc.StructureByteStride = 0;
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &torus.d3dPerObjectCB));
-
-		// vertex buffer
-		D3D11_BUFFER_DESC vertexBufferDesc;
-		vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-		vertexBufferDesc.ByteWidth = UINT(sizeof(mesh::MeshData::Vertex) * torus.mesh.vertices.size());
-		vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-		vertexBufferDesc.CPUAccessFlags = 0;
-		vertexBufferDesc.MiscFlags = 0;
-		vertexBufferDesc.StructureByteStride = 0;
-
-		D3D11_SUBRESOURCE_DATA vertexInitData;
-		vertexInitData.pSysMem = &torus.mesh.vertices[0];
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexInitData, &torus.d3dVertexBuffer));
-
-		// index buffer
-		D3D11_BUFFER_DESC indexBufferDesc;
-		indexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-		indexBufferDesc.ByteWidth = UINT(sizeof(uint32) * torus.mesh.indices.size());
-		indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-		indexBufferDesc.CPUAccessFlags = 0;
-		indexBufferDesc.MiscFlags = 0;
-		indexBufferDesc.StructureByteStride = 0;
-
-		D3D11_SUBRESOURCE_DATA indexInitdata;
-		indexInitdata.pSysMem = &torus.mesh.indices[0];
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &torus.d3dIndexBuffer));
-
-		m_renderables.push_back(torus);
-	}
 }
 
 
 void TexturesDemoApp::InitLights()
 {
-	m_dirLight.ambient = { 0.2f, 0.2f, 0.2f, 1.f };
-	m_dirLight.diffuse = { 0.2f, 0.2f, 0.2f, 1.f };
-	m_dirLight.specular = { 0.2f, 0.2f, 0.2f, 1.f };
+	m_dirKeyLight.ambient = { 0.16f, 0.18f, 0.18f, 1.f };
+	m_dirKeyLight.diffuse = { 2.f* 0.78f, 2.f* 0.83f, 2.f* 1.f, 1.f };
+	m_dirKeyLight.specular = {  0.87f,  0.90f,  0.94f, 1.f };
 	XMVECTOR dirLightDirection = XMVector3Normalize(-XMVectorSet(5.f, 3.f, 5.f, 0.f));
-	XMStoreFloat3(&m_dirLight.dirW, dirLightDirection);
+	XMStoreFloat3(&m_dirKeyLight.dirW, dirLightDirection);
 
-	for (int i = 0; i < 5; i++) {
-		float x = cos((DirectX::XM_PI * 2 / 5) * i) * 3.0f;
-		float y = 1.0f;
-		float z = sin((DirectX::XM_PI * 2 / 5) * i) * 3.0f;
-		m_pointLights[i].ambient = { 0.2f, 0.1f, 0.1f, 1.0f };
-		m_pointLights[i].diffuse = { 0.4f, 0.10f, 0.10f, 1.0f };
-		m_pointLights[i].specular = { 0.4f, 0.10f, 0.10f, 1.0f };
-		m_pointLights[i].posW = { x, y, z };
-		m_pointLights[i].range = 8.f;
-		m_pointLights[i].attenuation = { 0.0f, 0.3f, 0.f };
-	}
+	m_dirFillLight.ambient = { 0.16f, 0.18f, 0.18f, 1.f };
+	m_dirFillLight.diffuse  = { 0.4f * 1.f, 0.4f * 0.91f, 0.4f * 0.85f, 1.f };
+	m_dirFillLight.specular = { 0.087f, 0.09f, 0.094f, 1.f };
+	XMStoreFloat3(&m_dirFillLight.dirW, XMVectorScale(dirLightDirection, -1.f));
 
-	m_spotLight.ambient = { 0.018f, 0.018f, 1.8f, 1.0f };
-	m_spotLight.diffuse = { 0.1f, 0.1f, 1.0f, 1.0f };
-	m_spotLight.specular = { 0.1f, 0.1f, 1.0f, 1.0f };
-	XMVECTOR posW = XMVectorSet(5.f, 5.f, -5.f, 1.f);
-	XMStoreFloat3(&m_spotLight.posW, posW);
-	m_spotLight.range = 50.f;
-	XMVECTOR dirW = XMVector3Normalize(XMVectorSet(-4.f, 1.f, 0.f, 1.f) - posW);
-	XMStoreFloat3(&m_spotLight.dirW, dirW);
-	m_spotLight.spot = 30.f;
-	m_spotLight.attenuation = { 0.0f, 0.1f, 0.f };
-	
-	m_controls.useDirLight = true;
-	m_controls.usePointLight = true;
-	m_controls.useSpotLight = true;
-	m_controls.useDiffuseTexture = true;
-	m_controls.useNormalTexture = true;
-	m_controls.useGlossTexture = true;
-	   
-	// RarelyChangedCB
-	{
-		D3D11_BUFFER_DESC rarelyChangedCB;
-		rarelyChangedCB.Usage = D3D11_USAGE_DYNAMIC;
-		rarelyChangedCB.ByteWidth = sizeof(RarelyChangedCB);
-		rarelyChangedCB.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		rarelyChangedCB.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		rarelyChangedCB.MiscFlags = 0;
-		rarelyChangedCB.StructureByteStride = 0;
-
-		D3D11_SUBRESOURCE_DATA lightControlData;
-		lightControlData.pSysMem = &m_controls;
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&rarelyChangedCB, &lightControlData, &m_d3dRarelyChangedCB));
-	}
-}
+	m_pointLight.ambient = { 0.18f, 0.04f, 0.16f, 1.0f };
+	m_pointLight.diffuse = { 0.4f* 0.87f,  0.4f*0.90f,   0.4f*0.94f, 1.f };
+	m_pointLight.specular = { 0.4f*0.87f,   0.4f*0.90f,   0.4f*0.94f, 1.f };
+	m_pointLight.posW = { -3.75f, 1.f, 3.75f };
+	m_pointLight.range = 20.f;
+	m_pointLight.attenuation = { 0.0f, 0.2f, 0.f };
 
 
-void TexturesDemoApp::InitRasterizerState()
-{
-	// rasterizer state
-	D3D11_RASTERIZER_DESC rasterizerDesc;
-	ZeroMemory(&rasterizerDesc, sizeof(D3D11_RASTERIZER_DESC));
-	rasterizerDesc.FillMode = D3D11_FILL_SOLID;
-	rasterizerDesc.CullMode = D3D11_CULL_BACK;
-	rasterizerDesc.FrontCounterClockwise = false;
-	rasterizerDesc.DepthClipEnable = true;
-
-	m_d3dDevice->CreateRasterizerState(&rasterizerDesc, &m_rasterizerState);
+	m_lightingControls.useDirLight = true;
+	m_lightingControls.usePointLight = true;
+	m_lightingControls.useBumpMap = true;
 }
 
 
@@ -583,18 +188,25 @@ void TexturesDemoApp::OnResized()
 {
 	application::DirectxApp::OnResized();
 
+	//update the render pass state with the resized render target and depth buffer
+	m_renderPass.GetState()->ChangeRenderTargetView(m_backBufferView.Get());
+	m_renderPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
+	m_renderPass.GetState()->ChangeViewPort(m_viewport);
+
 	//update the projection matrix with the new aspect ratio
-	XMMATRIX P = XMMatrixPerspectiveFovLH(math::ToRadians(45.f), AspectRatio(), 1.f, 1000.f);
-	XMStoreFloat4x4(&m_projectionMatrix, P);
+	m_camera.SetPerspectiveProjection(math::ToRadians(45.f), AspectRatio(), 1.f, 1000.f);
 }
 
 
 void TexturesDemoApp::OnWheelScroll(input::ScrollStatus scroll)
 {
-	// zoom in or out when the scroll wheel is used
+	// move forward/backward when the wheel is used
 	if (service::Locator::GetMouse()->IsInClientArea())
 	{
-		m_camera.IncreaseRadiusBy(scroll.isScrollingUp ? -0.5f : 0.5f);
+		XMFLOAT3 cameraZ = m_camera.GetZAxis();
+		XMFLOAT3 forwardMovement;
+		XMStoreFloat3(&forwardMovement, XMVectorScale(XMLoadFloat3(&cameraZ), scroll.isScrollingUp ? 0.5f : -0.5f));
+		m_camera.TranslatePivotBy(forwardMovement);		
 	}
 }
 
@@ -639,33 +251,18 @@ void TexturesDemoApp::OnKeyStatusChange(input::Key key, const input::KeyStatus& 
 	}
 	else if (key == input::Key::F1 && status.isDown)
 	{
-		m_controls.useDirLight = !m_controls.useDirLight;
-		m_isControlsDirty = true;
+		m_lightingControls.useDirLight = !m_lightingControls.useDirLight;
+		m_isLightingControlsDirty = true;
 	}
 	else if (key == input::Key::F2 && status.isDown)
 	{
-		m_controls.usePointLight = !m_controls.usePointLight;
-		m_isControlsDirty = true;
+		m_lightingControls.usePointLight = !m_lightingControls.usePointLight;
+		m_isLightingControlsDirty = true;
 	}
 	else if (key == input::Key::F3 && status.isDown)
 	{
-		m_controls.useSpotLight = !m_controls.useSpotLight;
-		m_isControlsDirty = true;
-	}
-	else if (key == input::Key::F4 && status.isDown)
-	{
-		m_controls.useDiffuseTexture = !m_controls.useDiffuseTexture;
-		m_isControlsDirty = true;
-	}
-	else if (key == input::Key::F5 && status.isDown)
-	{
-		m_controls.useNormalTexture = !m_controls.useNormalTexture;
-		m_isControlsDirty = true;
-	}
-	else if (key == input::Key::F6 && status.isDown)
-	{
-		m_controls.useGlossTexture = !m_controls.useGlossTexture;
-		m_isControlsDirty = true;
+		m_lightingControls.useBumpMap = !m_lightingControls.useBumpMap;
+		m_isLightingControlsDirty = true;
 	}
 	else if (key == input::Key::space_bar && status.isDown)
 	{
@@ -676,117 +273,43 @@ void TexturesDemoApp::OnKeyStatusChange(input::Key key, const input::KeyStatus& 
 
 void TexturesDemoApp::UpdateScene(float deltaSeconds)
 {
-	XTEST_UNUSED_VAR(deltaSeconds);
-
-
-	// create the model-view-projection matrix
-	XMMATRIX V = m_camera.GetViewMatrix();
-	XMStoreFloat4x4(&m_viewMatrix, V);
-
-	// create projection matrix
-	XMMATRIX P = XMLoadFloat4x4(&m_projectionMatrix);
-	   
-	m_d3dAnnotation->BeginEvent(L"update-constant-buffer");
-
-	// PerObjectCB
-	for(unsigned int i = 0; i < m_renderables.size(); i++) 
-	{
-		XMMATRIX W = XMLoadFloat4x4(&m_renderables[i].W);
-		if (i == m_renderables.size() - 1) {
-			XMMATRIX R = XMMatrixRotationY(math::ToRadians(120.0f) * deltaSeconds);
-			W = W * R;
-			XMStoreFloat4x4(&m_renderables[i].W, W);
-		}
-
-		XMMATRIX WVP = W * V * P;
-		XMMATRIX TextureMatrix = XMLoadFloat4x4(&m_renderables[i].textureMatrix);
-
-		D3D11_MAPPED_SUBRESOURCE mappedResource;
-		ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-
-		// disable gpu access
-		XTEST_D3D_CHECK(m_d3dContext->Map(m_renderables[i].d3dPerObjectCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
-		PerObjectCB* perObjectCB = (PerObjectCB*)mappedResource.pData;
-
-		// update the data
-		XMStoreFloat4x4(&perObjectCB->W, XMMatrixTranspose(W));
-		XMStoreFloat4x4(&perObjectCB->WVP, XMMatrixTranspose(WVP));
-		XMStoreFloat4x4(&perObjectCB->W_inverseTraspose, XMMatrixInverse(nullptr, W));
-		XMStoreFloat4x4(&perObjectCB->TexcoordMatrix, XMMatrixTranspose(TextureMatrix));
-		
-		// update the moving texture, if there is one
-		perObjectCB->hasMovingTexture = false;
-		if (m_renderables[i].hasMovingTexture) {
-			perObjectCB->hasMovingTexture = true;
-			XMMATRIX MovingTextureMatrix = XMLoadFloat4x4(&m_renderables[i].movingTextureMatrix);
-			MovingTextureMatrix *= XMMatrixTranslation(0.0f, - 0.8f * deltaSeconds, 0.0f);
-			XMStoreFloat4x4(&m_renderables[i].movingTextureMatrix, MovingTextureMatrix);
-			XMStoreFloat4x4(&perObjectCB->MovingTexcoordMatrix, XMMatrixTranspose(MovingTextureMatrix));
-		}
-
-		perObjectCB->material = m_renderables[i].material;
-
-		// enable gpu access
-		m_d3dContext->Unmap(m_renderables[i].d3dPerObjectCB.Get(), 0);
-	}
 
 	// PerFrameCB
 	{
-
 		if (!m_stopLights)
 		{
 			XMMATRIX R = XMMatrixRotationY(math::ToRadians(30.f) * deltaSeconds);
-			for (int i = 0; i < 5; i++) {
-				XMStoreFloat3(&m_pointLights[i].posW, XMVector3Transform(XMLoadFloat3(&m_pointLights[i].posW), R));
-			}
+			XMStoreFloat3(&m_pointLight.posW, XMVector3Transform(XMLoadFloat3(&m_pointLight.posW), R));
 		}
 
-		D3D11_MAPPED_SUBRESOURCE mappedResource;
-		ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+		XMFLOAT3 tmp[4];
+		tmp[0] = m_pointLight.posW;
+		XMStoreFloat3(&tmp[1], XMVector3Transform(XMLoadFloat3(&tmp[0]), XMMatrixRotationY(math::ToRadians(90.f))));
+		XMStoreFloat3(&tmp[2], XMVector3Transform(XMLoadFloat3(&tmp[1]), XMMatrixRotationY(math::ToRadians(90.f))));
+		XMStoreFloat3(&tmp[3], XMVector3Transform(XMLoadFloat3(&tmp[2]), XMMatrixRotationY(math::ToRadians(90.f))));
 
-		// disable gpu access
-		XTEST_D3D_CHECK(m_d3dContext->Map(m_d3dPerFrameCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
-		PerFrameCB* perFrameCB = (PerFrameCB*)mappedResource.pData;
 
-		//update the data
-		perFrameCB->dirLight = m_dirLight;
-		perFrameCB->spotLight = m_spotLight;
-		perFrameCB->pointLights = m_pointLights;
-		perFrameCB->eyePosW = m_camera.GetPosition();
+		PerFrameData data;
+		data.dirLights[0] = m_dirKeyLight;
+		data.dirLights[1] = m_dirFillLight;
+		data.pointLights[0] = data.pointLights[1] = data.pointLights[2] = data.pointLights[3] = m_pointLight;
+		data.pointLights[0].posW = tmp[0];
+		data.pointLights[1].posW = tmp[1];
+		data.pointLights[2].posW = tmp[2];
+		data.pointLights[3].posW = tmp[3];
+		data.eyePosW = m_camera.GetPosition();
 
-		// enable gpu access
-		m_d3dContext->Unmap(m_d3dPerFrameCB.Get(), 0);
+		m_renderPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(data);
 	}
+
 
 	// RarelyChangedCB
+	if (m_isLightingControlsDirty)
 	{
-		if (m_isControlsDirty)
-		{
-			D3D11_MAPPED_SUBRESOURCE mappedResource;
-			ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-
-			// disable gpu access
-			XTEST_D3D_CHECK(m_d3dContext->Map(m_d3dRarelyChangedCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
-			RarelyChangedCB* rarelyChangedCB = (RarelyChangedCB*)mappedResource.pData;
-
-			//update the data
-			rarelyChangedCB->useDirLight = m_controls.useDirLight;
-			rarelyChangedCB->usePointLight = m_controls.usePointLight;
-			rarelyChangedCB->useSpotLight = m_controls.useSpotLight;
-			rarelyChangedCB->useDiffuseTexture = m_controls.useDiffuseTexture;
-			rarelyChangedCB->useNormalTexture = m_controls.useNormalTexture;
-			rarelyChangedCB->useGlossTexture = m_controls.useGlossTexture;
-
-			// enable gpu access
-			m_d3dContext->Unmap(m_d3dRarelyChangedCB.Get(), 0);
-
-			m_d3dContext->PSSetConstantBuffers(2, 1, m_d3dRarelyChangedCB.GetAddressOf());
-			m_isControlsDirty = false;
-
-		}
+		m_renderPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::rarely_changed)->UpdateBuffer(m_lightingControls);
+		m_isLightingControlsDirty = false;
 	}
-
-	m_d3dAnnotation->EndEvent();
+	
 }
 
 
@@ -794,47 +317,52 @@ void TexturesDemoApp::RenderScene()
 {
 	m_d3dAnnotation->BeginEvent(L"render-scene");
 
-	// clear the frame
-	m_d3dContext->ClearDepthStencilView(m_depthBufferView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
-	m_d3dContext->ClearRenderTargetView(m_backBufferView.Get(), DirectX::Colors::Black);
-
-	// set the shaders and the input layout
-	m_d3dContext->RSSetState(m_rasterizerState.Get());
-	m_d3dContext->IASetInputLayout(m_inputLayout.Get());
-	m_d3dContext->VSSetShader(m_vertexShader.Get(), nullptr, 0);
-	m_d3dContext->PSSetShader(m_pixelShader.Get(), nullptr, 0);
-
-	m_d3dContext->PSSetConstantBuffers(1, 1, m_d3dPerFrameCB.GetAddressOf());
-	m_d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	m_d3dContext->PSSetSamplers(0, 1, m_textureSampler.GetAddressOf());
-
-	// draw
-	for (unsigned int i = 0; i < m_renderables.size(); i++) {
-		// bind the constant data to the vertex shader
-		m_d3dContext->VSSetConstantBuffers(0, 1, m_renderables[i].d3dPerObjectCB.GetAddressOf());
-		m_d3dContext->PSSetConstantBuffers(0, 1, m_renderables[i].d3dPerObjectCB.GetAddressOf());
-
-		// bind the textures
-		m_d3dContext->PSSetShaderResources(0, 1, m_renderables[i].textureView.GetAddressOf());
-		m_d3dContext->PSSetShaderResources(1, 1, m_renderables[i].normalMapView.GetAddressOf());
-		m_d3dContext->PSSetShaderResources(2, 1, m_renderables[i].glossMapView.GetAddressOf());
-		
-		if (m_renderables[i].hasMovingTexture) {
-			m_d3dContext->PSSetShaderResources(3, 1, m_renderables[i].movingTextureView.GetAddressOf());
+	
+	m_renderPass.Bind();
+	m_renderPass.GetState()->ClearDepthOnly();
+	m_renderPass.GetState()->ClearRenderTarget(DirectX::Colors::DarkGray);
+	
+	
+	// draw objects
+	for (render::Renderable& renderable : m_objects)
+	{
+		for (const std::string& meshName : renderable.GetMeshNames())
+		{
+			PerObjectData data = ToPerObjectData(renderable, meshName);
+			m_renderPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+			m_renderPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+			m_renderPass.GetPixelShader()->BindTexture(TextureUsage::color, renderable.GetTextureView(TextureUsage::color, meshName));
+			m_renderPass.GetPixelShader()->BindTexture(TextureUsage::normal, renderable.GetTextureView(TextureUsage::normal, meshName));
+			m_renderPass.GetPixelShader()->BindTexture(TextureUsage::glossiness, renderable.GetTextureView(TextureUsage::glossiness, meshName));
+			renderable.Draw(meshName);
 		}
-
-		// set what to draw
-		UINT stride = sizeof(mesh::MeshData::Vertex);
-		UINT offset = 0;
-		m_d3dContext->IASetVertexBuffers(0, 1, m_renderables[i].d3dVertexBuffer.GetAddressOf(), &stride, &offset);
-		m_d3dContext->IASetIndexBuffer(m_renderables[i].d3dIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-
-		m_d3dContext->DrawIndexed(UINT(m_renderables[i].mesh.indices.size()), 0, 0);
 	}
-		
+
+
 	XTEST_D3D_CHECK(m_swapChain->Present(0, 0));
 
 	m_d3dAnnotation->EndEvent();
+}
+
+
+TexturesDemoApp::PerObjectData TexturesDemoApp::ToPerObjectData(const render::Renderable& renderable, const std::string& meshName) const
+{
+	PerObjectData data;
+
+	XMMATRIX W = XMLoadFloat4x4(&renderable.GetTransform());
+	XMMATRIX T = XMLoadFloat4x4(&renderable.GetTexcoordTransform(meshName));
+	XMMATRIX V = m_camera.GetViewMatrix();
+	XMMATRIX P = m_camera.GetProjectionMatrix();
+	XMMATRIX WVP = W * V*P;
+
+	XMStoreFloat4x4(&data.W, XMMatrixTranspose(W));
+	XMStoreFloat4x4(&data.WVP, XMMatrixTranspose(WVP));
+	XMStoreFloat4x4(&data.W_inverseTraspose, XMMatrixInverse(nullptr, W));
+	XMStoreFloat4x4(&data.TexcoordMatrix, XMMatrixTranspose(T));
+	data.material.ambient = renderable.GetMaterial(meshName).ambient;
+	data.material.diffuse = renderable.GetMaterial(meshName).diffuse;
+	data.material.specular = renderable.GetMaterial(meshName).specular;
+
+	return data;
 }
 

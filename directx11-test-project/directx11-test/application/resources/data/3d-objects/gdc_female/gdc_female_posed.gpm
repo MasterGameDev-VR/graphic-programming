@@ -1,0 +1,58 @@
+{
+	"flashbangs": {
+		"ambient": [0.15,0.15,0.15,1.0],
+		"diffuse": [0.5,0.5,0.5,1.0],
+		"diffuseMap": "textures\\flashbangs_color.png",
+		"glossMap": "textures\\flashbangs_gloss.png",
+		"normalMap": "textures\\flashbangs_norm.png",
+		"specular": [0.2,0.2,0.2,1.0]
+	},
+	"forearms": {
+		"ambient": [0.15,0.15,0.15,1.0],
+		"diffuse": [0.5,0.5,0.5,1.0],
+		"diffuseMap": "textures\\forearms_color.png",
+		"glossMap": "textures\\forearms_gloss.png",
+		"normalMap": "textures\\forearms_norm.png",
+		"specular": [0.2,0.2,0.2,1.0]
+	},
+	"handgun": {
+		"ambient": [0.15,0.15,0.15,1.0],
+		"diffuse": [0.5,0.5,0.5,1.0],
+		"diffuseMap": "textures\\handgun_color.png",
+		"glossMap": "textures\\handgun_gloss.png",
+		"normalMap": "textures\\handgun_norm.png",
+		"specular": [0.2,0.2,0.2,1.0]
+	},
+	"head": {
+		"ambient": [0.15,0.15,0.15,1.0],
+		"diffuse": [0.5,0.5,0.5,1.0],
+		"diffuseMap": "textures\\head_color.png",
+		"glossMap": "textures\\head_gloss.png",
+		"normalMap": "textures\\head_norm.png",
+		"specular": [0.2,0.2,0.2,1.0]
+	},
+	"lower_body": {
+		"ambient": [0.15,0.15,0.15,1.0],
+		"diffuse": [0.5,0.5,0.5,1.0],
+		"diffuseMap": "textures\\lower_body_color.png",
+		"glossMap": "textures\\lower_body_gloss.png",
+		"normalMap": "textures\\lower_body_norm.png",
+		"specular": [0.2,0.2,0.2,1.0]
+	},
+	"upper_arms": {
+		"ambient": [0.15,0.15,0.15,1.0],
+		"diffuse": [0.5,0.5,0.5,1.0],
+		"diffuseMap": "textures\\upper_arms_color.png",
+		"glossMap": "textures\\upper_arms_gloss.png",
+		"normalMap": "textures\\upper_arms_norm.png",
+		"specular": [0.2,0.2,0.2,1.0]
+	},
+	"upper_body": {
+		"ambient": [0.15,0.15,0.15,1.0],
+		"diffuse": [0.5,0.5,0.5,1.0],
+		"diffuseMap": "textures\\upper_body_color.png",
+		"glossMap": "textures\\upper_body_gloss.png",
+		"normalMap": "textures\\upper_body_norm.png",
+		"specular": [0.2,0.2,0.2,1.0]
+	}
+}
