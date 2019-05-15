@@ -44,9 +44,9 @@ LightsDemoApp::LightsDemoApp(HINSTANCE instance,
 	, m_rasterizerState(nullptr)
 	, m_rootString(GetRootDir())
 {
-	if (std::wstring::npos != m_rootString.find(L"builds\\x64\\Debug", 74)) {
+	/*if (std::wstring::npos != m_rootString.find(L"builds\\x64\\Debug", 74)) {
 		m_rootString = m_rootString.erase(74, m_rootString.length());
-	}
+	}*/
 }
 
 
@@ -211,11 +211,11 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		indexInitdata.pSysMem = &m_plane.mesh.indices[0];
 		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &m_plane.d3dIndexBuffer));
 		
-		std::wstring diffTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\ground\\ground_color.png");
+		std::wstring diffTextFileNameStr(L"\\3d-objects\\ground\\ground_color.png");
 		diffTextFileNameStr.insert(0, m_rootString);
-		std::wstring normalMapTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\ground\\ground_norm.png");
+		std::wstring normalMapTextFileNameStr(L"\\3d-objects\\ground\\ground_norm.png");
 		normalMapTextFileNameStr.insert(0, m_rootString);
-		std::wstring glossMapTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\ground\\ground_gloss.png");
+		std::wstring glossMapTextFileNameStr(L"\\3d-objects\\ground\\ground_gloss.png");
 		glossMapTextFileNameStr.insert(0, m_rootString);
 		//discard explicit creation
 		//XTEST_D3D_CHECK(CreateWICTextureFromFileEx(m_d3dDevice.Get(),m_d3dContext.Get(), diffTextFileName,0,D3D11_USAGE_DYNAMIC,D3D11_BIND_SHADER_RESOURCE,D3D11_CPU_ACCESS_WRITE,D3D11_RESOURCE_MISC_TILED,0,&m_plane.d3dResourceDiffText, &m_plane.d3dShaderResourceViewDiffText));
@@ -282,13 +282,13 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		indexInitdata.pSysMem = &m_sphere.mesh.indices[0];
 		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &m_sphere.d3dIndexBuffer));
 
-		std::wstring diffTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_color.png");
+		std::wstring diffTextFileNameStr(L"\\3d-objects\\coat\\coat_color.png");
 		diffTextFileNameStr.insert(0, m_rootString);
-		std::wstring normalMapTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_norm.png");
+		std::wstring normalMapTextFileNameStr(L"\\3d-objects\\coat\\coat_norm.png");
 		normalMapTextFileNameStr.insert(0, m_rootString);
-		std::wstring glossMapTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_gloss.png");
+		std::wstring glossMapTextFileNameStr(L"\\3d-objects\\coat\\coat_gloss.png");
 		glossMapTextFileNameStr.insert(0, m_rootString);
-		std::wstring motionDiffTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\sci-fi\\sci_fi_color.png");
+		std::wstring motionDiffTextFileNameStr(L"\\3d-objects\\sci-fi\\sci_fi_color.png");
 		motionDiffTextFileNameStr.insert(0, m_rootString);
 
 		//diffuseTexture
@@ -357,13 +357,13 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		indexInitdata.pSysMem = &m_torus.mesh.indices[0];
 		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &m_torus.d3dIndexBuffer));
 
-		std::wstring diffTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\jeans\\jeans_color.png");
+		std::wstring diffTextFileNameStr(L"\\3d-objects\\jeans\\jeans_color.png");
 		diffTextFileNameStr.insert(0, m_rootString);
-		std::wstring normalMapTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\jeans\\jeans_norm.png");
+		std::wstring normalMapTextFileNameStr(L"\\3d-objects\\jeans\\jeans_norm.png");
 		normalMapTextFileNameStr.insert(0, m_rootString);
-		std::wstring glossMapTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\jeans\\jeans_gloss.png");
+		std::wstring glossMapTextFileNameStr(L"\\3d-objects\\jeans\\jeans_gloss.png");
 		glossMapTextFileNameStr.insert(0, m_rootString);
-		std::wstring motionDiffTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\twine\\twine_color.png");
+		std::wstring motionDiffTextFileNameStr(L"\\3d-objects\\twine\\twine_color.png");
 		motionDiffTextFileNameStr.insert(0, m_rootString);
 
 
@@ -429,11 +429,11 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		indexInitdata.pSysMem = &m_box.mesh.indices[0];
 		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &m_box.d3dIndexBuffer));
 
-		std::wstring diffTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\wet-stone\\wet_stone_color.png");
+		std::wstring diffTextFileNameStr(L"\\3d-objects\\wet-stone\\wet_stone_color.png");
 		diffTextFileNameStr.insert(0, m_rootString);
-		std::wstring normalMapTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\wet-stone\\wet_stone_norm.png");
+		std::wstring normalMapTextFileNameStr(L"\\3d-objects\\wet-stone\\wet_stone_norm.png");
 		normalMapTextFileNameStr.insert(0, m_rootString);
-		std::wstring glossMapTextFileNameStr(L"directx11-test\\application\\resources\\data\\3d-objects\\wet-stone\\wet_stone_gloss.png");
+		std::wstring glossMapTextFileNameStr(L"\\3d-objects\\wet-stone\\wet_stone_gloss.png");
 		glossMapTextFileNameStr.insert(0, m_rootString);
 
 
@@ -473,11 +473,11 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		bottomMat.diffuse = { 0.94f, 0.40f, 0.14f, 1.0f };
 		bottomMat.specular = { 0.94f, 0.40f, 0.14f, 30.0f };
 
-		std::wstring diffTextFileName_bottomStr(L"directx11-test\\application\\resources\\data\\3d-objects\\wood\\wood_color.png");
+		std::wstring diffTextFileName_bottomStr(L"\\3d-objects\\wood\\wood_color.png");
 		diffTextFileName_bottomStr.insert(0, m_rootString);
-		std::wstring normalMapTextFileName_bottomStr(L"directx11-test\\application\\resources\\data\\3d-objects\\wood\\wood_norm.png");
+		std::wstring normalMapTextFileName_bottomStr(L"\\3d-objects\\wood\\wood_norm.png");
 		normalMapTextFileName_bottomStr.insert(0, m_rootString);
-		std::wstring glossMapTextFileName_bottomStr(L"directx11-test\\application\\resources\\data\\3d-objects\\wood\\wood_gloss.png");
+		std::wstring glossMapTextFileName_bottomStr(L"\\3d-objects\\wood\\wood_gloss.png");
 		glossMapTextFileName_bottomStr.insert(0, m_rootString);
 		
 		//diffuseTexture
@@ -494,11 +494,11 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		topMat.diffuse = { 0.9f, 0.9f, 0.9f, 1.0f };
 		topMat.specular = { 0.9f, 0.9f, 0.9f, 550.0f };
 
-		std::wstring diffTextFileName_topStr(L"directx11-test\\application\\resources\\data\\3d-objects\\fabric\\fabric_color.png");
+		std::wstring diffTextFileName_topStr(L"\\3d-objects\\fabric\\fabric_color.png");
 		diffTextFileName_topStr.insert(0, m_rootString);
-		std::wstring normalMapTextFileName_topStr(L"directx11-test\\application\\resources\\data\\3d-objects\\fabric\\fabric_norm.png");
+		std::wstring normalMapTextFileName_topStr(L"\\3d-objects\\fabric\\fabric_norm.png");
 		normalMapTextFileName_topStr.insert(0, m_rootString);
-		std::wstring glossMapTextFileName_topStr(L"directx11-test\\application\\resources\\data\\3d-objects\\fabric\\fabric_gloss.png");
+		std::wstring glossMapTextFileName_topStr(L"\\3d-objects\\fabric\\fabric_gloss.png");
 		glossMapTextFileName_topStr.insert(0, m_rootString);
 
 		
@@ -515,11 +515,11 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		topHandleMat.diffuse = { 0.4f, 0.4f, 0.4f, 1.0f };
 		topHandleMat.specular = { 0.9f, 0.9f, 0.9f, 120.0f };
 
-		std::wstring diffTextFileName_top_handlesStr(L"directx11-test\\application\\resources\\data\\3d-objects\\plastic-cover\\plastic_cover_color.png");
+		std::wstring diffTextFileName_top_handlesStr(L"\\3d-objects\\plastic-cover\\plastic_cover_color.png");
 		diffTextFileName_top_handlesStr.insert(0, m_rootString);
-		std::wstring normalMapTextFileName_top_handlesStr(L"directx11-test\\application\\resources\\data\\3d-objects\\plastic-cover\\plastic_cover_norm.png");
+		std::wstring normalMapTextFileName_top_handlesStr(L"\\3d-objects\\plastic-cover\\plastic_cover_norm.png");
 		normalMapTextFileName_top_handlesStr.insert(0, m_rootString);
-		std::wstring glossMapTextFileName_top_handlesStr(L"directx11-test\\application\\resources\\data\\3d-objects\\plastic-cover\\plastic_cover_gloss.png");
+		std::wstring glossMapTextFileName_top_handlesStr(L"\\3d-objects\\plastic-cover\\plastic_cover_gloss.png");
 		glossMapTextFileName_top_handlesStr.insert(0, m_rootString);
 
 
@@ -537,11 +537,11 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		handleMat.diffuse = { 0.67f, 0.61f, 0.1f, 1.0f };
 		handleMat.specular = { 0.67f, 0.61f, 0.1f, 200.0f };
 
-		std::wstring diffTextFileName_handlesStr(L"directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_color.png");
+		std::wstring diffTextFileName_handlesStr(L"\\3d-objects\\coat\\coat_color.png");
 		diffTextFileName_handlesStr.insert(0, m_rootString);
-		std::wstring normalMapTextFileName_handlesStr(L"directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_norm.png");
+		std::wstring normalMapTextFileName_handlesStr(L"\\3d-objects\\coat\\coat_norm.png");
 		normalMapTextFileName_handlesStr.insert(0, m_rootString);
-		std::wstring glossMapTextFileName_handlesStr(L"directx11-test\\application\\resources\\data\\3d-objects\\coat\\coat_gloss.png");
+		std::wstring glossMapTextFileName_handlesStr(L"\\3d-objects\\coat\\coat_gloss.png");
 		glossMapTextFileName_handlesStr.insert(0, m_rootString);
 
 
@@ -558,11 +558,11 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		metalPiecesMat.diffuse = { 0.4f, 0.4f, 0.4f, 1.0f };
 		metalPiecesMat.specular = { 0.4f, 0.4f, 0.4f, 520.0f };
 
-		std::wstring diffTextFileName_metal_pStr(L"directx11-test\\application\\resources\\data\\3d-objects\\twine\\twine_color.png");
+		std::wstring diffTextFileName_metal_pStr(L"\\3d-objects\\twine\\twine_color.png");
 		diffTextFileName_metal_pStr.insert(0, m_rootString);
-		std::wstring normalMapTextFileName_metal_pStr(L"directx11-test\\application\\resources\\data\\3d-objects\\twine\\twine_norm.png");
+		std::wstring normalMapTextFileName_metal_pStr(L"\\3d-objects\\twine\\twine_norm.png");
 		normalMapTextFileName_metal_pStr.insert(0, m_rootString);
-		std::wstring glossMapTextFileName_metal_pStr(L"directx11-test\\application\\resources\\data\\3d-objects\\twine\\twine_gloss.png");
+		std::wstring glossMapTextFileName_metal_pStr(L"\\3d-objects\\twine\\twine_gloss.png");
 		glossMapTextFileName_metal_pStr.insert(0, m_rootString);
 
 		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName_metal_pStr.data(), &m_crate.shapeAttributeMapByName["metal_pieces_3"].d3dResourceDiffText, &m_crate.shapeAttributeMapByName["metal_pieces_3"].d3dShaderResourceViewDiffText, 0Ui64));
