@@ -11,7 +11,7 @@ namespace mesh {
 		{
 			DirectX::XMFLOAT3 position;
 			DirectX::XMFLOAT3 normal;
-			DirectX::XMFLOAT3 tangentU;
+			DirectX::XMFLOAT4 tangentU;
 			DirectX::XMFLOAT2 uv;
 			bool operator==(const Vertex& other) const;
 
@@ -19,6 +19,18 @@ namespace mesh {
 
 		std::vector<Vertex> vertices;
 		std::vector<uint32> indices;
+	};
+
+
+	struct MeshMaterial
+	{
+		DirectX::XMFLOAT4 ambient;
+		DirectX::XMFLOAT4 diffuse;
+		DirectX::XMFLOAT4 specular;
+
+		std::wstring diffuseMap;
+		std::wstring normalMap;
+		std::wstring glossMap;
 	};
 
 
@@ -30,9 +42,12 @@ namespace mesh {
 			uint32 vertexOffset;
 			uint32 indexCount;
 			uint32 indexOffset;
+			MeshMaterial material;
 		};
 
-		std::map<std::string, MeshDescriptor> meshDescriptorMapByName;
+		typedef std::map<std::string, MeshDescriptor> DescriptorMap;
+
+		DescriptorMap meshDescriptorMapByName;
 		MeshData meshData;
 	};
 

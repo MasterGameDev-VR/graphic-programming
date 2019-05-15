@@ -39,7 +39,7 @@ If not defined, this macro has value 1 in Debug builds and 0 otherwise.
 					std::wstring message = L"- File: " + fileName + L"[" + std::to_wstring(__LINE__) + L"]\r" + \
 										   L"- Function: " + L#x + L" \r" + \
 										   L"- Error: " + error.ErrorMessage(); \
-					MessageBoxW(nullptr, message.c_str(), L"D3D Error", MB_OK | MB_ICONERROR); \
+					XTEST_ASSERT(false, message.c_str()); /*MessageBoxW(nullptr, message.c_str(), L"D3D Error", MB_OK | MB_ICONERROR);*/ \
 				} \
 			} while(false)
 #	endif

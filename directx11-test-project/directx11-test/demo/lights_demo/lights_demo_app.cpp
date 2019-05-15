@@ -1,10 +1,9 @@
-
 #include "stdafx.h"
 #include "lights_demo_app.h"
 #include <file/file_utils.h>
 #include <math/math_utils.h>
 #include <service/locator.h>
-#include <external_libs/directxtk/WICTextureLoader.h>
+
 
 using namespace DirectX;
 using namespace xtest;
@@ -21,33 +20,21 @@ LightsDemoApp::LightsDemoApp(HINSTANCE instance,
 	, m_projectionMatrix()
 	, m_camera(math::ToRadians(68.f), math::ToRadians(135.f), 7.f, { 0.f, 0.f, 0.f }, { 0.f, 1.f, 0.f }, { math::ToRadians(4.f), math::ToRadians(175.f) }, { 3.f, 25.f })
 	, m_dirLight()
-	, m_spotLights()
-	, m_pointLights()
+	, m_spotLight()
+	, m_pointLight()
 	, m_sphere()
-	, m_torus()
-	, m_box()
 	, m_plane()
 	, m_crate()
 	, m_lightsControl()
 	, m_isLightControlDirty(true)
 	, m_stopLights(false)
-	, m_texturesControl()
-	, m_isTexturesControlDirty(true)
 	, m_d3dPerFrameCB(nullptr)
-	//, m_d3dPerFrameTextureCB(nullptr)
-	, m_isTheFirstTextureMovementUpdate(true)
 	, m_d3dRarelyChangedCB(nullptr)
-	, m_d3dRarelyChangedTextureCB(nullptr)
 	, m_vertexShader(nullptr)
 	, m_pixelShader(nullptr)
 	, m_inputLayout(nullptr)
-	, m_rasterizerState(nullptr)
-	, m_rootString(GetRootDir())
-{
-	/*if (std::wstring::npos != m_rootString.find(L"builds\\x64\\Debug", 74)) {
-		m_rootString = m_rootString.erase(74, m_rootString.length());
-	}*/
-}
+	, m_rasterizerState(nullptr)	
+{}
 
 
 LightsDemoApp::~LightsDemoApp()
@@ -63,13 +50,11 @@ void LightsDemoApp::Init()
 	InitMatrices();
 	InitShaders();
 	InitRenderable();
-	InitSamplerState();
 	InitLights();
-	InitTexturesControls();
 	InitRasterizerState();
 
 	service::Locator::GetMouse()->AddListener(this);
-	service::Locator::GetKeyboard()->AddListener(this, { input::Key::F, input::Key::F1, input::Key::F2, input::Key::F3,input::Key::F4, input::Key::F5, input::Key::F6, input::Key::space_bar });
+	service::Locator::GetKeyboard()->AddListener(this, { input::Key::F, input::Key::F1, input::Key::F2, input::Key::F3, input::Key::space_bar });
 
 	m_d3dAnnotation->EndEvent();
 }
@@ -111,10 +96,8 @@ void LightsDemoApp::InitShaders()
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(mesh::MeshData::Vertex, normal), D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(mesh::MeshData::Vertex, tangentU), D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(mesh::MeshData::Vertex, uv), D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	};
-	XTEST_D3D_CHECK(m_d3dDevice->CreateInputLayout(vertexDesc, 4, vsByteCode.Data(), vsByteCode.ByteSize(), &m_inputLayout));
+	XTEST_D3D_CHECK(m_d3dDevice->CreateInputLayout(vertexDesc, 2, vsByteCode.Data(), vsByteCode.ByteSize(), &m_inputLayout));
 
 
 	// perFrameCB
@@ -126,30 +109,8 @@ void LightsDemoApp::InitShaders()
 	perFrameCBDesc.MiscFlags = 0;
 	perFrameCBDesc.StructureByteStride = 0;
 	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perFrameCBDesc, nullptr, &m_d3dPerFrameCB));
-	//errore di violazione di accesso corretto: avevo dimenticato di decommentare le due righe sotto per la creazione del Frame Constant Buffer a partire dal suo Descriptor
-	//perFrameCBDesc.ByteWidth = sizeof(PerFrameTextureCB);
-	//XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perFrameCBDesc, nullptr, &m_d3dPerFrameTextureCB));
-
-
-
 }
 
-void xtest::demo::LightsDemoApp::InitSamplerState() 
-{
-	D3D11_SAMPLER_DESC samplerDesc;
-	ZeroMemory(&samplerDesc,sizeof(D3D11_SAMPLER_DESC));
-	//properties.... to define
-	samplerDesc.Filter = D3D11_FILTER_ANISOTROPIC;
-	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-	samplerDesc.MaxAnisotropy = 16;
-	samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
-	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
-	//samplerDesc.MinLOD = 0;
-	XTEST_D3D_CHECK(m_d3dDevice->CreateSamplerState(&samplerDesc, &m_textureSamplerState));
-
-}
 
 void xtest::demo::LightsDemoApp::InitRenderable()
 {
@@ -165,8 +126,8 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 
 
 		// material
-		m_plane.material.ambient = { 0.15f, 0.15f, 0.15f, 1.f };
-		m_plane.material.diffuse = { 0.52f, 0.52f, 0.52f, 1.f };
+		m_plane.material.ambient  = { 0.15f, 0.15f, 0.15f, 1.f };
+		m_plane.material.diffuse  = { 0.52f, 0.52f, 0.52f, 1.f };
 		m_plane.material.specular = { 0.8f, 0.8f, 0.8f, 190.0f };
 
 
@@ -179,9 +140,6 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		perObjectCBDesc.MiscFlags = 0;
 		perObjectCBDesc.StructureByteStride = 0;
 		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &m_plane.d3dPerObjectCB));
-		//perObjectCBDesc.ByteWidth = sizeof(PerObjectTextureCB);
-		//XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &m_plane.d3dPerObjectTextureCB));
-
 
 
 		// vertex buffer
@@ -210,20 +168,6 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		D3D11_SUBRESOURCE_DATA indexInitdata;
 		indexInitdata.pSysMem = &m_plane.mesh.indices[0];
 		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &m_plane.d3dIndexBuffer));
-		
-		std::wstring diffTextFileNameStr(L"\\3d-objects\\ground\\ground_color.png");
-		diffTextFileNameStr.insert(0, m_rootString);
-		std::wstring normalMapTextFileNameStr(L"\\3d-objects\\ground\\ground_norm.png");
-		normalMapTextFileNameStr.insert(0, m_rootString);
-		std::wstring glossMapTextFileNameStr(L"\\3d-objects\\ground\\ground_gloss.png");
-		glossMapTextFileNameStr.insert(0, m_rootString);
-		//discard explicit creation
-		//XTEST_D3D_CHECK(CreateWICTextureFromFileEx(m_d3dDevice.Get(),m_d3dContext.Get(), diffTextFileName,0,D3D11_USAGE_DYNAMIC,D3D11_BIND_SHADER_RESOURCE,D3D11_CPU_ACCESS_WRITE,D3D11_RESOURCE_MISC_TILED,0,&m_plane.d3dResourceDiffText, &m_plane.d3dShaderResourceViewDiffText));
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileNameStr.data(),&m_plane.d3dResourceDiffText, &m_plane.d3dShaderResourceViewDiffText,0Ui64));
-		//normal map Texture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileNameStr.data(), &m_plane.d3dResourceNormalMapText, &m_plane.d3dShaderResourceViewNormalMapText, 0Ui64));
-		//gloss map Texture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileNameStr.data(), &m_plane.d3dResourceGlossMapText, &m_plane.d3dShaderResourceViewGlossMapText, 0Ui64));
 	}
 
 
@@ -235,7 +179,7 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 
 
 		// W
-		XMStoreFloat4x4(&m_sphere.W, XMMatrixTranslation(-4.f, 1.f, 0.f));
+		XMStoreFloat4x4(&m_sphere.W,XMMatrixTranslation(-4.f, 1.f, 0.f));
 
 		// material
 		m_sphere.material.ambient = { 0.7f, 0.1f, 0.1f, 1.0f };
@@ -252,8 +196,7 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		perObjectCBDesc.MiscFlags = 0;
 		perObjectCBDesc.StructureByteStride = 0;
 		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &m_sphere.d3dPerObjectCB));
-		//perObjectCBDesc.ByteWidth = sizeof(PerObjectTextureCB);
-		//XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &m_sphere.d3dPerObjectTextureCB));
+
 
 		// vertex buffer
 		D3D11_BUFFER_DESC vertexBufferDesc;
@@ -281,173 +224,6 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		D3D11_SUBRESOURCE_DATA indexInitdata;
 		indexInitdata.pSysMem = &m_sphere.mesh.indices[0];
 		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &m_sphere.d3dIndexBuffer));
-
-		std::wstring diffTextFileNameStr(L"\\3d-objects\\coat\\coat_color.png");
-		diffTextFileNameStr.insert(0, m_rootString);
-		std::wstring normalMapTextFileNameStr(L"\\3d-objects\\coat\\coat_norm.png");
-		normalMapTextFileNameStr.insert(0, m_rootString);
-		std::wstring glossMapTextFileNameStr(L"\\3d-objects\\coat\\coat_gloss.png");
-		glossMapTextFileNameStr.insert(0, m_rootString);
-		std::wstring motionDiffTextFileNameStr(L"\\3d-objects\\sci-fi\\sci_fi_color.png");
-		motionDiffTextFileNameStr.insert(0, m_rootString);
-
-		//diffuseTexture
-		//discard explicit creation
-		//XTEST_D3D_CHECK(CreateWICTextureFromFileEx(m_d3dDevice.Get(),m_d3dContext.Get(), diffTextFileName,0,D3D11_USAGE_DYNAMIC,D3D11_BIND_SHADER_RESOURCE,D3D11_CPU_ACCESS_WRITE,D3D11_RESOURCE_MISC_TILED,0,&m_plane.d3dResourceDiffText, &m_plane.d3dShaderResourceViewDiffText));
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileNameStr.data(), &m_sphere.d3dResourceDiffText, &m_sphere.d3dShaderResourceViewDiffText, 0Ui64));
-		//normal map Texture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileNameStr.data(), &m_sphere.d3dResourceNormalMapText, &m_sphere.d3dShaderResourceViewNormalMapText, 0Ui64));
-		//gloss map Texture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileNameStr.data(), &m_sphere.d3dResourceGlossMapText, &m_sphere.d3dShaderResourceViewGlossMapText, 0Ui64));
-		//motion color Texture - diffuse
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), motionDiffTextFileNameStr.data(), &m_sphere.d3dResourceMotionDiffText, &m_sphere.d3dShaderResourceViewMotionDiffText, 0Ui64));
-
-	}
-	// torus
-	{
-		// geo
-		m_torus.mesh = mesh::GenerateTorus(1.5f, 5.f, 360, 360);
-
-
-		// W
-		XMStoreFloat4x4(&m_torus.W, XMMatrixTranslation(-9.f,2.f,-8.f));
-
-
-		// material
-		m_torus.material.ambient = { 0.15f, 0.15f, 0.15f, 1.f };
-		m_torus.material.diffuse = { 0.52f, 0.52f, 0.52f, 1.f };
-		m_torus.material.specular = { 0.8f, 0.8f, 0.8f, 190.0f };
-
-		// perObjectCB
-		D3D11_BUFFER_DESC perObjectCBDesc;
-		perObjectCBDesc.Usage = D3D11_USAGE_DYNAMIC;
-		perObjectCBDesc.ByteWidth = sizeof(PerObjectCB);
-		perObjectCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		perObjectCBDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		perObjectCBDesc.MiscFlags = 0;
-		perObjectCBDesc.StructureByteStride = 0;
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &m_torus.d3dPerObjectCB));
-		//perObjectCBDesc.ByteWidth = sizeof(PerObjectTextureCB);
-		//XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &m_torus.d3dPerObjectTextureCB));
-
-		// vertex buffer
-		D3D11_BUFFER_DESC vertexBufferDesc;
-		vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-		vertexBufferDesc.ByteWidth = UINT(sizeof(mesh::MeshData::Vertex) * m_torus.mesh.vertices.size());
-		vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-		vertexBufferDesc.CPUAccessFlags = 0;
-		vertexBufferDesc.MiscFlags = 0;
-		vertexBufferDesc.StructureByteStride = 0;
-
-		D3D11_SUBRESOURCE_DATA vertexInitData;
-		vertexInitData.pSysMem = &m_torus.mesh.vertices[0];
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexInitData, &m_torus.d3dVertexBuffer));
-
-
-		// index buffer
-		D3D11_BUFFER_DESC indexBufferDesc;
-		indexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-		indexBufferDesc.ByteWidth = UINT(sizeof(uint32) * m_torus.mesh.indices.size());
-		indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-		indexBufferDesc.CPUAccessFlags = 0;
-		indexBufferDesc.MiscFlags = 0;
-		indexBufferDesc.StructureByteStride = 0;
-
-		D3D11_SUBRESOURCE_DATA indexInitdata;
-		indexInitdata.pSysMem = &m_torus.mesh.indices[0];
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &m_torus.d3dIndexBuffer));
-
-		std::wstring diffTextFileNameStr(L"\\3d-objects\\jeans\\jeans_color.png");
-		diffTextFileNameStr.insert(0, m_rootString);
-		std::wstring normalMapTextFileNameStr(L"\\3d-objects\\jeans\\jeans_norm.png");
-		normalMapTextFileNameStr.insert(0, m_rootString);
-		std::wstring glossMapTextFileNameStr(L"\\3d-objects\\jeans\\jeans_gloss.png");
-		glossMapTextFileNameStr.insert(0, m_rootString);
-		std::wstring motionDiffTextFileNameStr(L"\\3d-objects\\twine\\twine_color.png");
-		motionDiffTextFileNameStr.insert(0, m_rootString);
-
-
-		//diffuseTexture
-		//discard explicit creation
-		//XTEST_D3D_CHECK(CreateWICTextureFromFileEx(m_d3dDevice.Get(),m_d3dContext.Get(), diffTextFileName,0,D3D11_USAGE_DYNAMIC,D3D11_BIND_SHADER_RESOURCE,D3D11_CPU_ACCESS_WRITE,D3D11_RESOURCE_MISC_TILED,0,&m_plane.d3dResourceDiffText, &m_plane.d3dShaderResourceViewDiffText));
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileNameStr.data(), &m_torus.d3dResourceDiffText, &m_torus.d3dShaderResourceViewDiffText, 0Ui64));
-		//normal map Texture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileNameStr.data(), &m_torus.d3dResourceNormalMapText, &m_torus.d3dShaderResourceViewNormalMapText, 0Ui64));
-		//gloss map Texture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileNameStr.data(), &m_torus.d3dResourceGlossMapText, &m_torus.d3dShaderResourceViewGlossMapText, 0Ui64));
-		//motion color Texture - diffuse
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), motionDiffTextFileNameStr.data(), &m_torus.d3dResourceMotionDiffText, &m_torus.d3dShaderResourceViewMotionDiffText, 0Ui64));
-
-		
-	}
-	// box
-	{
-		// geo
-		m_box.mesh = mesh::GenerateBox(4.f, 5.f, 6.f);
-		// W
-		XMStoreFloat4x4(&m_box.W, XMMatrixTranslation(2.f, 4.f, -6.f));
-		// material
-		m_box.material.ambient = { 0.15f, 0.15f, 0.15f, 1.f };
-		m_box.material.diffuse = { 0.52f, 0.52f, 0.52f, 1.f };
-		m_box.material.specular = { 0.8f, 0.8f, 0.8f, 190.0f };
-		// perObjectCB
-		D3D11_BUFFER_DESC perObjectCBDesc;
-		perObjectCBDesc.Usage = D3D11_USAGE_DYNAMIC;
-		perObjectCBDesc.ByteWidth = sizeof(PerObjectCB);
-		perObjectCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		perObjectCBDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		perObjectCBDesc.MiscFlags = 0;
-		perObjectCBDesc.StructureByteStride = 0;
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &m_box.d3dPerObjectCB));
-
-
-		// vertex buffer
-		D3D11_BUFFER_DESC vertexBufferDesc;
-		vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-		vertexBufferDesc.ByteWidth = UINT(sizeof(mesh::MeshData::Vertex) * m_box.mesh.vertices.size());
-		vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-		vertexBufferDesc.CPUAccessFlags = 0;
-		vertexBufferDesc.MiscFlags = 0;
-		vertexBufferDesc.StructureByteStride = 0;
-
-		D3D11_SUBRESOURCE_DATA vertexInitData;
-		vertexInitData.pSysMem = &m_box.mesh.vertices[0];
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexInitData, &m_box.d3dVertexBuffer));
-		//perObjectCBDesc.ByteWidth = sizeof(PerObjectTextureCB);
-		//XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &m_box.d3dPerObjectTextureCB));
-
-		// index buffer
-		D3D11_BUFFER_DESC indexBufferDesc;
-		indexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-		indexBufferDesc.ByteWidth = UINT(sizeof(uint32) * m_box.mesh.indices.size());
-		indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-		indexBufferDesc.CPUAccessFlags = 0;
-		indexBufferDesc.MiscFlags = 0;
-		indexBufferDesc.StructureByteStride = 0;
-
-		D3D11_SUBRESOURCE_DATA indexInitdata;
-		indexInitdata.pSysMem = &m_box.mesh.indices[0];
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&indexBufferDesc, &indexInitdata, &m_box.d3dIndexBuffer));
-
-		std::wstring diffTextFileNameStr(L"\\3d-objects\\wet-stone\\wet_stone_color.png");
-		diffTextFileNameStr.insert(0, m_rootString);
-		std::wstring normalMapTextFileNameStr(L"\\3d-objects\\wet-stone\\wet_stone_norm.png");
-		normalMapTextFileNameStr.insert(0, m_rootString);
-		std::wstring glossMapTextFileNameStr(L"\\3d-objects\\wet-stone\\wet_stone_gloss.png");
-		glossMapTextFileNameStr.insert(0, m_rootString);
-
-
-		//diffuseTexture
-		//discard explicit creation
-		//XTEST_D3D_CHECK(CreateWICTextureFromFileEx(m_d3dDevice.Get(),m_d3dContext.Get(), diffTextFileName,0,D3D11_USAGE_DYNAMIC,D3D11_BIND_SHADER_RESOURCE,D3D11_CPU_ACCESS_WRITE,D3D11_RESOURCE_MISC_TILED,0,&m_plane.d3dResourceDiffText, &m_plane.d3dShaderResourceViewDiffText));
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileNameStr.data(), &m_box.d3dResourceDiffText, &m_box.d3dShaderResourceViewDiffText, 0Ui64));
-
-		//normal map Texture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileNameStr.data(), &m_box.d3dResourceNormalMapText, &m_box.d3dShaderResourceViewNormalMapText, 0Ui64));
-
-		//gloss map Texture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileNameStr.data(), &m_box.d3dResourceGlossMapText, &m_box.d3dShaderResourceViewGlossMapText, 0Ui64));
-
 	}
 
 
@@ -455,38 +231,22 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 	{
 
 		//geo
-		std::wstring targetFile = GetRootDir().append(LR"(\3d-objects\crate.gpf)");
-		
+		std::wstring targetFile = GetRootDir().append(LR"(\3d-objects\crate\crate.gpf)");
+
 		{
-			mesh::GPFMesh gpfMesh = file::ReadGPF(targetFile);
+			mesh::GPFMesh gpfMesh = *(service::Locator::GetResourceLoader()->LoadGPFMesh(targetFile));
 			m_crate.mesh = std::move(gpfMesh);
 		}
-
+		
 		// W
-		XMStoreFloat4x4(&m_crate.W, XMMatrixMultiply(XMMatrixScaling(0.01f, 0.01f, 0.01f), XMMatrixTranslation(0.f, 0.f, 0.f)));
+		XMStoreFloat4x4(&m_crate.W, XMMatrixIdentity());
 
-		//the following rows populate the shapeAttributeMapByName member of the struct object m_crate
-		//-----------------------------
-        //bottom material
+
+		//bottom material
 		Material& bottomMat = m_crate.shapeAttributeMapByName["bottom_1"].material;
 		bottomMat.ambient = { 0.8f, 0.3f, 0.1f, 1.0f };
 		bottomMat.diffuse = { 0.94f, 0.40f, 0.14f, 1.0f };
 		bottomMat.specular = { 0.94f, 0.40f, 0.14f, 30.0f };
-
-		std::wstring diffTextFileName_bottomStr(L"\\3d-objects\\wood\\wood_color.png");
-		diffTextFileName_bottomStr.insert(0, m_rootString);
-		std::wstring normalMapTextFileName_bottomStr(L"\\3d-objects\\wood\\wood_norm.png");
-		normalMapTextFileName_bottomStr.insert(0, m_rootString);
-		std::wstring glossMapTextFileName_bottomStr(L"\\3d-objects\\wood\\wood_gloss.png");
-		glossMapTextFileName_bottomStr.insert(0, m_rootString);
-		
-		//diffuseTexture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName_bottomStr.data(), &m_crate.shapeAttributeMapByName["bottom_1"].d3dResourceDiffText , &m_crate.shapeAttributeMapByName["bottom_1"].d3dShaderResourceViewDiffText, 0Ui64));
-     	//normal map Texture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileName_bottomStr.data(), &m_crate.shapeAttributeMapByName["bottom_1"].d3dResourceNormalMapText, &m_crate.shapeAttributeMapByName["bottom_1"].d3dShaderResourceViewNormalMapText, 0Ui64));
-		//gloss map Texture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName_bottomStr.data(), &m_crate.shapeAttributeMapByName["bottom_1"].d3dResourceGlossMapText, &m_crate.shapeAttributeMapByName["bottom_1"].d3dShaderResourceViewGlossMapText, 0Ui64));
-
 
 		//top material
 		Material& topMat = m_crate.shapeAttributeMapByName["top_2"].material;
@@ -494,90 +254,24 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		topMat.diffuse = { 0.9f, 0.9f, 0.9f, 1.0f };
 		topMat.specular = { 0.9f, 0.9f, 0.9f, 550.0f };
 
-		std::wstring diffTextFileName_topStr(L"\\3d-objects\\fabric\\fabric_color.png");
-		diffTextFileName_topStr.insert(0, m_rootString);
-		std::wstring normalMapTextFileName_topStr(L"\\3d-objects\\fabric\\fabric_norm.png");
-		normalMapTextFileName_topStr.insert(0, m_rootString);
-		std::wstring glossMapTextFileName_topStr(L"\\3d-objects\\fabric\\fabric_gloss.png");
-		glossMapTextFileName_topStr.insert(0, m_rootString);
-
-		
-		//diffuseTexture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName_topStr.data(), &m_crate.shapeAttributeMapByName["top_2"].d3dResourceDiffText, &m_crate.shapeAttributeMapByName["top_2"].d3dShaderResourceViewDiffText, 0Ui64));
-		//normal map Texture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileName_topStr.data(), &m_crate.shapeAttributeMapByName["top_2"].d3dResourceNormalMapText, &m_crate.shapeAttributeMapByName["top_2"].d3dShaderResourceViewNormalMapText, 0Ui64));
-		//gloss map Texture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName_topStr.data(), &m_crate.shapeAttributeMapByName["top_2"].d3dResourceGlossMapText, &m_crate.shapeAttributeMapByName["top_2"].d3dShaderResourceViewGlossMapText, 0Ui64));
-
 		//top handles material
-		Material& topHandleMat = m_crate.shapeAttributeMapByName["top_handles_4"].material;
+		Material& topHandleMat = m_crate.shapeAttributeMapByName["handles_6"].material;
 		topHandleMat.ambient = { 0.3f, 0.3f, 0.3f, 1.0f };
 		topHandleMat.diffuse = { 0.4f, 0.4f, 0.4f, 1.0f };
 		topHandleMat.specular = { 0.9f, 0.9f, 0.9f, 120.0f };
 
-		std::wstring diffTextFileName_top_handlesStr(L"\\3d-objects\\plastic-cover\\plastic_cover_color.png");
-		diffTextFileName_top_handlesStr.insert(0, m_rootString);
-		std::wstring normalMapTextFileName_top_handlesStr(L"\\3d-objects\\plastic-cover\\plastic_cover_norm.png");
-		normalMapTextFileName_top_handlesStr.insert(0, m_rootString);
-		std::wstring glossMapTextFileName_top_handlesStr(L"\\3d-objects\\plastic-cover\\plastic_cover_gloss.png");
-		glossMapTextFileName_top_handlesStr.insert(0, m_rootString);
-
-
-		//diffuseTexture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName_top_handlesStr.data(), &m_crate.shapeAttributeMapByName["top_handles_4"].d3dResourceDiffText, &m_crate.shapeAttributeMapByName["top_handles_4"].d3dShaderResourceViewDiffText, 0Ui64));
-		//normal map Texture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileName_top_handlesStr.data(), &m_crate.shapeAttributeMapByName["top_handles_4"].d3dResourceNormalMapText, &m_crate.shapeAttributeMapByName["top_handles_4"].d3dShaderResourceViewNormalMapText, 0Ui64));
-		//gloss map Texture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName_top_handlesStr.data(), &m_crate.shapeAttributeMapByName["top_handles_4"].d3dResourceGlossMapText, &m_crate.shapeAttributeMapByName["top_handles_4"].d3dShaderResourceViewGlossMapText, 0Ui64));
-
-
-		//handle material
-		Material& handleMat = m_crate.shapeAttributeMapByName["handles_8"].material;
-		handleMat.ambient = { 0.5f, 0.5f, 0.1f, 1.0f };
-		handleMat.diffuse = { 0.67f, 0.61f, 0.1f, 1.0f };
-		handleMat.specular = { 0.67f, 0.61f, 0.1f, 200.0f };
-
-		std::wstring diffTextFileName_handlesStr(L"\\3d-objects\\coat\\coat_color.png");
-		diffTextFileName_handlesStr.insert(0, m_rootString);
-		std::wstring normalMapTextFileName_handlesStr(L"\\3d-objects\\coat\\coat_norm.png");
-		normalMapTextFileName_handlesStr.insert(0, m_rootString);
-		std::wstring glossMapTextFileName_handlesStr(L"\\3d-objects\\coat\\coat_gloss.png");
-		glossMapTextFileName_handlesStr.insert(0, m_rootString);
-
-
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName_handlesStr.data(), &m_crate.shapeAttributeMapByName["handles_8"].d3dResourceDiffText, &m_crate.shapeAttributeMapByName["handles_8"].d3dShaderResourceViewDiffText, 0Ui64));
-		//normal map Texture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileName_handlesStr.data(), &m_crate.shapeAttributeMapByName["handles_8"].d3dResourceNormalMapText, &m_crate.shapeAttributeMapByName["handles_8"].d3dShaderResourceViewNormalMapText, 0Ui64));
-		//gloss map Texture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName_handlesStr.data(), &m_crate.shapeAttributeMapByName["handles_8"].d3dResourceGlossMapText, &m_crate.shapeAttributeMapByName["handles_8"].d3dShaderResourceViewGlossMapText, 0Ui64));
-
-
 		//metal material
-		Material& metalPiecesMat = m_crate.shapeAttributeMapByName["metal_pieces_3"].material;
-		metalPiecesMat.ambient = { 0.3f, 0.3f, 0.3f, 1.0f };
-		metalPiecesMat.diffuse = { 0.4f, 0.4f, 0.4f, 1.0f };
-		metalPiecesMat.specular = { 0.4f, 0.4f, 0.4f, 520.0f };
-
-		std::wstring diffTextFileName_metal_pStr(L"\\3d-objects\\twine\\twine_color.png");
-		diffTextFileName_metal_pStr.insert(0, m_rootString);
-		std::wstring normalMapTextFileName_metal_pStr(L"\\3d-objects\\twine\\twine_norm.png");
-		normalMapTextFileName_metal_pStr.insert(0, m_rootString);
-		std::wstring glossMapTextFileName_metal_pStr(L"\\3d-objects\\twine\\twine_gloss.png");
-		glossMapTextFileName_metal_pStr.insert(0, m_rootString);
-
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), diffTextFileName_metal_pStr.data(), &m_crate.shapeAttributeMapByName["metal_pieces_3"].d3dResourceDiffText, &m_crate.shapeAttributeMapByName["metal_pieces_3"].d3dShaderResourceViewDiffText, 0Ui64));
-		//normal map Texture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), normalMapTextFileName_metal_pStr.data(), &m_crate.shapeAttributeMapByName["metal_pieces_3"].d3dResourceNormalMapText, &m_crate.shapeAttributeMapByName["metal_pieces_3"].d3dShaderResourceViewNormalMapText, 0Ui64));
-		//gloss map Texture
-		XTEST_D3D_CHECK(CreateWICTextureFromFile(m_d3dDevice.Get(), m_d3dContext.Get(), glossMapTextFileName_metal_pStr.data(), &m_crate.shapeAttributeMapByName["metal_pieces_3"].d3dResourceGlossMapText, &m_crate.shapeAttributeMapByName["metal_pieces_3"].d3dShaderResourceViewGlossMapText, 0Ui64));
+		Material& metalPiecesMat = m_crate.shapeAttributeMapByName["metal_pieces_7"].material;
+		metalPiecesMat.ambient = { 0.5f, 0.5f, 0.1f, 1.0f };
+		metalPiecesMat.diffuse = { 0.67f, 0.61f, 0.1f, 1.0f };
+		metalPiecesMat.specular = { 0.67f, 0.61f, 0.1f, 200.0f };
 
 
-		//then, we populate the shapeAttributeMapByName with many constant buffers, one for each of the crate's parts
-		//---------------------
+
 		for (const auto& namePairWithDesc : m_crate.mesh.meshDescriptorMapByName)
 		{
 			ComPtr<ID3D11Buffer> d3dPerObjectCB;
-			//ComPtr<ID3D11Buffer> d3dPerObjectTextureCB;
+
 			// perObjectCBs
 			D3D11_BUFFER_DESC perObjectCBDesc;
 			perObjectCBDesc.Usage = D3D11_USAGE_DYNAMIC;
@@ -587,14 +281,10 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 			perObjectCBDesc.MiscFlags = 0;
 			perObjectCBDesc.StructureByteStride = 0;
 			XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &d3dPerObjectCB));
-			//perObjectCBDesc.ByteWidth = sizeof(PerObjectTextureCB);
-			//XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&perObjectCBDesc, nullptr, &d3dPerObjectTextureCB));
 
 			m_crate.shapeAttributeMapByName[namePairWithDesc.first].d3dPerObjectCB = d3dPerObjectCB;
-			//m_crate.shapeAttributeMapByName[namePairWithDesc.first].d3dPerObjectTextureCB = d3dPerObjectTextureCB;
-
 		}
-	
+			   		 
 
 		// vertex buffer
 		D3D11_BUFFER_DESC vertexBufferDesc;
@@ -629,42 +319,32 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 
 void LightsDemoApp::InitLights()
 {
-	m_dirLight.ambient = { 0.16f, 0.18f, 0.18f, 1.f };
-	m_dirLight.diffuse = { 0.4f* 0.87f,0.4f* 0.90f,0.4f* 0.94f, 1.f };
+	m_dirLight.ambient  = { 0.16f, 0.18f, 0.18f, 1.f };
+	m_dirLight.diffuse  = {0.4f* 0.87f,0.4f* 0.90f,0.4f* 0.94f, 1.f };
 	m_dirLight.specular = { 0.87f, 0.90f, 0.94f, 1.f };
 	XMVECTOR dirLightDirection = XMVector3Normalize(-XMVectorSet(5.f, 3.f, 5.f, 0.f));
 	XMStoreFloat3(&m_dirLight.dirW, dirLightDirection);
 
-	
-	for (int i = 0; i < 5;i++) {
-		PointLight pointLight;
 
-		pointLight.ambient = { 0.18f, 0.04f, 0.16f, 1.0f };
-		pointLight.diffuse = { 0.94f, 0.23f, 0.87f, 1.0f };
-		pointLight.specular = { 0.94f, 0.23f, 0.87f, 1.0f };
-		pointLight.posW = XMFLOAT3(10.f*cosf(XM_2PI/5 *(i+1)),2.f, 10.f*sinf(XM_2PI / 5 * (i + 1)));
-		//XMMATRIX R = XMMatrixRotationY(math::ToRadians(30.f)*(i + 1));
-		//XMStoreFloat3(&(*pointLightsRefs[i]).posW, XMVector3Transform(XMLoadFloat3(&(*pointLightsRefs[i]).posW), R));
-		pointLight.range = 150.f;
-		pointLight.attenuation = { 0.0f, 0.2f, 0.f };
-		m_pointLights.push_back(pointLight);
-	}
+	m_pointLight.ambient = { 0.18f, 0.04f, 0.16f, 1.0f };
+	m_pointLight.diffuse = { 0.94f, 0.23f, 0.87f, 1.0f };
+	m_pointLight.specular = { 0.94f, 0.23f, 0.87f, 1.0f };
+	m_pointLight.posW = { -5.f, 2.f, 5.f };
+	m_pointLight.range = 15.f;
+	m_pointLight.attenuation = { 0.0f, 0.2f, 0.f };
 
-	for (int i = 0; i < 3; i++) {
-		SpotLight spotLight;
-		spotLight.ambient = { 0.018f, 0.018f, 0.18f, 1.0f };
-		spotLight.diffuse = { 0.1f, 0.1f, 0.9f, 1.0f };
-		spotLight.specular = { 0.1f, 0.1f, 0.9f, 1.0f };
-		//XMVECTOR posW = XMVectorSet(5.f*cosf(XM_2PI / 3 * (i + 1)), 5.f, 5.f*sinf(XM_2PI / 3 * (i + 1)), 1.f);
-		//XMStoreFloat3(&spotLight.posW, posW);
-		spotLight.posW = XMFLOAT3(22.f*cosf(XM_2PI / 3 * (i + 1)), 9.f, 22.f*sinf(XM_2PI / 3 * (i + 1)));
-		spotLight.range = 200.f;
-		XMVECTOR dirW = XMVector3Normalize(XMVectorSet(0.f, 0.5f, 0.f, 1.f) - XMVectorSet(spotLight.posW.x, spotLight.posW.y, spotLight.posW.z,1.0f));
-		XMStoreFloat3(&spotLight.dirW, dirW);
-		spotLight.spot = 20.f;
-		spotLight.attenuation = { 0.0f, 0.125f, 0.f };
-		m_spotLights.push_back(spotLight);
-	}
+
+	m_spotLight.ambient  = { 0.018f, 0.018f, 0.18f, 1.0f };
+	m_spotLight.diffuse  = { 0.1f, 0.1f, 0.9f, 1.0f };
+	m_spotLight.specular = { 0.1f, 0.1f, 0.9f, 1.0f };
+	XMVECTOR posW = XMVectorSet(5.f, 5.f, -5.f, 1.f);
+	XMStoreFloat3(&m_spotLight.posW, posW);
+	m_spotLight.range = 50.f;
+	XMVECTOR dirW = XMVector3Normalize( XMVectorSet(-4.f, 1.f, 0.f, 1.f) -  posW);
+	XMStoreFloat3(&m_spotLight.dirW, dirW);
+	m_spotLight.spot = 40.f;
+	m_spotLight.attenuation = { 0.0f, 0.125f, 0.f };
+
 	
 	m_lightsControl.useDirLight = true;
 	m_lightsControl.usePointLight = true;
@@ -686,32 +366,6 @@ void LightsDemoApp::InitLights()
 		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&rarelyChangedCB, &lightControlData, &m_d3dRarelyChangedCB));
 	}
 }
-void LightsDemoApp::InitTexturesControls() 
-{
-
-	m_texturesControl.useColorTextureMap = true;
-	m_texturesControl.useNormalTextureMap = true;
-	m_texturesControl.useGlossTextureMap = true;
-	// RarelyChangedTextureCB
-	{
-		D3D11_BUFFER_DESC rarelyChangedTextureCB;
-		rarelyChangedTextureCB.Usage = D3D11_USAGE_DYNAMIC;
-		rarelyChangedTextureCB.ByteWidth = sizeof(RarelyChangedTextureCB);
-		rarelyChangedTextureCB.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		rarelyChangedTextureCB.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		rarelyChangedTextureCB.MiscFlags = 0;
-		rarelyChangedTextureCB.StructureByteStride = 0;
-
-		D3D11_SUBRESOURCE_DATA textureControlData;
-		textureControlData.pSysMem = &m_texturesControl;
-		XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&rarelyChangedTextureCB, &textureControlData, &m_d3dRarelyChangedTextureCB));
-
-
-	}
-
-
-}
-
 
 
 void LightsDemoApp::InitRasterizerState()
@@ -805,21 +459,6 @@ void LightsDemoApp::OnKeyStatusChange(input::Key key, const input::KeyStatus& st
 	{
 		m_stopLights = !m_stopLights;
 	}
-	else if (key == input::Key::F4 && status.isDown)
-	{
-		m_texturesControl.useColorTextureMap = !m_texturesControl.useColorTextureMap;
-		m_isTexturesControlDirty = true;
-	}
-	else if (key == input::Key::F5 && status.isDown)
-	{
-		m_texturesControl.useNormalTextureMap = !m_texturesControl.useNormalTextureMap;
-		m_isTexturesControlDirty = true;
-	}
-	else if (key == input::Key::F6 && status.isDown)
-	{
-		m_texturesControl.useGlossTextureMap = !m_texturesControl.useGlossTextureMap;
-		m_isTexturesControlDirty = true;
-	}
 }
 
 
@@ -827,15 +466,15 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 {
 	XTEST_UNUSED_VAR(deltaSeconds);
 
-
+	
 	// create the model-view-projection matrix
 	XMMATRIX V = m_camera.GetViewMatrix();
 	XMStoreFloat4x4(&m_viewMatrix, V);
 
 	// create projection matrix
 	XMMATRIX P = XMLoadFloat4x4(&m_projectionMatrix);
-
-
+	
+	
 
 	m_d3dAnnotation->BeginEvent(L"update-constant-buffer");
 
@@ -843,7 +482,7 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 	// plane PerObjectCB
 	{
 		XMMATRIX W = XMLoadFloat4x4(&m_plane.W);
-		XMMATRIX WVP = W * V*P;
+		XMMATRIX WVP = W*V*P;
 
 		D3D11_MAPPED_SUBRESOURCE mappedResource;
 		ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
@@ -857,31 +496,16 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 		XMStoreFloat4x4(&perObjectCB->WVP, XMMatrixTranspose(WVP));
 		XMStoreFloat4x4(&perObjectCB->W_inverseTraspose, XMMatrixInverse(nullptr, W));
 		perObjectCB->material = m_plane.material;
-		perObjectCB->usesNormalMapTexture = true;
-		perObjectCB->usesTwoColorMapTextures = false;
-		perObjectCB->_explicit_pad_1_ = false;
-		perObjectCB->_explicit_pad_2_ = false;
 
 		// enable gpu access
 		m_d3dContext->Unmap(m_plane.d3dPerObjectCB.Get(), 0);
-		/*
-		D3D11_MAPPED_SUBRESOURCE texturePropsMappedResource;
-		ZeroMemory(&texturePropsMappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-
-		// disable gpu access
-		XTEST_D3D_CHECK(m_d3dContext->Map(m_plane.d3dPerObjectTextureCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &texturePropsMappedResource));
-		PerObjectTextureCB* perObjectTextureCB = (PerObjectTextureCB*)texturePropsMappedResource.pData;
-		perObjectTextureCB->usesNormalMapTexture = true;
-		perObjectTextureCB->usesTwoColorMapTextures = false;
-		m_d3dContext->Unmap(m_plane.d3dPerObjectTextureCB.Get(), 0);
-		*/
 	}
 
 
 	// sphere PerObjectCB
 	{
 		XMMATRIX W = XMLoadFloat4x4(&m_sphere.W);
-		XMMATRIX WVP = W * V*P;
+		XMMATRIX WVP = W*V*P;
 
 		D3D11_MAPPED_SUBRESOURCE mappedResource;
 		ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
@@ -895,111 +519,21 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 		XMStoreFloat4x4(&perObjectCB->WVP, XMMatrixTranspose(WVP));
 		XMStoreFloat4x4(&perObjectCB->W_inverseTraspose, XMMatrixInverse(nullptr, W));
 		perObjectCB->material = m_sphere.material;
-		perObjectCB->usesNormalMapTexture = true;
-		perObjectCB->usesTwoColorMapTextures = true;
-		//perObjectCB->_explicit_pad_1_ = false;
-		//perObjectCB->_explicit_pad_2_ = false;
 
 		// enable gpu access
 		m_d3dContext->Unmap(m_sphere.d3dPerObjectCB.Get(), 0);
-
-		/*
-		D3D11_MAPPED_SUBRESOURCE texturePropsMappedResource;
-		ZeroMemory(&texturePropsMappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-
-		// disable gpu access
-		XTEST_D3D_CHECK(m_d3dContext->Map(m_sphere.d3dPerObjectTextureCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &texturePropsMappedResource));
-		PerObjectTextureCB* perObjectTextureCB = (PerObjectTextureCB*)texturePropsMappedResource.pData;
-		perObjectTextureCB->usesNormalMapTexture = true;
-		perObjectTextureCB->usesTwoColorMapTextures = true;
-		m_d3dContext->Unmap(m_sphere.d3dPerObjectTextureCB.Get(), 0);
-		*/
-	}
-
-	// torus PerObjectCB
-	{
-		XMMATRIX W = XMLoadFloat4x4(&m_torus.W);
-		XMMATRIX WVP = W * V*P;
-
-		D3D11_MAPPED_SUBRESOURCE mappedResource;
-		ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-
-		// disable gpu access
-		XTEST_D3D_CHECK(m_d3dContext->Map(m_torus.d3dPerObjectCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
-		PerObjectCB* perObjectCB = (PerObjectCB*)mappedResource.pData;
-
-		//update the data
-		XMStoreFloat4x4(&perObjectCB->W, XMMatrixTranspose(W));
-		XMStoreFloat4x4(&perObjectCB->WVP, XMMatrixTranspose(WVP));
-		XMStoreFloat4x4(&perObjectCB->W_inverseTraspose, XMMatrixInverse(nullptr, W));
-		perObjectCB->material = m_torus.material;
-		perObjectCB->usesNormalMapTexture = true;
-		perObjectCB->usesTwoColorMapTextures = true;
-		//perObjectCB->_explicit_pad_1_ = false;
-		//perObjectCB->_explicit_pad_2_ = false;
-
-		// enable gpu access
-		m_d3dContext->Unmap(m_torus.d3dPerObjectCB.Get(), 0);
-		/*
-		D3D11_MAPPED_SUBRESOURCE texturePropsMappedResource;
-		ZeroMemory(&texturePropsMappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-
-		// disable gpu access
-		XTEST_D3D_CHECK(m_d3dContext->Map(m_torus.d3dPerObjectTextureCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &texturePropsMappedResource));
-		PerObjectTextureCB* perObjectTextureCB = (PerObjectTextureCB*)texturePropsMappedResource.pData;
-		perObjectTextureCB->usesNormalMapTexture = true;
-		perObjectTextureCB->usesTwoColorMapTextures = true;
-		m_d3dContext->Unmap(m_torus.d3dPerObjectTextureCB.Get(), 0);
-		*/
-	}
-
-	// box PerObjectCB
-	{
-		XMMATRIX W = XMLoadFloat4x4(&m_box.W);
-		XMMATRIX WVP = W * V*P;
-
-		D3D11_MAPPED_SUBRESOURCE mappedResource;
-		ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-
-		// disable gpu access
-		XTEST_D3D_CHECK(m_d3dContext->Map(m_box.d3dPerObjectCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
-		PerObjectCB* perObjectCB = (PerObjectCB*)mappedResource.pData;
-
-		//update the data
-		XMStoreFloat4x4(&perObjectCB->W, XMMatrixTranspose(W));
-		XMStoreFloat4x4(&perObjectCB->WVP, XMMatrixTranspose(WVP));
-		XMStoreFloat4x4(&perObjectCB->W_inverseTraspose, XMMatrixInverse(nullptr, W));
-		perObjectCB->material = m_box.material;
-		perObjectCB->usesNormalMapTexture = true;
-		perObjectCB->usesTwoColorMapTextures = false;
-		//perObjectCB->_explicit_pad_1_ = false;
-		//perObjectCB->_explicit_pad_2_ = false;
-
-		// enable gpu access
-		m_d3dContext->Unmap(m_box.d3dPerObjectCB.Get(), 0);
-		/*
-		D3D11_MAPPED_SUBRESOURCE texturePropsMappedResource;
-		ZeroMemory(&texturePropsMappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-
-		// disable gpu access
-		XTEST_D3D_CHECK(m_d3dContext->Map(m_box.d3dPerObjectTextureCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &texturePropsMappedResource));
-		PerObjectTextureCB* perObjectTextureCB = (PerObjectTextureCB*)texturePropsMappedResource.pData;
-		perObjectTextureCB->usesNormalMapTexture = true;
-		perObjectTextureCB->usesTwoColorMapTextures = false;
-		m_d3dContext->Unmap(m_box.d3dPerObjectTextureCB.Get(), 0);
-		*/
 	}
 
 
 	// crate PerObjectCB
 	{
 		XMMATRIX W = XMLoadFloat4x4(&m_crate.W);
-		XMMATRIX WVP = W * V*P;
+		XMMATRIX WVP = W*V*P;
 
 		for (const auto& namePairWithDesc : m_crate.mesh.meshDescriptorMapByName)
 		{
 			const std::string& shapeName = namePairWithDesc.first;
-
+		
 
 			D3D11_MAPPED_SUBRESOURCE mappedResource;
 			ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
@@ -1013,25 +547,10 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 			XMStoreFloat4x4(&perObjectCB->WVP, XMMatrixTranspose(WVP));
 			XMStoreFloat4x4(&perObjectCB->W_inverseTraspose, XMMatrixInverse(nullptr, W));
 			perObjectCB->material = m_crate.shapeAttributeMapByName[shapeName].material;
-			perObjectCB->usesNormalMapTexture = false;
-			perObjectCB->usesTwoColorMapTextures = false;
-			perObjectCB->_explicit_pad_1_ = false;
-			perObjectCB->_explicit_pad_2_ = false;
 
 			// enable gpu access
 			m_d3dContext->Unmap(m_crate.shapeAttributeMapByName[shapeName].d3dPerObjectCB.Get(), 0);
-			/*
-			D3D11_MAPPED_SUBRESOURCE texturePropsMappedResource;
-			ZeroMemory(&texturePropsMappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-
-			// disable gpu access
-			XTEST_D3D_CHECK(m_d3dContext->Map(m_crate.shapeAttributeMapByName[shapeName].d3dPerObjectTextureCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &texturePropsMappedResource));
-			PerObjectTextureCB* perObjectTextureCB = (PerObjectTextureCB*)texturePropsMappedResource.pData;
-			perObjectTextureCB->usesNormalMapTexture = false;
-			perObjectTextureCB->usesTwoColorMapTextures = false;
-			m_d3dContext->Unmap(m_crate.shapeAttributeMapByName[shapeName].d3dPerObjectTextureCB.Get(), 0);
-			*/
-
+		
 		}
 	}
 
@@ -1042,14 +561,7 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 		if (!m_stopLights)
 		{
 			XMMATRIX R = XMMatrixRotationY(math::ToRadians(30.f) * deltaSeconds);
-			for (int i = 0; i < m_pointLights.size(); i++) {
-				XMStoreFloat3(&m_pointLights[i].posW, XMVector3Transform(XMLoadFloat3(&m_pointLights[i].posW), R));
-			}
-			R = XMMatrixRotationY(math::ToRadians(20.f) * deltaSeconds);
-			for (int i = 0; i < m_spotLights.size(); i++) {
-				XMStoreFloat3(&m_spotLights[i].posW, XMVector3Transform(XMLoadFloat3(&m_spotLights[i].posW), R));
-				XMStoreFloat3(&m_spotLights[i].dirW, XMVector3Transform(XMLoadFloat3(&m_spotLights[i].dirW), R));
-			}
+			XMStoreFloat3(&m_pointLight.posW, XMVector3Transform(XMLoadFloat3(&m_pointLight.posW), R));
 
 			R = XMMatrixRotationAxis(XMVectorSet(-1.f, 0.f, 1.f, 1.f), math::ToRadians(10.f) * deltaSeconds);
 			XMStoreFloat3(&m_dirLight.dirW, XMVector3Transform(XMLoadFloat3(&m_dirLight.dirW), R));
@@ -1064,51 +576,16 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 
 		//update the data
 		perFrameCB->dirLight = m_dirLight;
-		perFrameCB->pointLight0 = m_pointLights[0];
-		perFrameCB->pointLight1 = m_pointLights[1];
-		perFrameCB->pointLight2 = m_pointLights[2];
-		perFrameCB->pointLight3 = m_pointLights[3];
-		perFrameCB->pointLight4 = m_pointLights[4];
-		perFrameCB->spotLight0 = m_spotLights[0];
-		perFrameCB->spotLight1 = m_spotLights[1];
-		perFrameCB->spotLight2 = m_spotLights[2];
-
+		perFrameCB->spotLight = m_spotLight;
+		perFrameCB->pointLight = m_pointLight;
 		perFrameCB->eyePosW = m_camera.GetPosition();
-		perFrameCB->translateValue += 0.005f;
-		if (m_isTheFirstTextureMovementUpdate) {
-			perFrameCB->translateValue = 0.0f;
-			m_isTheFirstTextureMovementUpdate = false;
-		}
 
 		// enable gpu access
 		m_d3dContext->Unmap(m_d3dPerFrameCB.Get(), 0);
-
-
 	}
 
-	//PerFrameTextureCB
-	/*
-	{
-		XMMATRIX translateUVcoords = XMMatrixTranslation(deltaSeconds, 0.0f, 0.0f);
 
-		D3D11_MAPPED_SUBRESOURCE mappedResource;
-		ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-
-		XTEST_D3D_CHECK(m_d3dContext->Map(m_d3dPerFrameTextureCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource)); 
-		PerFrameTextureCB* perFrameTextureCB = (PerFrameTextureCB*)mappedResource.pData;
-		XMMATRIX pastTranslation = XMMatrixTranspose(  XMLoadFloat4x4(&(perFrameTextureCB->texCoordMatrix)));
-		if (m_isTheFirstTextureMovementUpdate) {
-			pastTranslation = XMMatrixIdentity();
-			m_isTheFirstTextureMovementUpdate = false;
-		}
-		XMMATRIX nextTranslation = XMMatrixMultiply(  pastTranslation, translateUVcoords );
-		XMStoreFloat4x4(&(perFrameTextureCB->texCoordMatrix), XMMatrixTranspose(nextTranslation));
-		perFrameTextureCB->translateValue += 0.005f;
-		m_d3dContext->Unmap(m_d3dPerFrameTextureCB.Get(), 0);
-	}
-	*/
 	// RarelyChangedCB
-		
 	{
 		if (m_isLightControlDirty)
 		{
@@ -1131,35 +608,9 @@ void LightsDemoApp::UpdateScene(float deltaSeconds)
 			m_isLightControlDirty = false;
 
 		}
-
 	}
-	// RarelyChangedTextureCB
-	{
-		if (m_isTexturesControlDirty)
-		{
-			D3D11_MAPPED_SUBRESOURCE mappedResource;
-			ZeroMemory(&mappedResource, sizeof(D3D11_MAPPED_SUBRESOURCE));
 
-			// disable gpu access
-			XTEST_D3D_CHECK(m_d3dContext->Map(m_d3dRarelyChangedTextureCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource));
-			RarelyChangedTextureCB* rarelyChangedTextureCB = (RarelyChangedTextureCB*)mappedResource.pData;
-
-			//update the data
-			rarelyChangedTextureCB->useColorTextureMap = m_texturesControl.useColorTextureMap;
-			rarelyChangedTextureCB->useNormalTextureMap = m_texturesControl.useNormalTextureMap;
-			rarelyChangedTextureCB->useGlossTextureMap = m_texturesControl.useGlossTextureMap;
-
-			// enable gpu access
-			m_d3dContext->Unmap(m_d3dRarelyChangedTextureCB.Get(), 0);
-			m_d3dContext->PSSetConstantBuffers(3, 1, m_d3dRarelyChangedTextureCB.GetAddressOf());
-
-
-			m_isTexturesControlDirty = false;
-
-		}
-	}
 	m_d3dAnnotation->EndEvent();
-	
 }
 
 
@@ -1178,11 +629,6 @@ void LightsDemoApp::RenderScene()
 	m_d3dContext->PSSetShader(m_pixelShader.Get(), nullptr, 0);
 
 	m_d3dContext->PSSetConstantBuffers(1, 1, m_d3dPerFrameCB.GetAddressOf());
-
-	//m_d3dContext->VSSetConstantBuffers(4, 1, m_d3dPerFrameTextureCB.GetAddressOf());
-
-	m_d3dContext->PSSetSamplers(0,1,m_textureSamplerState.GetAddressOf());
-
 	m_d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// draw plane
@@ -1190,14 +636,6 @@ void LightsDemoApp::RenderScene()
 		// bind the constant data to the vertex shader
 		m_d3dContext->VSSetConstantBuffers(0, 1, m_plane.d3dPerObjectCB.GetAddressOf());
 		m_d3dContext->PSSetConstantBuffers(0, 1, m_plane.d3dPerObjectCB.GetAddressOf());
-
-		//m_d3dContext->VSSetConstantBuffers(5, 1, m_plane.d3dPerObjectTextureCB.GetAddressOf());
-		//m_d3dContext->PSSetConstantBuffers(5, 1, m_plane.d3dPerObjectTextureCB.GetAddressOf());
-
-		m_d3dContext->PSSetShaderResources(0, 1, m_plane.d3dShaderResourceViewDiffText.GetAddressOf());
-		m_d3dContext->PSSetShaderResources(1, 1, m_plane.d3dShaderResourceViewNormalMapText.GetAddressOf());
-		m_d3dContext->PSSetShaderResources(2, 1, m_plane.d3dShaderResourceViewGlossMapText.GetAddressOf());
-
 
 		// set what to draw
 		UINT stride = sizeof(mesh::MeshData::Vertex);
@@ -1208,21 +646,12 @@ void LightsDemoApp::RenderScene()
 		m_d3dContext->DrawIndexed(UINT(m_plane.mesh.indices.size()), 0, 0);
 	}
 
-
+	
 	// draw sphere
 	{
 		// bind the constant data to the vertex shader
 		m_d3dContext->VSSetConstantBuffers(0, 1, m_sphere.d3dPerObjectCB.GetAddressOf());
 		m_d3dContext->PSSetConstantBuffers(0, 1, m_sphere.d3dPerObjectCB.GetAddressOf());
-
-		//m_d3dContext->VSSetConstantBuffers(5, 1, m_sphere.d3dPerObjectTextureCB.GetAddressOf());
-		//m_d3dContext->PSSetConstantBuffers(5, 1, m_sphere.d3dPerObjectTextureCB.GetAddressOf());
-
-		m_d3dContext->PSSetShaderResources(0, 1, m_sphere.d3dShaderResourceViewDiffText.GetAddressOf());
-		m_d3dContext->PSSetShaderResources(1, 1, m_sphere.d3dShaderResourceViewNormalMapText.GetAddressOf());
-		m_d3dContext->PSSetShaderResources(2, 1, m_sphere.d3dShaderResourceViewGlossMapText.GetAddressOf());
-		m_d3dContext->PSSetShaderResources(3, 1, m_sphere.d3dShaderResourceViewMotionDiffText.GetAddressOf());
-
 
 		// set what to draw
 		UINT stride = sizeof(mesh::MeshData::Vertex);
@@ -1233,55 +662,7 @@ void LightsDemoApp::RenderScene()
 		m_d3dContext->DrawIndexed(UINT(m_sphere.mesh.indices.size()), 0, 0);
 	}
 
-	// draw torus
-	{
-		// bind the constant data to the vertex shader
-		m_d3dContext->VSSetConstantBuffers(0, 1, m_torus.d3dPerObjectCB.GetAddressOf());
-		m_d3dContext->PSSetConstantBuffers(0, 1, m_torus.d3dPerObjectCB.GetAddressOf());
-
-		//m_d3dContext->VSSetConstantBuffers(5, 1, m_torus.d3dPerObjectTextureCB.GetAddressOf());
-		//m_d3dContext->PSSetConstantBuffers(5, 1, m_torus.d3dPerObjectTextureCB.GetAddressOf());
-
-		m_d3dContext->PSSetShaderResources(0, 1, m_torus.d3dShaderResourceViewDiffText.GetAddressOf());
-		m_d3dContext->PSSetShaderResources(1, 1, m_torus.d3dShaderResourceViewNormalMapText.GetAddressOf());
-		m_d3dContext->PSSetShaderResources(2, 1, m_torus.d3dShaderResourceViewGlossMapText.GetAddressOf());
-		m_d3dContext->PSSetShaderResources(3, 1, m_torus.d3dShaderResourceViewMotionDiffText.GetAddressOf());
-
-
-
-		// set what to draw
-		UINT stride = sizeof(mesh::MeshData::Vertex);
-		UINT offset = 0;
-		m_d3dContext->IASetVertexBuffers(0, 1, m_torus.d3dVertexBuffer.GetAddressOf(), &stride, &offset);
-		m_d3dContext->IASetIndexBuffer(m_torus.d3dIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-
-		m_d3dContext->DrawIndexed(UINT(m_torus.mesh.indices.size()), 0, 0);
-	}
-	// draw box
-	{
-		// bind the constant data to the vertex shader
-		m_d3dContext->VSSetConstantBuffers(0, 1, m_box.d3dPerObjectCB.GetAddressOf());
-		m_d3dContext->PSSetConstantBuffers(0, 1, m_box.d3dPerObjectCB.GetAddressOf());
-
-		//m_d3dContext->VSSetConstantBuffers(5, 1, m_box.d3dPerObjectTextureCB.GetAddressOf());
-		//m_d3dContext->PSSetConstantBuffers(5, 1, m_box.d3dPerObjectTextureCB.GetAddressOf());
-
-		m_d3dContext->PSSetShaderResources(0, 1, m_box.d3dShaderResourceViewDiffText.GetAddressOf());
-		m_d3dContext->PSSetShaderResources(1, 1, m_box.d3dShaderResourceViewNormalMapText.GetAddressOf());
-		m_d3dContext->PSSetShaderResources(2, 1, m_box.d3dShaderResourceViewGlossMapText.GetAddressOf());
-
-
-
-		// set what to draw
-		UINT stride = sizeof(mesh::MeshData::Vertex);
-		UINT offset = 0;
-		m_d3dContext->IASetVertexBuffers(0, 1, m_box.d3dVertexBuffer.GetAddressOf(), &stride, &offset);
-		m_d3dContext->IASetIndexBuffer(m_box.d3dIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-
-		m_d3dContext->DrawIndexed(UINT(m_box.mesh.indices.size()), 0, 0);
-	}
-
-
+	
 	// draw crate
 	{
 		// set what to draw
@@ -1296,24 +677,18 @@ void LightsDemoApp::RenderScene()
 			const mesh::GPFMesh::MeshDescriptor& meshDesc = m_crate.mesh.meshDescriptorMapByName[shapeName];
 
 			// bind the constant data to the vertex shader
-			m_d3dContext->VSSetConstantBuffers(0, 1, m_crate.shapeAttributeMapByName[shapeName].d3dPerObjectCB.GetAddressOf());
-			m_d3dContext->PSSetConstantBuffers(0, 1, m_crate.shapeAttributeMapByName[shapeName].d3dPerObjectCB.GetAddressOf());
-
-			//m_d3dContext->VSSetConstantBuffers(5, 1, m_crate.shapeAttributeMapByName[shapeName].d3dPerObjectTextureCB.GetAddressOf());
-			//m_d3dContext->PSSetConstantBuffers(5, 1, m_crate.shapeAttributeMapByName[shapeName].d3dPerObjectTextureCB.GetAddressOf());
-
-			m_d3dContext->PSSetShaderResources(0, 1, m_crate.shapeAttributeMapByName[shapeName].d3dShaderResourceViewDiffText.GetAddressOf());
-			m_d3dContext->PSSetShaderResources(1, 1, m_crate.shapeAttributeMapByName[shapeName].d3dShaderResourceViewNormalMapText.GetAddressOf());
-			m_d3dContext->PSSetShaderResources(2, 1, m_crate.shapeAttributeMapByName[shapeName].d3dShaderResourceViewGlossMapText.GetAddressOf());
+ 			m_d3dContext->VSSetConstantBuffers(0, 1, m_crate.shapeAttributeMapByName[shapeName].d3dPerObjectCB.GetAddressOf());
+ 			m_d3dContext->PSSetConstantBuffers(0, 1, m_crate.shapeAttributeMapByName[shapeName].d3dPerObjectCB.GetAddressOf());
 
 			// draw
 			m_d3dContext->DrawIndexed(meshDesc.indexCount, meshDesc.indexOffset, meshDesc.vertexOffset);
 		}
-
+		
 	}
 
-
+	
 	XTEST_D3D_CHECK(m_swapChain->Present(0, 0));
 
 	m_d3dAnnotation->EndEvent();
 }
+
