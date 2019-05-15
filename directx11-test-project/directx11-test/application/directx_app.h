@@ -2,6 +2,7 @@
 
 #include <application/windows_app.h>
 #include <application/directx_settings.h>
+#include <file/resource_loader.h>
 #include <time/timer.h>
 
 namespace xtest {
@@ -50,6 +51,8 @@ namespace application {
 		Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_backBufferView;
 		Microsoft::WRL::ComPtr<ID3D11Texture2D> m_depthBuffer;
 		Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_depthBufferView;
+		D3D11_VIEWPORT m_viewport;
+		file::ResourceLoader m_resourceLoader;
 
 	private:
 		

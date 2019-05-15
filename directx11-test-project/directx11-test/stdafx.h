@@ -21,6 +21,8 @@
 #include <vector>
 #include <array>
 #include <map>
+#include <unordered_map>
+#include <type_traits>
 
 // DirectX headers
 #include <d3d11_1.h>

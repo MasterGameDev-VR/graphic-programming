@@ -1,0 +1,34 @@
+{
+	"ground": {
+		"ambient": [0.15,0.15,0.15,1.0],
+		"diffuse": [0.5,0.5,0.5,1.0],
+		"diffuseMap": "textures\\sand_color.tif",
+		"glossMap": "textures\\sand_gloss.tif",
+		"normalMap": "textures\\sand_norm.tif",
+		"specular": [0.2,0.2,0.2,1.0]
+	},
+	"ground_rocks": {
+		"ambient": [0.15,0.15,0.15,1.0],
+		"diffuse": [0.5,0.5,0.5,1.0],
+		"diffuseMap": "textures\\ground_rocks_color.png",
+		"glossMap": "textures\\ground_rocks_gloss.png",
+		"normalMap": "textures\\ground_rocks_norm.png",
+		"specular": [0.2,0.2,0.2,1.0]
+	},
+	"sharp_rocks": {
+		"ambient": [0.15,0.15,0.15,1.0],
+		"diffuse": [0.5,0.5,0.5,1.0],
+		"diffuseMap": "textures\\sharp_rocks_color.png",
+		"glossMap": "textures\\sharp_rocks_gloss.png",
+		"normalMap": "textures\\sharp_rocks_norm.png",
+		"specular": [0.2,0.2,0.2,1.0]
+	},
+	"soft_rocks": {
+		"ambient": [0.15,0.15,0.15,1.0],
+		"diffuse": [0.5,0.5,0.5,1.0],
+		"diffuseMap": "textures\\soft_rocks_color.png",
+		"glossMap": "textures\\soft_rocks_gloss.png",
+		"normalMap": "textures\\soft_rocks_norm.png",
+		"specular": [0.2,0.2,0.2,1.0]
+	}
+}

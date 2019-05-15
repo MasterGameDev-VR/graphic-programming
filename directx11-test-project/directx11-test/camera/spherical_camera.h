@@ -1,11 +1,13 @@
 #pragma once
 
 #include <math/math_utils.h>
+#include <camera/camera.h>
 
 namespace xtest {
 namespace camera {
 
-	class SphericalCamera
+	// basic spherical camera implementation
+	class SphericalCamera : public Camera
 	{
 	public:
 
@@ -19,11 +21,6 @@ namespace camera {
 			const math::ClampValues<float>& radiusLimits = math::ClampValues<float>(1.f, 1000.f)
 		);
 
-		SphericalCamera(SphericalCamera&&) = default;
-		SphericalCamera(const SphericalCamera&) = default;
-		SphericalCamera& operator=(SphericalCamera&&) = default;
-		SphericalCamera& operator=(const SphericalCamera&) = default;
-
 
 		void RotateBy(float deltaPolarAngle, float deltaAzimuthAngle);
 		void IncreaseRadiusBy(float deltaRadiusLength);
@@ -32,11 +29,8 @@ namespace camera {
 		void SetRadius(float radiusLength);
 		void SetPivot(const DirectX::XMFLOAT3& pivot);
 
-		DirectX::XMFLOAT3 GetPosition() const;
-		DirectX::XMMATRIX GetViewMatrix() const;
-		DirectX::XMFLOAT3 GetXAxis() const;
- 		DirectX::XMFLOAT3 GetYAxis() const;
- 		DirectX::XMFLOAT3 GetZAxis() const;
+		virtual DirectX::XMFLOAT3 GetPosition() const override;
+		virtual DirectX::XMMATRIX GetViewMatrix() const override;
 		float GetPolarAngle() const;
 		float GetAzimuthAngle() const;
 		float GetRadius() const;

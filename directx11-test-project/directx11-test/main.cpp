@@ -1,7 +1,12 @@
 #include "stdafx.h"
 #include <demo/box_demo/box_demo_app.h>
 #include <demo/lights_demo/lights_demo_app.h>
+#include <demo/textures_demo/textures_demo_app.h>
+#include <demo/shadow_demo/shadow_demo_app.h>
 
+
+#include <file/file_utils.h>
+#include <external_libs/nlohmann_json/json.hpp>
 
 using namespace xtest::application;
 
@@ -23,8 +28,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	DirectxSettings directxSettings;
 	directxSettings.showFrameStats = true;
 	
-
-	typedef xtest::demo::LightsDemoApp TestApp;
+	typedef xtest::demo::TexturesDemoApp TestApp;
 
 	TestApp app(hInstance, windowSettings, directxSettings);
 	app.Init();
