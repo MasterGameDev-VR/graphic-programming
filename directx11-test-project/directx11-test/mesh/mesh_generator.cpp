@@ -32,7 +32,7 @@ xtest::mesh::MeshData xtest::mesh::GeneratePlane(float xLength, float zLength, u
 
 			mesh.vertices[zIter*xDivisions + xIter].position = { x, 0.0f, z };
 			mesh.vertices[zIter*xDivisions + xIter].normal = { 0.0f, 1.0f, 0.0f };
-			mesh.vertices[zIter*xDivisions + xIter].tangentU = { 1.0f, 0.0f, 0.0f };
+			mesh.vertices[zIter*xDivisions + xIter].tangentU = { 1.0f, 0.0f, 0.0f, 1.f };
 
 			mesh.vertices[zIter*xDivisions + xIter].uv.x = xIter * du;
 			mesh.vertices[zIter*xDivisions + xIter].uv.y = zIter * dv;
@@ -69,8 +69,8 @@ xtest::mesh::MeshData xtest::mesh::GeneratePlane(float xLength, float zLength, u
 xtest::mesh::MeshData xtest::mesh::GenerateSphere(float radius, uint32 sliceCount, uint32 stackCount)
 {
 	// poles vertices
-	MeshData::Vertex topVertex = { {0.0f, +radius, 0.0f}, {0.0f, +1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f} };
-	MeshData::Vertex bottomVertex = { {0.0f, -radius, 0.0f}, {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f} };
+	MeshData::Vertex topVertex = { {0.0f, +radius, 0.0f}, {0.0f, +1.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.f }, {0.0f, 0.0f} };
+	MeshData::Vertex bottomVertex = { {0.0f, -radius, 0.0f}, {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.f }, {0.0f, 1.0f} };
 
 	MeshData mesh;
 	mesh.vertices.push_back(topVertex);
@@ -99,8 +99,9 @@ xtest::mesh::MeshData xtest::mesh::GenerateSphere(float radius, uint32 sliceCoun
 			vertex.tangentU.y = 0.0f;
 			vertex.tangentU.z = +radius * sinf(phi)*cosf(theta);
 
-			XMVECTOR tangentU = XMLoadFloat3(&vertex.tangentU);
-			XMStoreFloat3(&vertex.tangentU, XMVector3Normalize(tangentU));
+			XMVECTOR tangentU = XMLoadFloat4(&vertex.tangentU);
+			XMStoreFloat4(&vertex.tangentU, XMVector3Normalize(tangentU));
+			vertex.tangentU.w = 1.f;
 
 			XMVECTOR position = XMLoadFloat3(&vertex.position);
 			XMStoreFloat3(&vertex.normal, XMVector3Normalize(position));
@@ -168,40 +169,40 @@ xtest::mesh::MeshData xtest::mesh::GenerateBox(float xLength, float yLength, flo
 	float zHalfLength = 0.5f*zLength;
 
 	// front
-	mesh.vertices[0] = { {-xHalfLength, -yHalfLength, -zHalfLength}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f} };
-	mesh.vertices[1] = { {-xHalfLength, +yHalfLength, -zHalfLength}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f} };
-	mesh.vertices[2] = { {+xHalfLength, +yHalfLength, -zHalfLength}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f} };
-	mesh.vertices[3] = { {+xHalfLength, -yHalfLength, -zHalfLength}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f} };
-					   																							 
-	// back		   																							 
-	mesh.vertices[4] = { {-xHalfLength, -yHalfLength, +zHalfLength}, {0.0f, 0.0f, 1.0f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f} };
-	mesh.vertices[5] = { {+xHalfLength, -yHalfLength, +zHalfLength}, {0.0f, 0.0f, 1.0f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 1.0f} };
-	mesh.vertices[6] = { {+xHalfLength, +yHalfLength, +zHalfLength}, {0.0f, 0.0f, 1.0f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f} };
-	mesh.vertices[7] = { {-xHalfLength, +yHalfLength, +zHalfLength}, {0.0f, 0.0f, 1.0f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 0.0f} };
+	mesh.vertices[0] = { {-xHalfLength, -yHalfLength, -zHalfLength}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f, 1.f }, {0.0f, 1.0f} };
+	mesh.vertices[1] = { {-xHalfLength, +yHalfLength, -zHalfLength}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f, 1.f }, {0.0f, 0.0f} };
+	mesh.vertices[2] = { {+xHalfLength, +yHalfLength, -zHalfLength}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f, 1.f }, {1.0f, 0.0f} };
+	mesh.vertices[3] = { {+xHalfLength, -yHalfLength, -zHalfLength}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f, 0.0f, 1.f }, {1.0f, 1.0f} };
 
-	// top			
-	mesh.vertices[8]  = {{-xHalfLength, +yHalfLength, -zHalfLength}, {0.0f, 1.0f, 0.0f }, {1.0f, 0.0f, 0.0f }, {0.0f, 1.0f}};
-	mesh.vertices[9]  = {{-xHalfLength, +yHalfLength, +zHalfLength}, {0.0f, 1.0f, 0.0f }, {1.0f, 0.0f, 0.0f }, {0.0f, 0.0f}};
-	mesh.vertices[10] = {{+xHalfLength, +yHalfLength, +zHalfLength}, {0.0f, 1.0f, 0.0f }, {1.0f, 0.0f, 0.0f }, {1.0f, 0.0f}};
-	mesh.vertices[11] = {{+xHalfLength, +yHalfLength, -zHalfLength}, {0.0f, 1.0f, 0.0f }, {1.0f, 0.0f, 0.0f }, {1.0f, 1.0f}};
+	// back		   																							
+	mesh.vertices[4] = { {-xHalfLength, -yHalfLength, +zHalfLength}, {0.0f, 0.0f, 1.0f}, {-1.0f, 0.0f, 0.0f, 1.f }, {1.0f, 1.0f} };
+	mesh.vertices[5] = { {+xHalfLength, -yHalfLength, +zHalfLength}, {0.0f, 0.0f, 1.0f}, {-1.0f, 0.0f, 0.0f, 1.f }, {0.0f, 1.0f} };
+	mesh.vertices[6] = { {+xHalfLength, +yHalfLength, +zHalfLength}, {0.0f, 0.0f, 1.0f}, {-1.0f, 0.0f, 0.0f, 1.f }, {0.0f, 0.0f} };
+	mesh.vertices[7] = { {-xHalfLength, +yHalfLength, +zHalfLength}, {0.0f, 0.0f, 1.0f}, {-1.0f, 0.0f, 0.0f, 1.f }, {1.0f, 0.0f} };
+
+	// top
+	mesh.vertices[8]  = {{-xHalfLength, +yHalfLength, -zHalfLength}, {0.0f, 1.0f, 0.0f }, {1.0f, 0.0f, 0.0f, 1.f }, {0.0f, 1.0f}};
+	mesh.vertices[9]  = {{-xHalfLength, +yHalfLength, +zHalfLength}, {0.0f, 1.0f, 0.0f }, {1.0f, 0.0f, 0.0f, 1.f }, {0.0f, 0.0f}};
+	mesh.vertices[10] = {{+xHalfLength, +yHalfLength, +zHalfLength}, {0.0f, 1.0f, 0.0f }, {1.0f, 0.0f, 0.0f, 1.f }, {1.0f, 0.0f}};
+	mesh.vertices[11] = {{+xHalfLength, +yHalfLength, -zHalfLength}, {0.0f, 1.0f, 0.0f }, {1.0f, 0.0f, 0.0f, 1.f }, {1.0f, 1.0f}};
 						
 	// bottom			
-	mesh.vertices[12] = {{-xHalfLength, -yHalfLength, -zHalfLength}, {0.0f, -1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}};
-	mesh.vertices[13] = {{+xHalfLength, -yHalfLength, -zHalfLength}, {0.0f, -1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}};
-	mesh.vertices[14] = {{+xHalfLength, -yHalfLength, +zHalfLength}, {0.0f, -1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}};
-	mesh.vertices[15] = {{-xHalfLength, -yHalfLength, +zHalfLength}, {0.0f, -1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}};
-						
-	// left			
-	mesh.vertices[16] = {{-xHalfLength, -yHalfLength, +zHalfLength}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f}};
-	mesh.vertices[17] = {{-xHalfLength, +yHalfLength, +zHalfLength}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f}};
-	mesh.vertices[18] = {{-xHalfLength, +yHalfLength, -zHalfLength}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f}};
-	mesh.vertices[19] = {{-xHalfLength, -yHalfLength, -zHalfLength}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f}};
-						
-	// right			
-	mesh.vertices[20] = {{+xHalfLength, -yHalfLength, -zHalfLength}, {1.0f, 0.0f, 0.0f }, {0.0f, 0.0f, 1.0f }, {0.0f, 1.0f}};
-	mesh.vertices[21] = {{+xHalfLength, +yHalfLength, -zHalfLength}, {1.0f, 0.0f, 0.0f }, {0.0f, 0.0f, 1.0f }, {0.0f, 0.0f}};
-	mesh.vertices[22] = {{+xHalfLength, +yHalfLength, +zHalfLength}, {1.0f, 0.0f, 0.0f }, {0.0f, 0.0f, 1.0f }, {1.0f, 0.0f}};
-	mesh.vertices[23] = {{+xHalfLength, -yHalfLength, +zHalfLength}, {1.0f, 0.0f, 0.0f }, {0.0f, 0.0f, 1.0f }, {1.0f, 1.0f}};
+	mesh.vertices[12] = {{-xHalfLength, -yHalfLength, -zHalfLength}, {0.0f, -1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f, 1.f }, {1.0f, 1.0f}};
+	mesh.vertices[13] = {{+xHalfLength, -yHalfLength, -zHalfLength}, {0.0f, -1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f, 1.f }, {0.0f, 1.0f}};
+	mesh.vertices[14] = {{+xHalfLength, -yHalfLength, +zHalfLength}, {0.0f, -1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f, 1.f }, {0.0f, 0.0f}};
+	mesh.vertices[15] = {{-xHalfLength, -yHalfLength, +zHalfLength}, {0.0f, -1.0f, 0.0f}, {-1.0f, 0.0f, 0.0f, 1.f }, {1.0f, 0.0f}};
+
+	// left
+	mesh.vertices[16] = {{-xHalfLength, -yHalfLength, +zHalfLength}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f, 1.f }, {0.0f, 1.0f}};
+	mesh.vertices[17] = {{-xHalfLength, +yHalfLength, +zHalfLength}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f, 1.f }, {0.0f, 0.0f}};
+	mesh.vertices[18] = {{-xHalfLength, +yHalfLength, -zHalfLength}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f, 1.f }, {1.0f, 0.0f}};
+	mesh.vertices[19] = {{-xHalfLength, -yHalfLength, -zHalfLength}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f, 1.f }, {1.0f, 1.0f}};
+
+	// right
+	mesh.vertices[20] = { {+xHalfLength, -yHalfLength, -zHalfLength}, {1.0f, 0.0f, 0.0f }, {0.0f, 0.0f, 1.0f, 1.f }, {0.0f, 1.0f} };
+	mesh.vertices[21] = { {+xHalfLength, +yHalfLength, -zHalfLength}, {1.0f, 0.0f, 0.0f }, {0.0f, 0.0f, 1.0f, 1.f }, {0.0f, 0.0f} };
+	mesh.vertices[22] = { {+xHalfLength, +yHalfLength, +zHalfLength}, {1.0f, 0.0f, 0.0f }, {0.0f, 0.0f, 1.0f, 1.f }, {1.0f, 0.0f} };
+	mesh.vertices[23] = { {+xHalfLength, -yHalfLength, +zHalfLength}, {1.0f, 0.0f, 0.0f }, {0.0f, 0.0f, 1.0f, 1.f }, {1.0f, 1.0f} };
 
 
 

@@ -73,35 +73,6 @@ XMMATRIX SphericalCamera::GetViewMatrix() const
 	);
 }
 
-XMFLOAT3 SphericalCamera::GetXAxis() const
-{
-	XMMATRIX Vt = XMMatrixTranspose(GetViewMatrix());
-
-	XMFLOAT3 xAxis;
-	XMStoreFloat3(&xAxis, Vt.r[0]);
-	return xAxis;
-}
-
-XMFLOAT3 SphericalCamera::GetYAxis() const
-{
-	XMMATRIX Vt = XMMatrixTranspose(GetViewMatrix());
-
-	XMFLOAT3 yAxis;
-	XMStoreFloat3(&yAxis, Vt.r[1]);
-	return yAxis;
-}
-
-XMFLOAT3 SphericalCamera::GetZAxis() const
-{
-	XMFLOAT3 position_float3 = GetPosition();
-	
-	XMVECTOR zAxis = XMVector3Normalize(XMVectorSubtract(XMLoadFloat3(&m_pivot), XMLoadFloat3(&position_float3)));
-	XMFLOAT3 zAxis_float3;
-	XMStoreFloat3(&zAxis_float3, zAxis);
-
-	return zAxis_float3;
-}
-
 float SphericalCamera::GetPolarAngle() const
 {
 	return m_polarAngle;

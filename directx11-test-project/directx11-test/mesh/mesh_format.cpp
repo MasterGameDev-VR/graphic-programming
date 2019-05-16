@@ -12,6 +12,7 @@ bool xtest::mesh::MeshData::Vertex::operator==(const Vertex & other) const
 		&& tangentU.x == other.tangentU.x
 		&& tangentU.y == other.tangentU.y
 		&& tangentU.z == other.tangentU.z
+		&& tangentU.w == other.tangentU.w
 		&& uv.x == other.uv.x
 		&& uv.y == other.uv.y;
 }

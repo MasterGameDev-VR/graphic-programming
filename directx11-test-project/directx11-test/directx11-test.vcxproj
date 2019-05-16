@@ -105,12 +105,18 @@
     <ClInclude Include="application\directx_app.h" />
     <ClInclude Include="application\directx_settings.h" />
     <ClInclude Include="application\windows_app.h" />
+    <ClInclude Include="camera\camera.h" />
     <ClInclude Include="camera\spherical_camera.h" />
     <ClInclude Include="common\assert.h" />
     <ClInclude Include="common\common_macros.h" />
     <ClInclude Include="common\int_types.h" />
+    <ClInclude Include="common\utils.h" />
     <ClInclude Include="demo\box_demo\box_demo_app.h" />
     <ClInclude Include="demo\lights_demo\lights_demo_app.h" />
+    <ClInclude Include="external_libs\mikktspace\mikktspace.h" />
+    <ClInclude Include="external_libs\nlohmann_json\json.hpp" />
+    <ClInclude Include="file\resource_loader.h" />
+    <ClInclude Include="demo\shadow_demo\shadow_demo_app.h" />
     <ClInclude Include="demo\textures_demo\textures_demo_app.h" />
     <ClInclude Include="external_libs\directxtk\dds.h" />
     <ClInclude Include="external_libs\directxtk\DDSTextureLoader.h" />
@@ -128,7 +134,22 @@
     <ClInclude Include="mesh\mesh_format.h" />
     <ClInclude Include="mesh\mesh_generator.h" />
     <ClInclude Include="render\directx_backend.h" />
+    <ClInclude Include="render\renderable.h" />
     <ClInclude Include="render\render_macros.h" />
+    <ClInclude Include="render\render_resource.h" />
+    <ClInclude Include="render\shading\cbuffer.h" />
+    <ClInclude Include="render\shading\common_types.h" />
+    <ClInclude Include="render\shading\pixel_shader.h" />
+    <ClInclude Include="render\shading\rasterizer_state.h" />
+    <ClInclude Include="render\shading\render_pass.h" />
+    <ClInclude Include="render\shading\rasterizer_state_types.h" />
+    <ClInclude Include="render\shading\render_pass_state.h" />
+    <ClInclude Include="render\shading\sampler.h" />
+    <ClInclude Include="render\shading\sampler_types.h" />
+    <ClInclude Include="render\shading\shader.h" />
+    <ClInclude Include="render\shading\vertex_input.h" />
+    <ClInclude Include="render\shading\vertex_input_types.h" />
+    <ClInclude Include="render\shading\vertex_shader.h" />
     <ClInclude Include="service\locator.h" />
     <ClInclude Include="time\timer.h" />
     <ClInclude Include="application\window_settings.h" />
@@ -141,10 +162,20 @@
   <ItemGroup>
     <ClCompile Include="application\directx_app.cpp" />
     <ClCompile Include="application\windows_app.cpp" />
+    <ClCompile Include="camera\camera.cpp" />
     <ClCompile Include="camera\spherical_camera.cpp" />
     <ClCompile Include="common\assert.cpp" />
+    <ClCompile Include="common\utils.cpp" />
     <ClCompile Include="demo\box_demo\box_demo_app.cpp" />
     <ClCompile Include="demo\lights_demo\lights_demo_app.cpp" />
+    <ClCompile Include="external_libs\mikktspace\mikktspace.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Level1</WarningLevel>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Level1</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="file\resource_loader.cpp" />
+    <ClCompile Include="demo\shadow_demo\shadow_demo_app.cpp" />
     <ClCompile Include="demo\textures_demo\textures_demo_app.cpp" />
     <ClCompile Include="external_libs\directxtk\DDSTextureLoader.cpp" />
     <ClCompile Include="external_libs\directxtk\WICTextureLoader.cpp" />
@@ -157,6 +188,12 @@
     <ClCompile Include="mesh\mesh_format.cpp" />
     <ClCompile Include="mesh\mesh_generator.cpp" />
     <ClCompile Include="render\directx_backend.cpp" />
+    <ClCompile Include="render\renderable.cpp" />
+    <ClCompile Include="render\shading\pixel_shader.cpp" />
+    <ClCompile Include="render\shading\render_pass.cpp" />
+    <ClCompile Include="render\shading\render_pass_state.cpp" />
+    <ClCompile Include="render\shading\shader.cpp" />
+    <ClCompile Include="render\shading\vertex_shader.cpp" />
     <ClCompile Include="service\locator.cpp" />
     <ClCompile Include="time\timer.cpp" />
     <ClCompile Include="main.cpp" />

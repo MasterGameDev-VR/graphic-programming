@@ -231,15 +231,15 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 	{
 
 		//geo
-		std::wstring targetFile = GetRootDir().append(LR"(\3d-objects\crate.gpf)");
+		std::wstring targetFile = GetRootDir().append(LR"(\3d-objects\crate\crate.gpf)");
 
 		{
-			mesh::GPFMesh gpfMesh = file::ReadGPF(targetFile);
+			mesh::GPFMesh gpfMesh = *(service::Locator::GetResourceLoader()->LoadGPFMesh(targetFile));
 			m_crate.mesh = std::move(gpfMesh);
 		}
 		
 		// W
-		XMStoreFloat4x4(&m_crate.W, XMMatrixMultiply(XMMatrixScaling(0.01f, 0.01f, 0.01f), XMMatrixTranslation(0.f, 0.f, 0.f)));
+		XMStoreFloat4x4(&m_crate.W, XMMatrixIdentity());
 
 
 		//bottom material
@@ -255,22 +255,16 @@ void xtest::demo::LightsDemoApp::InitRenderable()
 		topMat.specular = { 0.9f, 0.9f, 0.9f, 550.0f };
 
 		//top handles material
-		Material& topHandleMat = m_crate.shapeAttributeMapByName["top_handles_4"].material;
+		Material& topHandleMat = m_crate.shapeAttributeMapByName["handles_6"].material;
 		topHandleMat.ambient = { 0.3f, 0.3f, 0.3f, 1.0f };
 		topHandleMat.diffuse = { 0.4f, 0.4f, 0.4f, 1.0f };
 		topHandleMat.specular = { 0.9f, 0.9f, 0.9f, 120.0f };
 
-		//handle material
-		Material& handleMat = m_crate.shapeAttributeMapByName["handles_8"].material;
-		handleMat.ambient = { 0.5f, 0.5f, 0.1f, 1.0f };
-		handleMat.diffuse = { 0.67f, 0.61f, 0.1f, 1.0f };
-		handleMat.specular = { 0.67f, 0.61f, 0.1f, 200.0f };
-
 		//metal material
-		Material& metalPiecesMat = m_crate.shapeAttributeMapByName["metal_pieces_3"].material;
-		metalPiecesMat.ambient = { 0.3f, 0.3f, 0.3f, 1.0f };
-		metalPiecesMat.diffuse = { 0.4f, 0.4f, 0.4f, 1.0f };
-		metalPiecesMat.specular = { 0.4f, 0.4f, 0.4f, 520.0f };
+		Material& metalPiecesMat = m_crate.shapeAttributeMapByName["metal_pieces_7"].material;
+		metalPiecesMat.ambient = { 0.5f, 0.5f, 0.1f, 1.0f };
+		metalPiecesMat.diffuse = { 0.67f, 0.61f, 0.1f, 1.0f };
+		metalPiecesMat.specular = { 0.67f, 0.61f, 0.1f, 200.0f };
 
 
 
