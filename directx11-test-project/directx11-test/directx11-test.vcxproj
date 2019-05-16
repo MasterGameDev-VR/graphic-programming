@@ -112,7 +112,6 @@
     <ClInclude Include="common\int_types.h" />
     <ClInclude Include="common\utils.h" />
     <ClInclude Include="demo\box_demo\box_demo_app.h" />
-    <ClInclude Include="demo\lights_demo\lights_demo_app.h" />
     <ClInclude Include="external_libs\mikktspace\mikktspace.h" />
     <ClInclude Include="external_libs\nlohmann_json\json.hpp" />
     <ClInclude Include="file\resource_loader.h" />
@@ -167,7 +166,6 @@
     <ClCompile Include="common\assert.cpp" />
     <ClCompile Include="common\utils.cpp" />
     <ClCompile Include="demo\box_demo\box_demo_app.cpp" />
-    <ClCompile Include="demo\lights_demo\lights_demo_app.cpp" />
     <ClCompile Include="external_libs\mikktspace\mikktspace.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
@@ -220,12 +218,6 @@
     <FxCompile Include="demo\box_demo\box_demo_VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
-    </FxCompile>
-    <FxCompile Include="demo\lights_demo\lights_demo_PS.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-    </FxCompile>
-    <FxCompile Include="demo\lights_demo\lights_demo_VS.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
     </FxCompile>
     <FxCompile Include="demo\textures_demo\textures_demo_PS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>

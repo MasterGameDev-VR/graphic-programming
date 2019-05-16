@@ -137,9 +137,6 @@
     <ClInclude Include="camera\spherical_camera.h">
       <Filter>camera</Filter>
     </ClInclude>
-    <ClInclude Include="demo\lights_demo\lights_demo_app.h">
-      <Filter>demo\lights_demo</Filter>
-    </ClInclude>
     <ClInclude Include="service\locator.h">
       <Filter>service</Filter>
     </ClInclude>
@@ -285,9 +282,6 @@
     <ClCompile Include="camera\spherical_camera.cpp">
       <Filter>camera</Filter>
     </ClCompile>
-    <ClCompile Include="demo\lights_demo\lights_demo_app.cpp">
-      <Filter>demo\lights_demo</Filter>
-    </ClCompile>
     <ClCompile Include="service\locator.cpp">
       <Filter>service</Filter>
     </ClCompile>
@@ -359,12 +353,6 @@
     </FxCompile>
     <FxCompile Include="demo\box_demo\box_demo_VS.hlsl">
       <Filter>demo\box_demo</Filter>
-    </FxCompile>
-    <FxCompile Include="demo\lights_demo\lights_demo_VS.hlsl">
-      <Filter>demo\lights_demo</Filter>
-    </FxCompile>
-    <FxCompile Include="demo\lights_demo\lights_demo_PS.hlsl">
-      <Filter>demo\lights_demo</Filter>
     </FxCompile>
     <FxCompile Include="demo\textures_demo\textures_demo_PS.hlsl">
       <Filter>demo\textures_demo</Filter>
