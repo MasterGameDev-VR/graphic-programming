@@ -360,6 +360,8 @@
     <FxCompile Include="demo\textures_demo\textures_demo_VS.hlsl">
       <Filter>demo\textures_demo</Filter>
     </FxCompile>
+    <FxCompile Include="demo\shadow_demo\shadow_demo_PS.hlsl" />
+    <FxCompile Include="demo\shadow_demo\shadow_demo_VS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="math\math_utils.inl">

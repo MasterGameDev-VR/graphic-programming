@@ -1,21 +1,22 @@
 #pragma once
 
 #include <application/directx_app.h>
-//#include <input/mouse.h>
-//#include <input/keyboard.h>
+#include <input/mouse.h>
+#include <input/keyboard.h>
 #include <camera/spherical_camera.h>
 #include <mesh/mesh_generator.h>
 #include <mesh/mesh_format.h>
 #include <render/renderable.h>
 #include <render/shading/render_pass.h>
 
-namespace xtest 
+namespace xtest
 {
-	namespace demo 
+	namespace demo
 	{
 
 		class ShadowDemoApp : public application::DirectxApp, public input::MouseListener, public input::KeyboardListener
 		{
+		public:
 			//structs which define lights, material, per object data, etc
 			struct DirectionalLight
 			{
@@ -83,7 +84,7 @@ namespace xtest
 			ShadowDemoApp& operator=(ShadowDemoApp&&) = delete;
 			ShadowDemoApp& operator=(const ShadowDemoApp&) = delete;
 
-			//override from directc_app
+			//override from directx_app
 			virtual void Init() override; // it calls the methods WindowsApp::Init(), InitDirectX() (defined in DirectXApp), ProvideD3DDevice, ProvideD3DContext, ProvideResourceLocator
 			virtual void OnResized() override;  //this method calls ResizeBuffers
 
@@ -91,7 +92,16 @@ namespace xtest
 			virtual void UpdateScene(float deltaSeconds) override;
 			virtual void RenderScene() override;
 
+			virtual void OnWheelScroll(input::ScrollStatus scroll) override;
+			virtual void OnMouseMove(const DirectX::XMINT2& movement, const DirectX::XMINT2& currentPos) override;
+			virtual void OnKeyStatusChange(input::Key key, const input::KeyStatus& status) override;
+
+			void RenderShadows();
+
 		private:
+
+			void InitShadowRenderTechnique();
+			void UpdateShadowRenderPass();
 
 			void InitRenderTechnique();
 			void InitRenderables();
@@ -108,6 +118,8 @@ namespace xtest
 			camera::SphericalCamera m_camera;
 			std::vector<render::Renderable> m_objects;
 			render::shading::RenderPass m_renderPass;
-		}
+			render::shading::RenderPass m_shadowRenderPass;
+
+		};
 	}
 }
