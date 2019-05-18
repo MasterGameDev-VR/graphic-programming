@@ -55,6 +55,11 @@ namespace xtest {
 				Material material;
 			};
 
+			struct PerObjectShawdowData
+			{
+				DirectX::XMFLOAT4X4 WVP;
+			};
+
 			static const int k_pointLightCount = 4;
 			static const int k_dirLightCount = 2;
 			struct PerFrameData
@@ -69,6 +74,23 @@ namespace xtest {
 				int32 useDirLight;
 				int32 useBumpMap;
 				int64 _explicit_pad_;
+			};
+
+			struct ShawdowMap {
+				Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
+				Microsoft::WRL::ComPtr<ID3D11DepthStencilView> depthStencilView;
+				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> shaderView;
+			};
+
+			struct Sphere {
+				float x;
+				float y;
+				float z;
+
+				Sphere(float);
+				float GetRadius() const;
+			private:
+				float radius;
 			};
 
 
@@ -96,7 +118,9 @@ namespace xtest {
 			void InitRenderTechnique();
 			void InitRenderables();
 			void InitLights();
+			void InitShawdows();
 			PerObjectData ToPerObjectData(const render::Renderable& renderable, const std::string& meshName) const;
+			PerObjectShawdowData ToPerObjectShawdowData(const render::Renderable& renderable) const;
 
 
 
@@ -108,7 +132,12 @@ namespace xtest {
 			camera::SphericalCamera m_camera;
 			std::vector<render::Renderable> m_objects;
 			render::shading::RenderPass m_renderPass;
+			render::shading::RenderPass m_renderPassShawdow;
 
+			int m_shawdowMapResolution;
+			ShawdowMap m_shawdowMap;
+			Sphere m_bSphere;
+			D3D11_VIEWPORT m_shawdowVieport;
 		};
 
 	} // demo

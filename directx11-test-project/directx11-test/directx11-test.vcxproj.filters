@@ -378,6 +378,9 @@
     <FxCompile Include="demo\shadow_demo\shawdow_demo_VS.hlsl">
       <Filter>demo\shadow_demo</Filter>
     </FxCompile>
+    <FxCompile Include="demo\shadow_demo\shawdow_demo_shawdowmap_VS.hlsl">
+      <Filter>demo\shadow_demo</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="math\math_utils.inl">
