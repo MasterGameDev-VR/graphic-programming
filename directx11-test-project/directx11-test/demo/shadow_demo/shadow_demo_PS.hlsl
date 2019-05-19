@@ -1,7 +1,7 @@
 
 #define POINT_LIGHT_COUNT 4
 #define DIRECTIONAL_LIGHT_COUNT 2
-
+#define LIGHTS_THAT_CAST_SHADOWS 1
 
 struct Material
 {
@@ -64,6 +64,8 @@ cbuffer PerFrameCB : register(b1)
 {
 	DirectionalLight dirLights[DIRECTIONAL_LIGHT_COUNT];
 	PointLight pointLights[POINT_LIGHT_COUNT];
+	float4x4 LightViewMatrices[LIGHTS_THAT_CAST_SHADOWS];
+	float4x4 ProjectionMatrices[LIGHTS_THAT_CAST_SHADOWS];
 	float3 eyePosW;
 };
 

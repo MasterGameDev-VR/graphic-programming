@@ -8,13 +8,14 @@
 #include <mesh/mesh_format.h>
 #include <render/renderable.h>
 #include <render/shading/render_pass.h>
+#include<demo/shadow_demo/ShadowUtilities.h>
 
 namespace xtest
 {
 	namespace demo
 	{
 
-		class ShadowDemoApp : public application::DirectxApp, public input::MouseListener, public input::KeyboardListener
+		class ShadowDemoApp : public application::DirectxApp, public ShadowUtilities, public input::MouseListener, public input::KeyboardListener
 		{
 		public:
 			//structs which define lights, material, per object data, etc
@@ -54,17 +55,44 @@ namespace xtest
 				Material material;
 			};
 
+			struct BoundingSphere {
+				DirectX::XMFLOAT4 bSpherePositionLS;
+				float radius;
+				float view_Left;
+				float view_Right;
+				float view_Bottom;
+				float view_Top;
+				float view_NearZ;
+				float view_FarZ;
+				float _explicit_pad_;
+			};
+
 			//number of point lights and directional lights
 			static const int k_pointLightCount = 4;
 			//a directional light is used to enlighten the shadowed areas of the scene
 			static const int k_dirLightCount = 2;
+			//
+			static const int k_lightsThatCastShadows = 1;
 			struct PerFrameData
 			{
 				DirectionalLight dirLights[k_dirLightCount];
 				PointLight pointLights[k_pointLightCount];
+				DirectX::XMFLOAT4X4 LightViewMatrices[k_lightsThatCastShadows];
+				DirectX::XMFLOAT4X4 ProjectionMatrices[k_lightsThatCastShadows];
 				DirectX::XMFLOAT3 eyePosW;
 				float _explicit_pad_;
 			};
+			
+			/*
+			struct PerObjectDataForShadows 
+			{
+
+			};
+			struct PerFrameDataForShadows 
+			{
+				DirectX::XMFLOAT4X4 LightViewMatrices[k_lightsThatCastShadows];
+			};
+			*/
 
 			struct RarelyChangedData
 			{
@@ -101,7 +129,7 @@ namespace xtest
 		private:
 
 			void InitShadowRenderTechnique();
-			void UpdateShadowRenderPass();
+			//void UpdateShadowRenderPass();
 
 			void InitRenderTechnique();
 			void InitRenderables();
@@ -110,6 +138,7 @@ namespace xtest
 
 			DirectionalLight m_dirKeyLight;
 			DirectionalLight m_dirFillLight;
+			BoundingSphere m_boundingSphere;
 			PointLight m_pointLight;
 			RarelyChangedData m_lightingControls;
 			bool m_isLightingControlsDirty;
@@ -119,6 +148,9 @@ namespace xtest
 			std::vector<render::Renderable> m_objects;
 			render::shading::RenderPass m_renderPass;
 			render::shading::RenderPass m_shadowRenderPass;
+
+			XMFLOAT4X4 LVMtemp[k_lightsThatCastShadows];
+			XMFLOAT4X4 PrMatrtemp[k_lightsThatCastShadows];
 
 		};
 	}

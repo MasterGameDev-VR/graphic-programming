@@ -67,6 +67,7 @@ ShadowDemoApp::ShadowDemoApp(HINSTANCE instance,
 	, m_objects()
 	, m_renderPass()
 	, m_shadowRenderPass()
+	,m_boundingSphere()
 {}
 
 
@@ -77,15 +78,30 @@ ShadowDemoApp::~ShadowDemoApp()
 void ShadowDemoApp::Init()
 {
 	application::DirectxApp::Init();
+	ShadowUtilities::Init();
+	ShadowUtilities::SetViewPort();
 
 	m_camera.SetPerspectiveProjection(math::ToRadians(45.f), AspectRatio(), 1.f, 1000.f);
 
+	m_boundingSphere.radius=20.0f;
+	m_boundingSphere.bSpherePositionLS= XMFLOAT4( 0.0f ,0.0f ,0.0f ,1.0f );
+	m_boundingSphere.view_Left = m_boundingSphere.bSpherePositionLS.x - m_boundingSphere.radius;
+	m_boundingSphere.view_Right = m_boundingSphere.bSpherePositionLS.x + m_boundingSphere.radius;	
+	m_boundingSphere.view_Bottom= m_boundingSphere.bSpherePositionLS.y - m_boundingSphere.radius;
+	m_boundingSphere.view_Top=m_boundingSphere.bSpherePositionLS.y + m_boundingSphere.radius;	
+	m_boundingSphere.view_NearZ = m_boundingSphere.bSpherePositionLS.z - m_boundingSphere.radius;
+	m_boundingSphere.view_FarZ = m_boundingSphere.bSpherePositionLS.z + m_boundingSphere.radius;
+		
 	InitRenderTechnique();
+	InitShadowRenderTechnique();
+
 	InitRenderables();
 	InitLights();
 
 	service::Locator::GetMouse()->AddListener(this);
 	service::Locator::GetKeyboard()->AddListener(this, { input::Key::F, input::Key::F1, input::Key::F2, input::Key::F3, input::Key::space_bar });
+
+	
 }
 
 
@@ -113,12 +129,19 @@ void ShadowDemoApp::InitShadowRenderTechnique()
 {
 	file::ResourceLoader* loader = service::Locator::GetResourceLoader();
 
-	std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"")));
+	//I would like to create a shared pointer of a vertex shader....
+	std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\shadow_demo_shadowsVS.cso")));
+	//..and add at least two constant buffer with a different frequency
+	vertexShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectData>>());
+	vertexShader->AddConstantBuffer(CBufferFrequency::per_frame, std::make_unique<CBuffer<PerFrameData>>());
 	std::shared_ptr<PixelShader> pixelShader = nullptr;
+	
+	
 
-	m_shadowRenderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_backBufferView.Get(), m_depthBufferView.Get()));
+
+	m_shadowRenderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, ShadowUtilities::m_shadowsViewPort, std::make_shared<SolidCullBackRS>(), nullptr, ShadowUtilities::m_shadowDepthBufferView.Get()));
 	m_shadowRenderPass.SetVertexShader(vertexShader);
-	//m_shadowRenderPass.SetPixelShader(pixelShader);
+	m_shadowRenderPass.SetPixelShader(pixelShader);
 	m_shadowRenderPass.Init();
 }
 
@@ -183,35 +206,7 @@ void ShadowDemoApp::InitRenderables()
 }
 
 
-void ShadowDemoApp::UpdateShadowRenderPass()
-{
-	m_shadowRenderPass.GetState()->ChangeRenderTargetView(m_backBufferView.Get());
-	m_shadowRenderPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
-	m_shadowRenderPass.GetState()->ChangeViewPort(m_viewport);
-}
 
-void ShadowDemoApp::RenderShadows()
-{
-	m_d3dAnnotation->BeginEvent(L"render-scene");
-
-
-	m_shadowRenderPass.Bind();
-	m_shadowRenderPass.GetState()->ClearDepthOnly();
-	m_shadowRenderPass.GetState()->ClearRenderTarget(DirectX::Colors::DarkGray);
-	// draw objects
-	for (render::Renderable& renderable : m_objects)
-	{
-		for (const std::string& meshName : renderable.GetMeshNames())
-		{
-			PerObjectData data = ToPerObjectData(renderable, meshName);
-			m_shadowRenderPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
-			//m_shadowRenderPass.GetVertexShader()->BindTexture(TextureUsage::shadow_map, );
-		}
-	}
-
-
-	m_d3dAnnotation->EndEvent();
-}
 
 
 void ShadowDemoApp::OnResized()
@@ -327,8 +322,31 @@ void ShadowDemoApp::UpdateScene(float deltaSeconds)
 		data.pointLights[3].posW = tmp[3];
 		data.eyePosW = m_camera.GetPosition();
 
+		
+		XMVECTOR bSpherePosLS=XMLoadFloat4(&m_boundingSphere.bSpherePositionLS);
+		float radius = m_boundingSphere.radius;
+		XMVECTOR lightCameraDir{ m_dirKeyLight.dirW.x * radius,m_dirKeyLight.dirW.y * radius,m_dirKeyLight.dirW.z * radius ,0.0f };
+		XMVECTOR eyePosition = lightCameraDir + bSpherePosLS;
+		XMStoreFloat4x4(&LVMtemp[0], XMMatrixLookAtLH(eyePosition, bSpherePosLS,XMVectorSet(0.0f,1.0f,0.0f,0.0f)));
+		data.LightViewMatrices[0] = LVMtemp[0];
+		
+		XMStoreFloat4x4(&PrMatrtemp[0], XMMatrixOrthographicOffCenterLH(
+			m_boundingSphere.view_Left,
+			m_boundingSphere.view_Right,
+			m_boundingSphere.view_Bottom,
+			m_boundingSphere.view_Top,
+			m_boundingSphere.view_NearZ,
+			m_boundingSphere.view_FarZ
+		));
+		data.ProjectionMatrices[0] = PrMatrtemp[0];
+
 		m_renderPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(data);
+
+		m_shadowRenderPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(data);
+		//m_shadowRenderPass.GetState()->ChangeViewPort(m_viewport);
 	}
+	//PerFrameCBShadows
+	//{m_shadowRenderPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer();}
 
 
 	// RarelyChangedCB
@@ -339,7 +357,46 @@ void ShadowDemoApp::UpdateScene(float deltaSeconds)
 	}
 
 }
+/*
+void ShadowDemoApp::UpdateShadowRenderPass()
+{
+	m_shadowRenderPass.GetState()->ChangeRenderTargetView(m_backBufferView.Get());
+	m_shadowRenderPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
+	m_shadowRenderPass.GetState()->ChangeViewPort(m_viewport);
+}
+*/
 
+void ShadowDemoApp::RenderShadows()
+{
+	m_d3dAnnotation->BeginEvent(L"render-scene");
+
+	//the Bind method is the RenderPass class version and deactivates the pixel shader - see render_pass.cpp row 46 - 56
+	//the following lines calls also the Bind method of the RenderPassState instance (so OMSetRenderTargets is called)
+	m_shadowRenderPass.Bind();
+	m_shadowRenderPass.GetState()->ClearDepthOnly();
+	//unuseful: the RenderTarget is set to null
+	//m_shadowRenderPass.GetState()->ClearRenderTarget(DirectX::Colors::DarkGray);
+
+	//here we should pass another TEXTURE, the shadowMap - is it necessary for each object?
+	//m_renderPass.GetVertexShader()->BindTexture(TextureUsage::shadow_map, );
+	// draw objects
+	for (render::Renderable& renderable : m_objects)
+	{
+		for (const std::string& meshName : renderable.GetMeshNames())
+		{
+			PerObjectData data = ToPerObjectData(renderable, meshName);
+			XMStoreFloat4x4(&data.WVP, XMMatrixMultiply(  XMMatrixMultiply(XMLoadFloat4x4(&data.W) , XMLoadFloat4x4(&LVMtemp[0]) ) ,  XMLoadFloat4x4(&PrMatrtemp[0]) ) );
+			//data.WVP = data.W * LVMtemp[0] *  PrMatrtemp[0];
+			m_shadowRenderPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+			//m_shadowRenderPass.GetVertexShader()->BindTexture(TextureUsage::shadow_map, );
+
+			renderable.Draw(meshName);
+		}
+	}
+
+
+	m_d3dAnnotation->EndEvent();
+}
 
 void ShadowDemoApp::RenderScene()
 {
@@ -350,8 +407,7 @@ void ShadowDemoApp::RenderScene()
 	m_renderPass.GetState()->ClearDepthOnly();
 	m_renderPass.GetState()->ClearRenderTarget(DirectX::Colors::DarkGray);
 
-	//here we should pass another TEXTURE, the shadowMap - is it necessary for each object?
-	//m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, );
+	
 
 	// draw objects
 	for (render::Renderable& renderable : m_objects)

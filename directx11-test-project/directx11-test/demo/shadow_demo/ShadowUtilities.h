@@ -10,6 +10,8 @@ namespace xtest
 	{
 		class ShadowUtilities 
 		{
+		public:
+			ShadowUtilities(ID3D11Device*);
 			ShadowUtilities();
 			virtual ~ShadowUtilities() {};
 
@@ -19,11 +21,20 @@ namespace xtest
 			ShadowUtilities& operator=(const ShadowUtilities&) = delete;
 
 
-		public:
+		
 			Microsoft::WRL::ComPtr<ID3D11Texture2D> m_shadowDepthBuffer;
 			Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_shadowDepthBufferView;
+			Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_shadowShaderResourceView;
+			D3D11_VIEWPORT m_shadowsViewPort;
+			uint32 m_shadowsTextureResolution;
 
-			void CreateShadowDepthStencilBuffer();
+			void Init();
+			void CreateShadowDepthStencilBufferAndViews();
+
+			void SetViewPort();
+
+		protected:
+			Microsoft::WRL::ComPtr<ID3D11Device> m_d3dDevice;
 
 		};
 

@@ -233,6 +233,7 @@
     <ClInclude Include="render\shading\render_pass_state.h">
       <Filter>render\shading</Filter>
     </ClInclude>
+    <ClInclude Include="ShadowUtilities.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -333,6 +334,7 @@
     <ClCompile Include="render\shading\render_pass_state.cpp">
       <Filter>render\shading</Filter>
     </ClCompile>
+    <ClCompile Include="ShadowUtilities.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="application\resources\small.ico">
