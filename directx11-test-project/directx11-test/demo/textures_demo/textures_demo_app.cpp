@@ -27,7 +27,7 @@ TexturesDemoApp::TexturesDemoApp(HINSTANCE instance,
 	, m_lightingControls()
 	, m_isLightingControlsDirty(true)
 	, m_stopLights(false)
-	, m_camera(math::ToRadians(60.f), math::ToRadians(125.f), 5.f, { 0.f, 0.f, 0.f }, { 0.f, 1.f, 0.f }, { math::ToRadians(4.f), math::ToRadians(175.f) }, { 3.f, 25.f })
+	, m_camera(math::ToRadians(60.f), math::ToRadians(125.f), 12.5f, { 0.f, 5.f, 0.f }, { 0.f, 1.f, 0.f }, { math::ToRadians(4.f), math::ToRadians(175.f) }, { 3.f, 25.f })
 	, m_objects()
 	, m_renderPass()
 {}
@@ -41,7 +41,7 @@ void TexturesDemoApp::Init()
 {
 	application::DirectxApp::Init();
 
-	m_camera.SetPerspectiveProjection(math::ToRadians(45.f), AspectRatio(), 1.f, 1000.f);
+	m_camera.SetPerspectiveProjection(math::ToRadians(45.f), AspectRatio(), 0.1f, 1000.f);
 
 	InitRenderTechnique();
 	InitRenderables();
@@ -122,10 +122,12 @@ void TexturesDemoApp::InitRenderables()
 			if (row == 1 && column == 1)
 			{
 
-				render::Renderable crate{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\crate\crate.gpf)"))) };
-				crate.SetTransform(XMMatrixTranslation(xPos, 0.f, zPos));
-				crate.Init();
-				m_objects.push_back(std::move(crate));
+				render::Renderable soldier{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\gdc_female\gdc_female_posed_2.gpf)"))) };
+				soldier.SetTransform(XMMatrixTranslation(xPos, 0.f, zPos));
+				soldier.SetTransform(XMMatrixScaling(0.5f, 0.5f, 0.5f));
+				soldier.SetTransform(XMMatrixRotationY(math::ToRadians(-45.f)));
+				soldier.Init();
+				m_objects.push_back(std::move(soldier));
 			}
 			else
 			{
