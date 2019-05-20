@@ -37,7 +37,7 @@ ShawdowsDemoApp::ShawdowsDemoApp(HINSTANCE instance,
 	, m_renderPass()
 	, m_renderPassShawdow()
 	, m_bSphere(6.5f, 0.f, 0.f, 0.f)
-	, m_shawdowMapResolution(2048)
+	, m_shawdowMapResolution(4096)
 {}
 
 
@@ -105,9 +105,9 @@ void ShawdowsDemoApp::InitRenderables()
 void ShawdowsDemoApp::InitLights()
 {
 	m_dirKeyLight.ambient = { 0.16f, 0.18f, 0.18f, 1.f };
-	m_dirKeyLight.diffuse = { 2.f* 0.78f, 2.f* 0.83f, 2.f* 1.f, 1.f };
+	m_dirKeyLight.diffuse = { 1.f* 0.78f, 1.f* 0.83f, 1.f* 1.f, 1.f };
 	m_dirKeyLight.specular = {  0.87f,  0.90f,  0.94f, 1.f };
-	XMVECTOR dirLightDirection = XMVector3Normalize(-XMVectorSet(5.f, 3.f, 5.f, 0.f));
+	XMVECTOR dirLightDirection = XMVector3Normalize(-XMVectorSet(5.f, 5.f, 5.f, 0.f));
 	XMStoreFloat3(&m_dirKeyLight.dirW, dirLightDirection);
 
 	m_dirFillLight.ambient = { 0.16f, 0.18f, 0.18f, 1.f };

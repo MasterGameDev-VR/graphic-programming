@@ -1,5 +1,5 @@
 #define DIRECTIONAL_LIGHT_COUNT 2
-
+#define RESOLUTION 4096
 
 struct Material
 {
@@ -54,7 +54,7 @@ Texture2D normalTexture : register(t1);
 Texture2D glossTexture : register(t2);
 Texture2D shawdowMap : register(t10);
 SamplerState textureSampler : register(s0);
-SamplerState shawdowSampler : register(s10);
+SamplerComparisonState shawdowSampler : register(s10);
 
 
 
@@ -198,23 +198,24 @@ float4 main(VertexOut pin) : SV_TARGET
 
 	if (useDirLight)
 	{
-		float shawdowDepthNDC = shawdowMap.Sample(shawdowSampler, pin.shawdowPosH.xy).r;
-		float litFactor = 0.f;
+		float step = 1.f;
+		float litFactor = shawdowMap.SampleCmpLevelZero(shawdowSampler, pin.shawdowPosH.xy, depthNDC).r;
+		litFactor += shawdowMap.SampleCmpLevelZero(shawdowSampler, pin.shawdowPosH.xy + float2(step / RESOLUTION, 0), depthNDC).r;
+		litFactor += shawdowMap.SampleCmpLevelZero(shawdowSampler, pin.shawdowPosH.xy + float2(-step / RESOLUTION, 0), depthNDC).r;
+		litFactor += shawdowMap.SampleCmpLevelZero(shawdowSampler, pin.shawdowPosH.xy + float2(0, step / RESOLUTION), depthNDC).r;
+		litFactor += shawdowMap.SampleCmpLevelZero(shawdowSampler, pin.shawdowPosH.xy + float2(0, -step / RESOLUTION), depthNDC).r;
 
-		[flatten]
-		if (shawdowDepthNDC >= depthNDC) {
-			litFactor = 1.f;
-		}
+		litFactor /= 5;
 
 		DirectionalLightContribution(material, dirLights[0], bumpNormalW, toEyeW, glossSample, ambient, diffuse, specular);
 		totalAmbient += ambient;
 		totalDiffuse += diffuse * litFactor;
 		totalSpecular += specular * litFactor;
 
-		//DirectionalLightContribution(material, dirLights[1], bumpNormalW, toEyeW, glossSample, ambient, diffuse, specular);
-		//totalAmbient += ambient;
-		//totalDiffuse += diffuse;
-		//totalSpecular += specular;
+		DirectionalLightContribution(material, dirLights[1], bumpNormalW, toEyeW, glossSample, ambient, diffuse, specular);
+		totalAmbient += ambient;
+		totalDiffuse += diffuse;
+		totalSpecular += specular;
 	}
 	
 
