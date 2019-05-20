@@ -17,8 +17,11 @@ using namespace xtest::render::shading;
 using xtest::demo::ShawdowsDemoApp;
 using Microsoft::WRL::ComPtr;
 
-ShawdowsDemoApp::Sphere::Sphere(float radius) : radius(radius), x(0), y(0), z(0) {}
+ShawdowsDemoApp::Sphere::Sphere(float radius, float x, float y, float z) : radius(radius), coordinates(x, y, z) {}
 float ShawdowsDemoApp::Sphere::GetRadius() const { return radius; }
+DirectX::XMFLOAT3 ShawdowsDemoApp::Sphere::GetCoordinates() const { return coordinates; }
+
+const XMMATRIX ShawdowsDemoApp::T = DirectX::XMMatrixSet(0.5f, 0.f, 0.f, 0.f, 0.f, -0.5f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.5f, 0.5f, 0.f, 1.f);
 
 ShawdowsDemoApp::ShawdowsDemoApp(HINSTANCE instance,
 	const application::WindowSettings& windowSettings,
@@ -33,7 +36,7 @@ ShawdowsDemoApp::ShawdowsDemoApp(HINSTANCE instance,
 	, m_objects()
 	, m_renderPass()
 	, m_renderPassShawdow()
-	, m_bSphere(100.f)
+	, m_bSphere(6.5f, 0.f, 0.f, 0.f)
 	, m_shawdowMapResolution(2048)
 {}
 
@@ -71,6 +74,7 @@ void ShawdowsDemoApp::InitRenderTechnique()
 	pixelShader->AddConstantBuffer(CBufferFrequency::per_frame, std::make_unique<CBuffer<PerFrameData>>());
 	pixelShader->AddConstantBuffer(CBufferFrequency::rarely_changed, std::make_unique<CBuffer<RarelyChangedData>>());
 	pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<AnisotropicSampler>());
+	pixelShader->AddSampler(SamplerUsage::shadow_map, std::make_shared<ShawdowSampler>());
 
 	m_renderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_backBufferView.Get(), m_depthBufferView.Get()));
 	m_renderPass.SetVertexShader(vertexShader);
@@ -158,7 +162,7 @@ void ShawdowsDemoApp::InitShawdows() {
 	vertexShader->SetVertexInput(std::make_shared<MeshDataVertexInput>());
 	vertexShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectShawdowData>>());
 
-	m_renderPassShawdow.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_shawdowVieport, std::make_shared<SolidCullBackRS>(), nullptr, m_shawdowMap.depthStencilView.Get()));
+	m_renderPassShawdow.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_shawdowVieport, std::make_shared<ShawdowRS>(), nullptr, m_shawdowMap.depthStencilView.Get()));
 	m_renderPassShawdow.SetVertexShader(vertexShader);
 	m_renderPassShawdow.SetPixelShader(nullptr);
 	m_renderPassShawdow.Init();
@@ -275,6 +279,7 @@ void ShawdowsDemoApp::RenderScene()
 
 	m_renderPassShawdow.Bind();
 	m_renderPassShawdow.GetState()->ClearDepthOnly();
+	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, nullptr);
 
 	// draw shawdows
 	for (render::Renderable& renderable : m_objects)
@@ -292,6 +297,9 @@ void ShawdowsDemoApp::RenderScene()
 	m_renderPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
 	
 	// draw objects
+
+	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, m_shawdowMap.shaderView.Get());
+
 	for (render::Renderable& renderable : m_objects)
 	{
 		for (const std::string& meshName : renderable.GetMeshNames())
@@ -318,15 +326,34 @@ ShawdowsDemoApp::PerObjectData ShawdowsDemoApp::ToPerObjectData(const render::Re
 	PerObjectData data;
 
 	XMMATRIX W = XMLoadFloat4x4(&renderable.GetTransform());
-	XMMATRIX T = XMLoadFloat4x4(&renderable.GetTexcoordTransform(meshName));
+	XMMATRIX TM = XMLoadFloat4x4(&renderable.GetTexcoordTransform(meshName));
 	XMMATRIX V = m_camera.GetViewMatrix();
 	XMMATRIX P = m_camera.GetProjectionMatrix();
 	XMMATRIX WVP = W * V*P;
 
+	FXMVECTOR focusPosition = XMVectorSet(m_bSphere.GetCoordinates().x, m_bSphere.GetCoordinates().y, m_bSphere.GetCoordinates().z, 1.f);
+	XMMATRIX Vl = XMMatrixLookAtLH(
+		focusPosition + DirectX::XMLoadFloat3(&m_dirKeyLight.dirW) * -m_bSphere.GetRadius(),
+		focusPosition,
+		XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f)
+	);
+
+	XMMATRIX Pl = XMMatrixOrthographicOffCenterLH(
+		-m_bSphere.GetRadius(),
+		m_bSphere.GetRadius(),
+		-m_bSphere.GetRadius(),
+		m_bSphere.GetRadius(),
+		0,
+		m_bSphere.GetRadius() * 2
+	);
+
+	XMMATRIX WVPT = W * Vl * Pl * T;
+
 	XMStoreFloat4x4(&data.W, XMMatrixTranspose(W));
 	XMStoreFloat4x4(&data.WVP, XMMatrixTranspose(WVP));
 	XMStoreFloat4x4(&data.W_inverseTraspose, XMMatrixInverse(nullptr, W));
-	XMStoreFloat4x4(&data.TexcoordMatrix, XMMatrixTranspose(T));
+	XMStoreFloat4x4(&data.TexcoordMatrix, XMMatrixTranspose(TM));
+	XMStoreFloat4x4(&data.WVPT_shawdowMap, XMMatrixTranspose(WVPT));
 	data.material.ambient = renderable.GetMaterial(meshName).ambient;
 	data.material.diffuse = renderable.GetMaterial(meshName).diffuse;
 	data.material.specular = renderable.GetMaterial(meshName).specular;
@@ -340,7 +367,7 @@ ShawdowsDemoApp::PerObjectShawdowData ShawdowsDemoApp::ToPerObjectShawdowData(co
 
 	XMMATRIX W = XMLoadFloat4x4(&renderable.GetTransform());
 
-	FXMVECTOR focusPosition = XMVectorSet(m_bSphere.x, m_bSphere.y, m_bSphere.z, 0.f);
+	FXMVECTOR focusPosition = XMVectorSet(m_bSphere.GetCoordinates().x, m_bSphere.GetCoordinates().y, m_bSphere.GetCoordinates().z, 1.f);
 	XMMATRIX V = XMMatrixLookAtLH(
 		focusPosition + DirectX::XMLoadFloat3(&m_dirKeyLight.dirW) * -m_bSphere.GetRadius(),
 		focusPosition,
@@ -348,12 +375,12 @@ ShawdowsDemoApp::PerObjectShawdowData ShawdowsDemoApp::ToPerObjectShawdowData(co
 	);
 
 	XMMATRIX P = XMMatrixOrthographicOffCenterLH(
-		m_bSphere.x - m_bSphere.GetRadius(),
-		m_bSphere.x + m_bSphere.GetRadius(),
-		m_bSphere.y - m_bSphere.GetRadius(),
-		m_bSphere.y + m_bSphere.GetRadius(),
-		m_bSphere.z - m_bSphere.GetRadius(),
-		m_bSphere.z + m_bSphere.GetRadius()
+		-m_bSphere.GetRadius(),
+		m_bSphere.GetRadius(),
+		-m_bSphere.GetRadius(),
+		m_bSphere.GetRadius(),
+		0,
+		m_bSphere.GetRadius() * 2
 	);
 
 	XMMATRIX WVP = W * V*P;

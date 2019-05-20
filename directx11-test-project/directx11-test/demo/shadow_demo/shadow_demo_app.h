@@ -52,6 +52,7 @@ namespace xtest {
 				DirectX::XMFLOAT4X4 W_inverseTraspose;
 				DirectX::XMFLOAT4X4 WVP;
 				DirectX::XMFLOAT4X4 TexcoordMatrix;
+				DirectX::XMFLOAT4X4 WVPT_shawdowMap;
 				Material material;
 			};
 
@@ -83,14 +84,13 @@ namespace xtest {
 			};
 
 			struct Sphere {
-				float x;
-				float y;
-				float z;
 
-				Sphere(float);
+				Sphere(float, float, float, float);
 				float GetRadius() const;
+				DirectX::XMFLOAT3 GetCoordinates() const;
 			private:
 				float radius;
+				DirectX::XMFLOAT3 coordinates;
 			};
 
 
@@ -122,7 +122,7 @@ namespace xtest {
 			PerObjectData ToPerObjectData(const render::Renderable& renderable, const std::string& meshName) const;
 			PerObjectShawdowData ToPerObjectShawdowData(const render::Renderable& renderable) const;
 
-
+			const static DirectX::XMMATRIX T;
 
 			DirectionalLight m_dirKeyLight;
 			DirectionalLight m_dirFillLight;

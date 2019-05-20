@@ -23,8 +23,8 @@ struct VertexOut
 	float3 normalW : NORMAL;
 	float3 tangentW : TANGENT;
 	float2 uv : TEXCOORD;
+	float4 shawdowPosH : SHAWDOWPOS;
 };
-
 
 
 cbuffer PerObjectCB : register(b0)
@@ -33,6 +33,7 @@ cbuffer PerObjectCB : register(b0)
 	float4x4 W_inverseTraspose;
 	float4x4 WVP;
 	float4x4 TexcoordMatrix;
+	float4x4 WVPT_shawdowMap;
 	Material material;
 };
 
@@ -51,7 +52,9 @@ cbuffer RarelyChangedCB : register(b2)
 Texture2D diffuseTexture : register(t0);
 Texture2D normalTexture : register(t1);
 Texture2D glossTexture : register(t2);
+Texture2D shawdowMap : register(t10);
 SamplerState textureSampler : register(s0);
+SamplerState shawdowSampler : register(s10);
 
 
 
@@ -189,17 +192,29 @@ float4 main(VertexOut pin) : SV_TARGET
 	float4 diffuse;
 	float4 specular;
 
+	pin.shawdowPosH.xyz /= pin.shawdowPosH.w;
+	float depthNDC = pin.shawdowPosH.z;
+	depthNDC = clamp(depthNDC, 0.f, 1.f);
 
 	if (useDirLight)
 	{
-		[unroll]
-		for (uint i = 0; i < DIRECTIONAL_LIGHT_COUNT; i++)
-		{
-			DirectionalLightContribution(material, dirLights[i], bumpNormalW, toEyeW, glossSample, ambient, diffuse, specular);
-			totalAmbient += ambient;
-			totalDiffuse += diffuse;
-			totalSpecular += specular;
+		float shawdowDepthNDC = shawdowMap.Sample(shawdowSampler, pin.shawdowPosH.xy).r;
+		float litFactor = 0.f;
+
+		[flatten]
+		if (shawdowDepthNDC >= depthNDC) {
+			litFactor = 1.f;
 		}
+
+		DirectionalLightContribution(material, dirLights[0], bumpNormalW, toEyeW, glossSample, ambient, diffuse, specular);
+		totalAmbient += ambient;
+		totalDiffuse += diffuse * litFactor;
+		totalSpecular += specular * litFactor;
+
+		//DirectionalLightContribution(material, dirLights[1], bumpNormalW, toEyeW, glossSample, ambient, diffuse, specular);
+		//totalAmbient += ambient;
+		//totalDiffuse += diffuse;
+		//totalSpecular += specular;
 	}
 	
 

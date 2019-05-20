@@ -38,6 +38,34 @@ namespace shading {
 		}
 	};
 
+	class ShawdowSampler : public Sampler
+	{
+	public:
+		virtual void Init() override
+		{
+			// already initialized
+			if (m_d3dTextureSampler)
+			{
+				return;
+			}
+
+			D3D11_SAMPLER_DESC samplerDesc;
+			ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
+			samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+			samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+			samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
+			samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
+			samplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
+			samplerDesc.BorderColor[0] = 1.f;
+			samplerDesc.BorderColor[1] = 1.f;
+			samplerDesc.BorderColor[2] = 1.f;
+			samplerDesc.BorderColor[3] = 1.f;
+			samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+			XTEST_D3D_CHECK(service::Locator::GetD3DDevice()->CreateSamplerState(&samplerDesc, &m_d3dTextureSampler));
+		}
+	};
+
 
 	
 
