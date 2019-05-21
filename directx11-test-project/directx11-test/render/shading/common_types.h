@@ -32,7 +32,9 @@ namespace shading {
 		color = 0,
 		normal = 1,
 		glossiness = 2,
+		projectorTexture = 3,
 		shadow_map = 10,
+		projector = 11,
 		uknown
 	};
 
@@ -43,6 +45,7 @@ namespace shading {
 	{
 		common_textures = 0,
 		shadow_map = 10,
+		projector = 11,
 		unknown
 	};
 
