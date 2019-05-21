@@ -47,6 +47,8 @@ struct VertexOut
 	float3 normalW : NORMAL;
 	float3 tangentW : TANGENT;
 	float2 uv : TEXCOORD;
+	float4 shadowPosH : SHADOWPOS;
+
 };
 
 
@@ -57,6 +59,7 @@ cbuffer PerObjectCB : register(b0)
 	float4x4 W_inverseTraspose;
 	float4x4 WVP;
 	float4x4 TexcoordMatrix;
+	float4x4 WVPT_shadowMap;
 	Material material;
 };
 
@@ -81,7 +84,8 @@ Texture2D normalTexture : register(t1);
 Texture2D glossTexture : register(t2);
 SamplerState textureSampler : register(s0);
 
-
+Texture2D shadowMapTexture : register(t10);
+SamplerState shadowSampler : register(s10);
 
 
 
@@ -260,7 +264,15 @@ float4 main(VertexOut pin) : SV_TARGET
 	{
 		bumpNormalW = pin.normalW;
 	}
-
+	//shadow map usage - first directional light
+	pin.shadowPosH.xyz /= pin.shadowPosH.w;
+	float depthNDC = pin.shadowPosH.z;
+	float shadowDepthNDC = shadowMapTexture.Sample(shadowSampler,pin.shadowPosH.xy).r;
+	float litFactor = 0.0f;
+	[flatten]
+	if (shadowDepthNDC >= depthNDC) {
+		litFactor = 1.0f;
+	}
 
 	float glossSample = glossTexture.Sample(textureSampler, pin.uv).r;
 	float3 toEyeW = normalize(eyePosW - pin.posW);
@@ -279,9 +291,18 @@ float4 main(VertexOut pin) : SV_TARGET
 		for (uint i = 0; i < DIRECTIONAL_LIGHT_COUNT; i++)
 		{
 			DirectionalLightContribution(material, dirLights[i], bumpNormalW, toEyeW, glossSample, ambient, diffuse, specular);
+
 			totalAmbient += ambient;
-			totalDiffuse += diffuse;
-			totalSpecular += specular;
+
+			[flatten]
+			if (i == 0) {
+				totalDiffuse += diffuse *litFactor;
+				totalSpecular += specular * litFactor;
+			}
+			else {
+				totalDiffuse += diffuse;
+				totalSpecular += specular;
+			}
 		}
 	}
 

@@ -10,6 +10,12 @@ struct VertexIn
 	float3 tangentU : TANGENT;   
 	float2 uv : TEXCOORD;
 };
+struct Material
+{
+	float4 ambient;
+	float4 diffuse;
+	float4 specular;
+};
 
 cbuffer PerObjectCB : register(b0)
 {
@@ -17,9 +23,11 @@ cbuffer PerObjectCB : register(b0)
 	float4x4 W_inverseTraspose;
 	float4x4 WVP;
 	float4x4 TexcoordMatrix;
+	float4x4 WVPT_shadowMap;
 	Material material;
 };
 
+/*
 cbuffer PerFrameCB : register(b1)
 {
 	DirectionalLight dirLights[DIRECTIONAL_LIGHT_COUNT];
@@ -28,6 +36,7 @@ cbuffer PerFrameCB : register(b1)
 	float4x4 ProjectionMatrices[LIGHTS_THAT_CAST_SHADOWS];
 	float3 eyePosW;
 };
+*/
 /*
 struct VertexOut
 {
@@ -41,14 +50,20 @@ struct VertexOut
 */
 
 
+struct VertexOut {
+	float4 vFromLightPOV : SV_POSITION;
+	//float depth : SV_DEPTH;
 
+};
 
 //Texture2D shadowMapTexture : register(t10);
-//SamplerState textureSampler : register(s0);
+//SamplerState shadowSampler : register(s0);
 
-float4 main(VertexIn vin): SV_POSITION
+VertexOut main(VertexIn vin)
 {
-	float4 vFromLightPOV = mul(float4(vin.posL, 1.0f), WVP);
-	return vFromLightPOV;
+	VertexOut output;
+	output.vFromLightPOV = mul(float4(vin.posL, 1.0f), WVPT_shadowMap);
+	//output.depth = 0.5f;
+	return output;
 
 }

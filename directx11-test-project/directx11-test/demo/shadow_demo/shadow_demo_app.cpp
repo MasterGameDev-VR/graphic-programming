@@ -68,6 +68,8 @@ ShadowDemoApp::ShadowDemoApp(HINSTANCE instance,
 	, m_renderPass()
 	, m_shadowRenderPass()
 	,m_boundingSphere()
+	,myShadowUtilsInstance()
+	
 {}
 
 
@@ -78,12 +80,14 @@ ShadowDemoApp::~ShadowDemoApp()
 void ShadowDemoApp::Init()
 {
 	application::DirectxApp::Init();
-	ShadowUtilities::Init();
-	ShadowUtilities::SetViewPort();
+
+	//XTEST_D3D_CHECK(m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), &myShadowUtilsInstance.m_shadowDepthBuffer));
+	myShadowUtilsInstance.Init();
+	myShadowUtilsInstance.SetViewPort();
 
 	m_camera.SetPerspectiveProjection(math::ToRadians(45.f), AspectRatio(), 1.f, 1000.f);
 
-	m_boundingSphere.radius=20.0f;
+	m_boundingSphere.radius=15.0f;
 	m_boundingSphere.bSpherePositionLS= XMFLOAT4( 0.0f ,0.0f ,0.0f ,1.0f );
 	m_boundingSphere.view_Left = m_boundingSphere.bSpherePositionLS.x - m_boundingSphere.radius;
 	m_boundingSphere.view_Right = m_boundingSphere.bSpherePositionLS.x + m_boundingSphere.radius;	
@@ -91,10 +95,19 @@ void ShadowDemoApp::Init()
 	m_boundingSphere.view_Top=m_boundingSphere.bSpherePositionLS.y + m_boundingSphere.radius;	
 	m_boundingSphere.view_NearZ = m_boundingSphere.bSpherePositionLS.z - m_boundingSphere.radius;
 	m_boundingSphere.view_FarZ = m_boundingSphere.bSpherePositionLS.z + m_boundingSphere.radius;
+
+	T_shadowMap = XMMatrixSet(
+		0.5f, 0.0f, 0.0f, 0.0f,
+		0.0f, -0.5f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.5f, 0.5f, 0.0f, 1.0f
+
+	);
 		
 	InitRenderTechnique();
 	InitShadowRenderTechnique();
 
+	
 	InitRenderables();
 	InitLights();
 
@@ -118,7 +131,10 @@ void ShadowDemoApp::InitRenderTechnique()
 	pixelShader->AddConstantBuffer(CBufferFrequency::per_frame, std::make_unique<CBuffer<PerFrameData>>());
 	pixelShader->AddConstantBuffer(CBufferFrequency::rarely_changed, std::make_unique<CBuffer<RarelyChangedData>>());
 	pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<AnisotropicSampler>());
+	//I added a new sampler in the s10 register - it is a sampler of a new class :)
+	pixelShader->AddSampler(SamplerUsage::shadow_map, std::make_shared<NoFilterSampler>());
 
+	
 	m_renderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_backBufferView.Get(), m_depthBufferView.Get()));
 	m_renderPass.SetVertexShader(vertexShader);
 	m_renderPass.SetPixelShader(pixelShader);
@@ -130,16 +146,21 @@ void ShadowDemoApp::InitShadowRenderTechnique()
 	file::ResourceLoader* loader = service::Locator::GetResourceLoader();
 
 	//I would like to create a shared pointer of a vertex shader....
-	std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\shadow_demo_shadowsVS.cso")));
-	//..and add at least two constant buffer with a different frequency
+	std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\shadow_demo_shadows_VS.cso")));
+	vertexShader->SetVertexInput(std::make_shared<MeshDataVertexInput>());
+	//...and add at least two constant buffer with a different frequency
 	vertexShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectData>>());
-	vertexShader->AddConstantBuffer(CBufferFrequency::per_frame, std::make_unique<CBuffer<PerFrameData>>());
+	//vertexShader->AddConstantBuffer(CBufferFrequency::per_frame, std::make_unique<CBuffer<PerFrameData>>());
 	std::shared_ptr<PixelShader> pixelShader = nullptr;
 	
-	
+	//there was an error, caused by these lines that shouldn't have been placed after the RenderPass SetState method, but BEFORE...
+	XTEST_D3D_CHECK(m_d3dDevice->CreateTexture2D(&myShadowUtilsInstance.shadowDepthBufferDesc, NULL, myShadowUtilsInstance.m_shadowDepthBuffer.GetAddressOf()));
+	XTEST_D3D_CHECK(m_d3dDevice->CreateShaderResourceView(myShadowUtilsInstance.m_shadowDepthBuffer.Get(), &myShadowUtilsInstance.shadowShaderResViewDesc, &myShadowUtilsInstance.m_shadowShaderResourceView));
+	XTEST_D3D_CHECK(m_d3dDevice->CreateDepthStencilState(&myShadowUtilsInstance.shadowDepthStencilDesc, myShadowUtilsInstance.m_shadowDepthStencilState.GetAddressOf()));
+	XTEST_D3D_CHECK(m_d3dDevice->CreateDepthStencilView(myShadowUtilsInstance.m_shadowDepthBuffer.Get(), &myShadowUtilsInstance.shadowDepthBufferViewDesc, &myShadowUtilsInstance.m_shadowDepthBufferView));
 
 
-	m_shadowRenderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, ShadowUtilities::m_shadowsViewPort, std::make_shared<SolidCullBackRS>(), nullptr, ShadowUtilities::m_shadowDepthBufferView.Get()));
+	m_shadowRenderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, myShadowUtilsInstance.m_shadowsViewPort, std::make_shared<SolidCullBackRS>(), nullptr, myShadowUtilsInstance.m_shadowDepthBufferView.Get()));
 	m_shadowRenderPass.SetVertexShader(vertexShader);
 	m_shadowRenderPass.SetPixelShader(pixelShader);
 	m_shadowRenderPass.Init();
@@ -191,7 +212,7 @@ void ShadowDemoApp::InitRenderables()
 	render::Renderable crate{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\crate\crate.gpf)"))) };
 	crate.SetTransform(XMMatrixTranslation(0.f, 0.f, 0.f));
 	crate.Init();
-	m_objects.push_back(std::move(crate));
+	m_objects.push_back(crate);
 
 	render::Renderable female{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\gdc_female\gdc_female.gpf)"))) };
 	female.SetTransform(XMMatrixTranslation(-8.0f, 0.0f, -8.0f));
@@ -342,7 +363,8 @@ void ShadowDemoApp::UpdateScene(float deltaSeconds)
 
 		m_renderPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(data);
 
-		m_shadowRenderPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(data);
+		//following line suddenly cancelled: intuition, could be unuseful
+		//m_shadowRenderPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(data);
 		//m_shadowRenderPass.GetState()->ChangeViewPort(m_viewport);
 	}
 	//PerFrameCBShadows
@@ -373,7 +395,7 @@ void ShadowDemoApp::RenderShadows()
 	//the Bind method is the RenderPass class version and deactivates the pixel shader - see render_pass.cpp row 46 - 56
 	//the following lines calls also the Bind method of the RenderPassState instance (so OMSetRenderTargets is called)
 	m_shadowRenderPass.Bind();
-	m_shadowRenderPass.GetState()->ClearDepthOnly();
+	m_shadowRenderPass.GetState()->ClearDepthStencil();
 	//unuseful: the RenderTarget is set to null
 	//m_shadowRenderPass.GetState()->ClearRenderTarget(DirectX::Colors::DarkGray);
 
@@ -385,11 +407,20 @@ void ShadowDemoApp::RenderShadows()
 		for (const std::string& meshName : renderable.GetMeshNames())
 		{
 			PerObjectData data = ToPerObjectData(renderable, meshName);
-			XMStoreFloat4x4(&data.WVP, XMMatrixMultiply(  XMMatrixMultiply(XMLoadFloat4x4(&data.W) , XMLoadFloat4x4(&LVMtemp[0]) ) ,  XMLoadFloat4x4(&PrMatrtemp[0]) ) );
+			XMMATRIX Wtmp = XMLoadFloat4x4(&data.W);
+			XMMATRIX LightViewMatrtmp = XMLoadFloat4x4(&LVMtemp[0]);
+			XMMATRIX ProjMatrtmp = XMLoadFloat4x4(&PrMatrtemp[0]);
+			XMStoreFloat4x4(&data.WVPT_shadowMap, XMMatrixTranspose(Wtmp *LightViewMatrtmp*  ProjMatrtmp));
+			
+			/*
+			XMStoreFloat4x4(&data.WVPT_shadowMap, 
+				XMMatrixMultiply(  
+					XMMatrixMultiply(XMLoadFloat4x4(&data.W) , XMLoadFloat4x4(&LVMtemp[0]) ),  
+					XMLoadFloat4x4(&PrMatrtemp[0]) ) );*/
 			//data.WVP = data.W * LVMtemp[0] *  PrMatrtemp[0];
 			m_shadowRenderPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
 			//m_shadowRenderPass.GetVertexShader()->BindTexture(TextureUsage::shadow_map, );
-
+		
 			renderable.Draw(meshName);
 		}
 	}
@@ -400,6 +431,7 @@ void ShadowDemoApp::RenderShadows()
 
 void ShadowDemoApp::RenderScene()
 {
+	RenderShadows();
 	m_d3dAnnotation->BeginEvent(L"render-scene");
 
 
@@ -415,14 +447,26 @@ void ShadowDemoApp::RenderScene()
 		for (const std::string& meshName : renderable.GetMeshNames())
 		{
 			PerObjectData data = ToPerObjectData(renderable, meshName);
+			
+			XMMATRIX Wtmp = XMLoadFloat4x4(&data.W);
+			XMMATRIX LightViewMatrtmp = XMLoadFloat4x4(&LVMtemp[0]);
+			XMMATRIX ProjMatrtmp = XMLoadFloat4x4(&PrMatrtemp[0]);
+			XMStoreFloat4x4(&data.WVPT_shadowMap, XMMatrixTranspose(Wtmp *LightViewMatrtmp*  ProjMatrtmp *  T_shadowMap));
+			/*
+			XMStoreFloat4x4(&data.WVPT_shadowMap, 
+				XMMatrixMultiply(
+					XMMatrixMultiply(
+						XMMatrixMultiply(XMLoadFloat4x4(&data.W), XMLoadFloat4x4(&LVMtemp[0])), 
+						XMLoadFloat4x4(&PrMatrtemp[0])), 
+					T_shadowMap) );*/
 			m_renderPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
 			m_renderPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
 			m_renderPass.GetPixelShader()->BindTexture(TextureUsage::color, renderable.GetTextureView(TextureUsage::color, meshName));
 			m_renderPass.GetPixelShader()->BindTexture(TextureUsage::normal, renderable.GetTextureView(TextureUsage::normal, meshName));
 			m_renderPass.GetPixelShader()->BindTexture(TextureUsage::glossiness, renderable.GetTextureView(TextureUsage::glossiness, meshName));
-			
-
-
+			m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map,myShadowUtilsInstance.m_shadowShaderResourceView.Get());
+			//myShadowUtilsInstance.GetShadowShaderResourceView()
+	
 			renderable.Draw(meshName);
 		}
 	}

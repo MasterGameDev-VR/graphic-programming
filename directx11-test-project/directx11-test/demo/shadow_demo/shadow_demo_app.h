@@ -15,7 +15,7 @@ namespace xtest
 	namespace demo
 	{
 
-		class ShadowDemoApp : public application::DirectxApp, public ShadowUtilities, public input::MouseListener, public input::KeyboardListener
+		class ShadowDemoApp : public application::DirectxApp, public input::MouseListener, public input::KeyboardListener
 		{
 		public:
 			//structs which define lights, material, per object data, etc
@@ -52,6 +52,8 @@ namespace xtest
 				DirectX::XMFLOAT4X4 W_inverseTraspose;
 				DirectX::XMFLOAT4X4 WVP;
 				DirectX::XMFLOAT4X4 TexcoordMatrix;
+				DirectX::XMFLOAT4X4 WVPT_shadowMap;
+
 				Material material;
 			};
 
@@ -149,9 +151,11 @@ namespace xtest
 			render::shading::RenderPass m_renderPass;
 			render::shading::RenderPass m_shadowRenderPass;
 
-			XMFLOAT4X4 LVMtemp[k_lightsThatCastShadows];
-			XMFLOAT4X4 PrMatrtemp[k_lightsThatCastShadows];
+			DirectX::XMFLOAT4X4 LVMtemp[k_lightsThatCastShadows];
+			DirectX::XMFLOAT4X4 PrMatrtemp[k_lightsThatCastShadows];
+			DirectX::XMMATRIX T_shadowMap;
 
+			ShadowUtilities myShadowUtilsInstance;
 		};
 	}
 }

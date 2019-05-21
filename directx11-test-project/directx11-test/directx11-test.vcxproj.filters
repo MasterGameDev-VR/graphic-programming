@@ -233,7 +233,7 @@
     <ClInclude Include="render\shading\render_pass_state.h">
       <Filter>render\shading</Filter>
     </ClInclude>
-    <ClInclude Include="ShadowUtilities.h" />
+    <ClInclude Include="demo\shadow_demo\ShadowUtilities.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -334,7 +334,7 @@
     <ClCompile Include="render\shading\render_pass_state.cpp">
       <Filter>render\shading</Filter>
     </ClCompile>
-    <ClCompile Include="ShadowUtilities.cpp" />
+    <ClCompile Include="demo\shadow_demo\ShadowUtilities.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="application\resources\small.ico">
@@ -364,6 +364,7 @@
     </FxCompile>
     <FxCompile Include="demo\shadow_demo\shadow_demo_PS.hlsl" />
     <FxCompile Include="demo\shadow_demo\shadow_demo_VS.hlsl" />
+    <FxCompile Include="demo\shadow_demo\shadow_demo_shadows_VS.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="math\math_utils.inl">

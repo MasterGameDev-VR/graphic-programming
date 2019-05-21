@@ -21,6 +21,7 @@ struct VertexOut
 	float3 normalW : NORMAL;
 	float3 tangentW : TANGENT;
 	float2 uv : TEXCOORD;
+	float4 shadowPosH : SHADOWPOS;
 };
 
 
@@ -30,6 +31,7 @@ cbuffer PerObjectCB : register(b0)
 	float4x4 W_inverseTraspose;
 	float4x4 WVP;
 	float4x4 TexcoordMatrix;
+	float4x4 WVPT_shadowMap;
 	Material material;
 };
 
@@ -44,6 +46,6 @@ VertexOut main(VertexIn vin)
 
 	vout.posH = mul(float4(vin.posL, 1.0f), WVP);
 	vout.uv = mul(float4(vin.uv, 0.f, 1.f), TexcoordMatrix).xy;
-
+	vout.shadowPosH = mul(float4(vin.posL, 1.0f),WVPT_shadowMap);
 	return vout;
 }

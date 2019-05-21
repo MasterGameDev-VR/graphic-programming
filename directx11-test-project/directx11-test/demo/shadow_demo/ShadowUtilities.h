@@ -11,7 +11,6 @@ namespace xtest
 		class ShadowUtilities 
 		{
 		public:
-			ShadowUtilities(ID3D11Device*);
 			ShadowUtilities();
 			virtual ~ShadowUtilities() {};
 
@@ -21,17 +20,26 @@ namespace xtest
 			ShadowUtilities& operator=(const ShadowUtilities&) = delete;
 
 
-		
-			Microsoft::WRL::ComPtr<ID3D11Texture2D> m_shadowDepthBuffer;
-			Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_shadowDepthBufferView;
-			Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_shadowShaderResourceView;
+			//Microsoft::WRL::ComPtr <>
+			Microsoft::WRL::ComPtr < ID3D11Texture2D> m_shadowDepthBuffer;
+			Microsoft::WRL::ComPtr < ID3D11DepthStencilView> m_shadowDepthBufferView;
+			Microsoft::WRL::ComPtr < ID3D11ShaderResourceView> m_shadowShaderResourceView;
+			Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_shadowDepthStencilState;
 			D3D11_VIEWPORT m_shadowsViewPort;
-			uint32 m_shadowsTextureResolution;
+			unsigned m_shadowsTextureResolution;
 
 			void Init();
 			void CreateShadowDepthStencilBufferAndViews();
 
+			//const ID3D11ShaderResourceView* GetShadowShaderResourceView();
+
 			void SetViewPort();
+
+			D3D11_TEXTURE2D_DESC shadowDepthBufferDesc;
+			D3D11_DEPTH_STENCIL_DESC shadowDepthStencilDesc;
+			D3D11_DEPTH_STENCIL_VIEW_DESC shadowDepthBufferViewDesc;
+			D3D11_SHADER_RESOURCE_VIEW_DESC shadowShaderResViewDesc;
+
 
 		protected:
 			Microsoft::WRL::ComPtr<ID3D11Device> m_d3dDevice;
