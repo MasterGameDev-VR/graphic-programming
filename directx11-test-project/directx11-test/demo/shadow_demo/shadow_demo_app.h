@@ -155,7 +155,26 @@ namespace xtest
 			DirectX::XMFLOAT4X4 PrMatrtemp[k_lightsThatCastShadows];
 			DirectX::XMMATRIX T_shadowMap;
 
-			ShadowUtilities myShadowUtilsInstance;
+			//ShadowUtilities myShadowUtilsInstance;
+
+			void InitShadowBuffersAndViews();
+			void CreateShadowDepthStencilBuffersAndViews();
+			void SetViewPort();
+
+			Microsoft::WRL::ComPtr < ID3D11Texture2D> m_shadowDepthTextureBuffer;
+			Microsoft::WRL::ComPtr < ID3D11DepthStencilView> m_shadowDepthStencilBufferView;
+			Microsoft::WRL::ComPtr < ID3D11ShaderResourceView> m_shadowShaderResourceView;
+			Microsoft::WRL::ComPtr<ID3D11DepthStencilState> m_shadowDepthStencilState;
+
+			D3D11_TEXTURE2D_DESC shadowDepthTextureBufferDesc;
+			D3D11_DEPTH_STENCIL_DESC shadowDepthStencilStateDesc;
+			D3D11_DEPTH_STENCIL_VIEW_DESC shadowDepthBufferViewDesc;
+			D3D11_SHADER_RESOURCE_VIEW_DESC shadowShaderResViewDesc;
+
+			D3D11_VIEWPORT m_shadowsViewPort;
+			unsigned m_shadowsTextureResolution;
+
+
 		};
 	}
 }

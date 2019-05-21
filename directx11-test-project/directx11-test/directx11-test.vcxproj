@@ -150,7 +150,6 @@
     <ClInclude Include="render\shading\vertex_input_types.h" />
     <ClInclude Include="render\shading\vertex_shader.h" />
     <ClInclude Include="service\locator.h" />
-    <ClInclude Include="demo\shadow_demo\ShadowUtilities.h" />
     <ClInclude Include="time\timer.h" />
     <ClInclude Include="application\window_settings.h" />
     <ClInclude Include="application\resources\Resource.h" />
@@ -194,7 +193,6 @@
     <ClCompile Include="render\shading\shader.cpp" />
     <ClCompile Include="render\shading\vertex_shader.cpp" />
     <ClCompile Include="service\locator.cpp" />
-    <ClCompile Include="demo\shadow_demo\ShadowUtilities.cpp" />
     <ClCompile Include="time\timer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="stdafx.cpp">

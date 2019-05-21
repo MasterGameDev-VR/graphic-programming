@@ -24,7 +24,7 @@ ShadowUtilities::ShadowUtilities() :
 
 void ShadowUtilities::Init() {
 	//m_d3dDevice = Locator::GetD3DDevice();
-	m_shadowsTextureResolution = D3D11_REQ_TEXTURECUBE_DIMENSION/16;
+	m_shadowsTextureResolution = D3D11_REQ_TEXTURECUBE_DIMENSION;
 	m_shadowDepthBuffer.Reset();
 	m_shadowDepthBufferView.Reset();
 	m_shadowShaderResourceView.Reset();
@@ -56,8 +56,8 @@ void ShadowUtilities::CreateShadowDepthStencilBufferAndViews()
 
 
 	shadowDepthStencilDesc.DepthEnable=TRUE;
-	shadowDepthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-	shadowDepthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	shadowDepthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+	shadowDepthStencilDesc.DepthFunc = D3D11_COMPARISON_GREATER;
 	shadowDepthStencilDesc.StencilEnable = FALSE;
 
 
@@ -71,7 +71,6 @@ void ShadowUtilities::CreateShadowDepthStencilBufferAndViews()
 	shadowShaderResViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 	shadowShaderResViewDesc.Texture2D.MipLevels = 1;
 	shadowShaderResViewDesc.Texture2D.MostDetailedMip = 0;
-
 	//D3D11_SUBRESOURCE_DATA shadowDepthTextureSubresource;
 	//shadowDepthTextureSubresource.pSysMem = m_shadowDepthBuffer.Get();
 

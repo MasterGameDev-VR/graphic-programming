@@ -68,7 +68,7 @@ ShadowDemoApp::ShadowDemoApp(HINSTANCE instance,
 	, m_renderPass()
 	, m_shadowRenderPass()
 	,m_boundingSphere()
-	,myShadowUtilsInstance()
+	//,myShadowUtilsInstance()
 	
 {}
 
@@ -82,8 +82,7 @@ void ShadowDemoApp::Init()
 	application::DirectxApp::Init();
 
 	//XTEST_D3D_CHECK(m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), &myShadowUtilsInstance.m_shadowDepthBuffer));
-	myShadowUtilsInstance.Init();
-	myShadowUtilsInstance.SetViewPort();
+	InitShadowBuffersAndViews();
 
 	m_camera.SetPerspectiveProjection(math::ToRadians(45.f), AspectRatio(), 1.f, 1000.f);
 
@@ -154,13 +153,13 @@ void ShadowDemoApp::InitShadowRenderTechnique()
 	std::shared_ptr<PixelShader> pixelShader = nullptr;
 	
 	//there was an error, caused by these lines that shouldn't have been placed after the RenderPass SetState method, but BEFORE...
-	XTEST_D3D_CHECK(m_d3dDevice->CreateTexture2D(&myShadowUtilsInstance.shadowDepthBufferDesc, NULL, myShadowUtilsInstance.m_shadowDepthBuffer.GetAddressOf()));
-	XTEST_D3D_CHECK(m_d3dDevice->CreateShaderResourceView(myShadowUtilsInstance.m_shadowDepthBuffer.Get(), &myShadowUtilsInstance.shadowShaderResViewDesc, &myShadowUtilsInstance.m_shadowShaderResourceView));
-	XTEST_D3D_CHECK(m_d3dDevice->CreateDepthStencilState(&myShadowUtilsInstance.shadowDepthStencilDesc, myShadowUtilsInstance.m_shadowDepthStencilState.GetAddressOf()));
-	XTEST_D3D_CHECK(m_d3dDevice->CreateDepthStencilView(myShadowUtilsInstance.m_shadowDepthBuffer.Get(), &myShadowUtilsInstance.shadowDepthBufferViewDesc, &myShadowUtilsInstance.m_shadowDepthBufferView));
+	XTEST_D3D_CHECK(m_d3dDevice->CreateTexture2D(&shadowDepthTextureBufferDesc, NULL, m_shadowDepthTextureBuffer.GetAddressOf()));
+	XTEST_D3D_CHECK(m_d3dDevice->CreateShaderResourceView(m_shadowDepthTextureBuffer.Get(), &shadowShaderResViewDesc, &m_shadowShaderResourceView));
+	XTEST_D3D_CHECK(m_d3dDevice->CreateDepthStencilState(&shadowDepthStencilStateDesc, m_shadowDepthStencilState.GetAddressOf()));
+	XTEST_D3D_CHECK(m_d3dDevice->CreateDepthStencilView(m_shadowDepthTextureBuffer.Get(), &shadowDepthBufferViewDesc, m_shadowDepthStencilBufferView.GetAddressOf()));
+	
 
-
-	m_shadowRenderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, myShadowUtilsInstance.m_shadowsViewPort, std::make_shared<SolidCullBackRS>(), nullptr, myShadowUtilsInstance.m_shadowDepthBufferView.Get()));
+	m_shadowRenderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_shadowsViewPort, std::make_shared<SolidCullBackRS>(), nullptr, m_shadowDepthStencilBufferView.Get()));
 	m_shadowRenderPass.SetVertexShader(vertexShader);
 	m_shadowRenderPass.SetPixelShader(pixelShader);
 	m_shadowRenderPass.Init();
@@ -392,6 +391,8 @@ void ShadowDemoApp::RenderShadows()
 {
 	m_d3dAnnotation->BeginEvent(L"render-scene");
 
+	//m_d3dContext->OMSetDepthStencilState(m_shadowDepthStencilState.Get(), 1);
+	m_d3dContext->OMSetRenderTargets(0, nullptr, m_shadowDepthStencilBufferView.Get());
 	//the Bind method is the RenderPass class version and deactivates the pixel shader - see render_pass.cpp row 46 - 56
 	//the following lines calls also the Bind method of the RenderPassState instance (so OMSetRenderTargets is called)
 	m_shadowRenderPass.Bind();
@@ -435,6 +436,7 @@ void ShadowDemoApp::RenderScene()
 	m_d3dAnnotation->BeginEvent(L"render-scene");
 
 
+	m_d3dContext->OMSetRenderTargets(1, m_backBufferView.GetAddressOf(), m_depthBufferView.Get());
 	m_renderPass.Bind();
 	m_renderPass.GetState()->ClearDepthOnly();
 	m_renderPass.GetState()->ClearRenderTarget(DirectX::Colors::DarkGray);
@@ -464,7 +466,7 @@ void ShadowDemoApp::RenderScene()
 			m_renderPass.GetPixelShader()->BindTexture(TextureUsage::color, renderable.GetTextureView(TextureUsage::color, meshName));
 			m_renderPass.GetPixelShader()->BindTexture(TextureUsage::normal, renderable.GetTextureView(TextureUsage::normal, meshName));
 			m_renderPass.GetPixelShader()->BindTexture(TextureUsage::glossiness, renderable.GetTextureView(TextureUsage::glossiness, meshName));
-			m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map,myShadowUtilsInstance.m_shadowShaderResourceView.Get());
+			m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map,m_shadowShaderResourceView.Get());
 			//myShadowUtilsInstance.GetShadowShaderResourceView()
 	
 			renderable.Draw(meshName);
@@ -497,5 +499,76 @@ ShadowDemoApp::PerObjectData ShadowDemoApp::ToPerObjectData(const render::Render
 	data.material.specular = renderable.GetMaterial(meshName).specular;
 
 	return data;
+}
+
+void ShadowDemoApp::InitShadowBuffersAndViews() {
+	//m_d3dDevice = Locator::GetD3DDevice();
+	m_shadowsTextureResolution = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+	m_shadowDepthTextureBuffer.Reset();
+	m_shadowDepthStencilBufferView.Reset();
+	m_shadowShaderResourceView.Reset();
+	m_shadowDepthStencilState.Reset();
+	CreateShadowDepthStencilBuffersAndViews();
+	SetViewPort();
+}
+
+void ShadowDemoApp::CreateShadowDepthStencilBuffersAndViews()
+{
+	// release any previous references
+	//the following two lines could be useful in case of repeated calls to this method
+	//probably not
+
+	//D3D11_TEXTURE2D_DESC
+
+	shadowDepthTextureBufferDesc = { 0 };
+	shadowDepthTextureBufferDesc.Width = m_shadowsTextureResolution;
+	shadowDepthTextureBufferDesc.Height = m_shadowsTextureResolution;
+	shadowDepthTextureBufferDesc.MipLevels = 1;
+	shadowDepthTextureBufferDesc.ArraySize = 1;
+	//there was another error caused by the format
+	shadowDepthTextureBufferDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
+	shadowDepthTextureBufferDesc.SampleDesc.Count = 1;		// no MSAA
+	shadowDepthTextureBufferDesc.SampleDesc.Quality = 0;	// no MSAA
+	shadowDepthTextureBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	shadowDepthTextureBufferDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+	//there was an error caused by the  CPU Access Flag
+	//shadowDepthBufferDesc.CPUAccessFlags = 0;
+	shadowDepthTextureBufferDesc.MiscFlags = 0;
+
+	//D3D11_DEPTH_STENCIL_DESC
+	shadowDepthStencilStateDesc.DepthEnable = TRUE;
+	shadowDepthStencilStateDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+	shadowDepthStencilStateDesc.DepthFunc = D3D11_COMPARISON_GREATER;
+	shadowDepthStencilStateDesc.StencilEnable = FALSE;
+
+	//D3D11_DEPTH_STENCIL_VIEW_DESC 
+	shadowDepthBufferViewDesc.Flags = 0;
+	shadowDepthBufferViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	shadowDepthBufferViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	shadowDepthBufferViewDesc.Texture2D.MipSlice = 0;
+
+
+	shadowShaderResViewDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+	shadowShaderResViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	shadowShaderResViewDesc.Texture2D.MipLevels = 1;
+	shadowShaderResViewDesc.Texture2D.MostDetailedMip = 0;
+	//D3D11_SUBRESOURCE_DATA shadowDepthTextureSubresource;
+	//shadowDepthTextureSubresource.pSysMem = m_shadowDepthBuffer.Get();
+
+	//it should be good to NOT initialize this subresource!!
+	// and to not give her any pitch data
+
+	// create the depth buffer and its view
+	//you need to know the device!!
+
+}
+
+void ShadowDemoApp::SetViewPort() {
+	m_shadowsViewPort.TopLeftX = 0.0f;
+	m_shadowsViewPort.TopLeftY = 0.0f;
+	m_shadowsViewPort.MinDepth = 0.0f;
+	m_shadowsViewPort.MaxDepth = 1.0f;
+	m_shadowsViewPort.Width = static_cast<float>(m_shadowsTextureResolution);
+	m_shadowsViewPort.Height = static_cast<float>(m_shadowsTextureResolution);
 }
 

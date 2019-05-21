@@ -56,7 +56,7 @@ namespace shading {
 			samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
 			samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
 			//samplerDesc.MaxAnisotropy = 16;
-			//samplerDesc.BorderColor=1.0f;
+			//samplerDesc.BorderColor = 1.0f;
 			samplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
 			samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
