@@ -85,15 +85,9 @@ void ShadowDemoApp::Init()
 	InitShadowBuffersAndViews();
 
 	m_camera.SetPerspectiveProjection(math::ToRadians(45.f), AspectRatio(), 1.f, 1000.f);
-
-	m_boundingSphere.radius=15.0f;
-	m_boundingSphere.bSpherePositionLS= XMFLOAT4( 0.0f ,0.0f ,0.0f ,1.0f );
-	m_boundingSphere.view_Left = m_boundingSphere.bSpherePositionLS.x - m_boundingSphere.radius;
-	m_boundingSphere.view_Right = m_boundingSphere.bSpherePositionLS.x + m_boundingSphere.radius;	
-	m_boundingSphere.view_Bottom= m_boundingSphere.bSpherePositionLS.y - m_boundingSphere.radius;
-	m_boundingSphere.view_Top=m_boundingSphere.bSpherePositionLS.y + m_boundingSphere.radius;	
-	m_boundingSphere.view_NearZ = m_boundingSphere.bSpherePositionLS.z - m_boundingSphere.radius;
-	m_boundingSphere.view_FarZ = m_boundingSphere.bSpherePositionLS.z + m_boundingSphere.radius;
+	
+	m_boundingSphere.radius=10.0f;
+	m_boundingSphere.bSpherePositionWS = { 0.0f,0.0f,0.0f,1.0f };
 
 	T_shadowMap = XMMatrixSet(
 		0.5f, 0.0f, 0.0f, 0.0f,
@@ -157,7 +151,7 @@ void ShadowDemoApp::InitShadowRenderTechnique()
 	XTEST_D3D_CHECK(m_d3dDevice->CreateShaderResourceView(m_shadowDepthTextureBuffer.Get(), &shadowShaderResViewDesc, &m_shadowShaderResourceView));
 	XTEST_D3D_CHECK(m_d3dDevice->CreateDepthStencilState(&shadowDepthStencilStateDesc, m_shadowDepthStencilState.GetAddressOf()));
 	XTEST_D3D_CHECK(m_d3dDevice->CreateDepthStencilView(m_shadowDepthTextureBuffer.Get(), &shadowDepthBufferViewDesc, m_shadowDepthStencilBufferView.GetAddressOf()));
-	
+	//
 
 	m_shadowRenderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_shadowsViewPort, std::make_shared<SolidCullBackRS>(), nullptr, m_shadowDepthStencilBufferView.Get()));
 	m_shadowRenderPass.SetVertexShader(vertexShader);
@@ -170,7 +164,7 @@ void ShadowDemoApp::InitLights()
 	m_dirKeyLight.ambient = { 0.16f, 0.18f, 0.18f, 1.f };
 	m_dirKeyLight.diffuse = { 2.f* 0.78f, 2.f* 0.83f, 2.f* 1.f, 1.f };
 	m_dirKeyLight.specular = { 0.87f,  0.90f,  0.94f, 1.f };
-	XMVECTOR dirLightDirection = XMVector3Normalize(-XMVectorSet(5.f, 3.f, 5.f, 0.f));
+	XMVECTOR dirLightDirection = XMVector3Normalize(-XMVectorSet(15.f, 3.f, 15.f, 0.f));
 	XMStoreFloat3(&m_dirKeyLight.dirW, dirLightDirection);
 
 	m_dirFillLight.ambient = { 0.16f, 0.18f, 0.18f, 1.f };
@@ -343,13 +337,35 @@ void ShadowDemoApp::UpdateScene(float deltaSeconds)
 		data.eyePosW = m_camera.GetPosition();
 
 		
-		XMVECTOR bSpherePosLS=XMLoadFloat4(&m_boundingSphere.bSpherePositionLS);
+		XMVECTOR bSpherePosWS=XMLoadFloat4(&m_boundingSphere.bSpherePositionWS);
 		float radius = m_boundingSphere.radius;
-		XMVECTOR lightCameraDir{ m_dirKeyLight.dirW.x * radius,m_dirKeyLight.dirW.y * radius,m_dirKeyLight.dirW.z * radius ,0.0f };
-		XMVECTOR eyePosition = lightCameraDir + bSpherePosLS;
-		XMStoreFloat4x4(&LVMtemp[0], XMMatrixLookAtLH(eyePosition, bSpherePosLS,XMVectorSet(0.0f,1.0f,0.0f,0.0f)));
+		XMVECTOR lightCameraRay{ m_dirKeyLight.dirW.x * radius,m_dirKeyLight.dirW.y * radius,m_dirKeyLight.dirW.z * radius ,0.0f };
+		XMVECTOR eyePosition = lightCameraRay + bSpherePosWS;
+		XMMATRIX LVMatrix = XMMatrixLookAtLH(eyePosition, bSpherePosWS, XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+
+		XMStoreFloat4x4(&LVMtemp[0], LVMatrix);
 		data.LightViewMatrices[0] = LVMtemp[0];
-		
+
+		XMFLOAT4 eyePosition_F4;
+		XMStoreFloat4(&eyePosition_F4, eyePosition);
+		XMMATRIX TranslateToLS=XMMatrixTranslation(eyePosition_F4.x, eyePosition_F4.y, eyePosition_F4.z);
+		XMVECTOR bSpherePosLS = XMVector3Transform(bSpherePosWS, TranslateToLS);
+
+		XMFLOAT4 bSpherePosLS_F4;
+		XMStoreFloat4(&bSpherePosLS_F4, bSpherePosLS);
+		//bSpherePosLS_F4.w = 1.0f;
+
+		//write the bounding sphere in LIGHT SPACE
+		//-------------------------------------------------------------------------------------------------
+		m_boundingSphere.bSpherePositionLS = bSpherePosLS_F4;
+		m_boundingSphere.view_Left = m_boundingSphere.bSpherePositionLS.x - m_boundingSphere.radius;
+		m_boundingSphere.view_Right = m_boundingSphere.bSpherePositionLS.x + m_boundingSphere.radius;
+		m_boundingSphere.view_Bottom = m_boundingSphere.bSpherePositionLS.y - m_boundingSphere.radius;
+		m_boundingSphere.view_Top = m_boundingSphere.bSpherePositionLS.y + m_boundingSphere.radius;
+		m_boundingSphere.view_NearZ = m_boundingSphere.bSpherePositionLS.z - m_boundingSphere.radius;
+		m_boundingSphere.view_FarZ = m_boundingSphere.bSpherePositionLS.z + m_boundingSphere.radius;
+		//-------------------------------------------------------------------------------------------------
+
 		XMStoreFloat4x4(&PrMatrtemp[0], XMMatrixOrthographicOffCenterLH(
 			m_boundingSphere.view_Left,
 			m_boundingSphere.view_Right,
@@ -389,9 +405,11 @@ void ShadowDemoApp::UpdateShadowRenderPass()
 
 void ShadowDemoApp::RenderShadows()
 {
-	m_d3dAnnotation->BeginEvent(L"render-scene");
+	m_d3dAnnotation->BeginEvent(L"shadow-render-scene");
 
 	//m_d3dContext->OMSetDepthStencilState(m_shadowDepthStencilState.Get(), 1);
+	m_d3dContext->RSSetViewports(1, &m_shadowsViewPort);
+
 	m_d3dContext->OMSetRenderTargets(0, nullptr, m_shadowDepthStencilBufferView.Get());
 	//the Bind method is the RenderPass class version and deactivates the pixel shader - see render_pass.cpp row 46 - 56
 	//the following lines calls also the Bind method of the RenderPassState instance (so OMSetRenderTargets is called)
@@ -435,7 +453,7 @@ void ShadowDemoApp::RenderScene()
 	RenderShadows();
 	m_d3dAnnotation->BeginEvent(L"render-scene");
 
-
+	m_d3dContext->RSSetViewports(1, &m_viewport);
 	m_d3dContext->OMSetRenderTargets(1, m_backBufferView.GetAddressOf(), m_depthBufferView.Get());
 	m_renderPass.Bind();
 	m_renderPass.GetState()->ClearDepthOnly();
@@ -453,6 +471,7 @@ void ShadowDemoApp::RenderScene()
 			XMMATRIX Wtmp = XMLoadFloat4x4(&data.W);
 			XMMATRIX LightViewMatrtmp = XMLoadFloat4x4(&LVMtemp[0]);
 			XMMATRIX ProjMatrtmp = XMLoadFloat4x4(&PrMatrtemp[0]);
+			//XMMatrixMultiply(Wtmp, LightViewMatrtmp);
 			XMStoreFloat4x4(&data.WVPT_shadowMap, XMMatrixTranspose(Wtmp *LightViewMatrtmp*  ProjMatrtmp *  T_shadowMap));
 			/*
 			XMStoreFloat4x4(&data.WVPT_shadowMap, 
@@ -538,7 +557,7 @@ void ShadowDemoApp::CreateShadowDepthStencilBuffersAndViews()
 	//D3D11_DEPTH_STENCIL_DESC
 	shadowDepthStencilStateDesc.DepthEnable = TRUE;
 	shadowDepthStencilStateDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
-	shadowDepthStencilStateDesc.DepthFunc = D3D11_COMPARISON_GREATER;
+	shadowDepthStencilStateDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
 	shadowDepthStencilStateDesc.StencilEnable = FALSE;
 
 	//D3D11_DEPTH_STENCIL_VIEW_DESC 

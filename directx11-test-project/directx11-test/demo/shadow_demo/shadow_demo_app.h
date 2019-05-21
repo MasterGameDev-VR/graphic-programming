@@ -59,6 +59,8 @@ namespace xtest
 
 			struct BoundingSphere {
 				DirectX::XMFLOAT4 bSpherePositionLS;
+				DirectX::XMFLOAT4 bSpherePositionWS;
+
 				float radius;
 				float view_Left;
 				float view_Right;
@@ -147,6 +149,7 @@ namespace xtest
 			bool m_stopLights;
 
 			camera::SphericalCamera m_camera;
+
 			std::vector<render::Renderable> m_objects;
 			render::shading::RenderPass m_renderPass;
 			render::shading::RenderPass m_shadowRenderPass;
@@ -173,6 +176,7 @@ namespace xtest
 
 			D3D11_VIEWPORT m_shadowsViewPort;
 			unsigned m_shadowsTextureResolution;
+
 
 
 		};
