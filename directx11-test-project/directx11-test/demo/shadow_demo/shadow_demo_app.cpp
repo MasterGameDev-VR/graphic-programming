@@ -86,7 +86,7 @@ void ShadowDemoApp::Init()
 
 	m_camera.SetPerspectiveProjection(math::ToRadians(45.f), AspectRatio(), 1.f, 1000.f);
 	
-	m_boundingSphere.radius=10.0f;
+	m_boundingSphere.radius=18.0f;
 	m_boundingSphere.bSpherePositionWS = { 0.0f,0.0f,0.0f,1.0f };
 
 	T_shadowMap = XMMatrixSet(
@@ -341,10 +341,7 @@ void ShadowDemoApp::UpdateScene(float deltaSeconds)
 		float radius = m_boundingSphere.radius;
 		XMVECTOR lightCameraRay{ m_dirKeyLight.dirW.x * radius,m_dirKeyLight.dirW.y * radius,m_dirKeyLight.dirW.z * radius ,0.0f };
 		XMVECTOR eyePosition = lightCameraRay + bSpherePosWS;
-		XMMATRIX LVMatrix = XMMatrixLookAtLH(eyePosition, bSpherePosWS, XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
-
-		XMStoreFloat4x4(&LVMtemp[0], LVMatrix);
-		data.LightViewMatrices[0] = LVMtemp[0];
+		
 
 		XMFLOAT4 eyePosition_F4;
 		XMStoreFloat4(&eyePosition_F4, eyePosition);
@@ -353,6 +350,11 @@ void ShadowDemoApp::UpdateScene(float deltaSeconds)
 
 		XMFLOAT4 bSpherePosLS_F4;
 		XMStoreFloat4(&bSpherePosLS_F4, bSpherePosLS);
+
+		XMMATRIX LVMatrix = XMMatrixLookAtLH(-lightCameraRay, bSpherePosLS, XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+		XMStoreFloat4x4(&LVMtemp[0], LVMatrix);
+		data.LightViewMatrices[0] = LVMtemp[0];
+
 		//bSpherePosLS_F4.w = 1.0f;
 
 		//write the bounding sphere in LIGHT SPACE
@@ -429,7 +431,7 @@ void ShadowDemoApp::RenderShadows()
 			XMMATRIX Wtmp = XMLoadFloat4x4(&data.W);
 			XMMATRIX LightViewMatrtmp = XMLoadFloat4x4(&LVMtemp[0]);
 			XMMATRIX ProjMatrtmp = XMLoadFloat4x4(&PrMatrtemp[0]);
-			XMStoreFloat4x4(&data.WVPT_shadowMap, XMMatrixTranspose(Wtmp *LightViewMatrtmp*  ProjMatrtmp));
+			XMStoreFloat4x4(&data.WVPT_shadowMap, Wtmp *XMMatrixTranspose(LightViewMatrtmp)*  XMMatrixTranspose(ProjMatrtmp));
 			
 			/*
 			XMStoreFloat4x4(&data.WVPT_shadowMap, 
@@ -472,7 +474,7 @@ void ShadowDemoApp::RenderScene()
 			XMMATRIX LightViewMatrtmp = XMLoadFloat4x4(&LVMtemp[0]);
 			XMMATRIX ProjMatrtmp = XMLoadFloat4x4(&PrMatrtemp[0]);
 			//XMMatrixMultiply(Wtmp, LightViewMatrtmp);
-			XMStoreFloat4x4(&data.WVPT_shadowMap, XMMatrixTranspose(Wtmp *LightViewMatrtmp*  ProjMatrtmp *  T_shadowMap));
+			XMStoreFloat4x4(&data.WVPT_shadowMap, XMMatrixTranspose(Wtmp *LightViewMatrtmp*  ProjMatrtmp * T_shadowMap));
 			/*
 			XMStoreFloat4x4(&data.WVPT_shadowMap, 
 				XMMatrixMultiply(
