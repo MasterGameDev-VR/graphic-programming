@@ -164,7 +164,7 @@ void ShadowDemoApp::InitLights()
 	m_dirKeyLight.ambient = { 0.16f, 0.18f, 0.18f, 1.f };
 	m_dirKeyLight.diffuse = { 2.f* 0.78f, 2.f* 0.83f, 2.f* 1.f, 1.f };
 	m_dirKeyLight.specular = { 0.87f,  0.90f,  0.94f, 1.f };
-	XMVECTOR dirLightDirection = XMVector3Normalize(-XMVectorSet(15.f, 3.f, 15.f, 0.f));
+	XMVECTOR dirLightDirection = XMVector3Normalize(-XMVectorSet(5.f, 5.5f, 5.f, 0.f));
 	XMStoreFloat3(&m_dirKeyLight.dirW, dirLightDirection);
 
 	m_dirFillLight.ambient = { 0.16f, 0.18f, 0.18f, 1.f };
@@ -339,21 +339,22 @@ void ShadowDemoApp::UpdateScene(float deltaSeconds)
 		
 		XMVECTOR bSpherePosWS=XMLoadFloat4(&m_boundingSphere.bSpherePositionWS);
 		float radius = m_boundingSphere.radius;
-		XMVECTOR lightCameraRay{ m_dirKeyLight.dirW.x * radius,m_dirKeyLight.dirW.y * radius,m_dirKeyLight.dirW.z * radius ,0.0f };
+		XMVECTOR lightCameraRay{ -m_dirKeyLight.dirW.x * radius,-m_dirKeyLight.dirW.y * radius,-m_dirKeyLight.dirW.z * radius ,0.0f };
 		XMVECTOR eyePosition = lightCameraRay + bSpherePosWS;
 		
+		XMMATRIX LVMatrix = XMMatrixLookAtLH(eyePosition, bSpherePosWS, XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+		XMStoreFloat4x4(&LVMtemp[0], LVMatrix);
+		data.LightViewMatrices[0] = LVMtemp[0];
 
-		XMFLOAT4 eyePosition_F4;
-		XMStoreFloat4(&eyePosition_F4, eyePosition);
-		XMMATRIX TranslateToLS=XMMatrixTranslation(eyePosition_F4.x, eyePosition_F4.y, eyePosition_F4.z);
-		XMVECTOR bSpherePosLS = XMVector3Transform(bSpherePosWS, TranslateToLS);
+		//XMFLOAT4 eyePosition_F4;
+		//XMStoreFloat4(&eyePosition_F4, eyePosition);
+		//XMMATRIX TranslateToLS=XMMatrixTranslation(eyePosition_F4.x, eyePosition_F4.y, eyePosition_F4.z);
+		XMVECTOR bSpherePosLS = XMVector3Transform(bSpherePosWS, LVMatrix);
 
 		XMFLOAT4 bSpherePosLS_F4;
 		XMStoreFloat4(&bSpherePosLS_F4, bSpherePosLS);
 
-		XMMATRIX LVMatrix = XMMatrixLookAtLH(-lightCameraRay, bSpherePosLS, XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
-		XMStoreFloat4x4(&LVMtemp[0], LVMatrix);
-		data.LightViewMatrices[0] = LVMtemp[0];
+		
 
 		//bSpherePosLS_F4.w = 1.0f;
 
@@ -428,10 +429,10 @@ void ShadowDemoApp::RenderShadows()
 		for (const std::string& meshName : renderable.GetMeshNames())
 		{
 			PerObjectData data = ToPerObjectData(renderable, meshName);
-			XMMATRIX Wtmp = XMLoadFloat4x4(&data.W);
+			XMMATRIX Wtmp = XMMatrixTranspose(XMLoadFloat4x4(&data.W));
 			XMMATRIX LightViewMatrtmp = XMLoadFloat4x4(&LVMtemp[0]);
 			XMMATRIX ProjMatrtmp = XMLoadFloat4x4(&PrMatrtemp[0]);
-			XMStoreFloat4x4(&data.WVPT_shadowMap, Wtmp *XMMatrixTranspose(LightViewMatrtmp)*  XMMatrixTranspose(ProjMatrtmp));
+			XMStoreFloat4x4(&data.WVPT_shadowMap, XMMatrixTranspose(Wtmp *LightViewMatrtmp* ProjMatrtmp));
 			
 			/*
 			XMStoreFloat4x4(&data.WVPT_shadowMap, 
@@ -470,9 +471,10 @@ void ShadowDemoApp::RenderScene()
 		{
 			PerObjectData data = ToPerObjectData(renderable, meshName);
 			
-			XMMATRIX Wtmp = XMLoadFloat4x4(&data.W);
+			XMMATRIX Wtmp = XMMatrixTranspose(XMLoadFloat4x4(&data.W));
 			XMMATRIX LightViewMatrtmp = XMLoadFloat4x4(&LVMtemp[0]);
 			XMMATRIX ProjMatrtmp = XMLoadFloat4x4(&PrMatrtemp[0]);
+
 			//XMMatrixMultiply(Wtmp, LightViewMatrtmp);
 			XMStoreFloat4x4(&data.WVPT_shadowMap, XMMatrixTranspose(Wtmp *LightViewMatrtmp*  ProjMatrtmp * T_shadowMap));
 			/*
