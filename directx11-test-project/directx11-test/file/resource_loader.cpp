@@ -51,7 +51,7 @@ const xtest::mesh::GPFMesh* xtest::file::ResourceLoader::LoadGPFMesh(const std::
 
 
 
-ResourceLoader::LoadedTexture ResourceLoader::LoadTexture(const std::wstring& filePath)
+ResourceLoader::LoadedTexture ResourceLoader::LoadTexture(const std::wstring& filePath, bool forseSRGB)
 {
 	// for now we only load texture with usage default and bind flag shader resource
 	if (m_d3dTextureMapByPath.find(filePath) == m_d3dTextureMapByPath.end())
@@ -60,7 +60,8 @@ ResourceLoader::LoadedTexture ResourceLoader::LoadTexture(const std::wstring& fi
 		ID3D11DeviceContext* d3dContext = service::Locator::GetD3DContext();
 		Microsoft::WRL::ComPtr<ID3D11Resource> d3dTexture;
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> d3dShaderView;
-		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(d3dDevice, d3dContext, filePath.c_str(), &d3dTexture, &d3dShaderView));
+		unsigned int loadFlag = forseSRGB ? DirectX::WIC_LOADER_FORCE_SRGB : DirectX::WIC_LOADER_IGNORE_SRGB;
+		XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFileEx(d3dDevice, d3dContext, filePath.c_str(), 0, D3D11_USAGE_DEFAULT, D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET, 0, D3D11_RESOURCE_MISC_GENERATE_MIPS, loadFlag, &d3dTexture, &d3dShaderView));
 
 		m_d3dTextureMapByPath[filePath] = std::make_pair(d3dTexture, d3dShaderView);
 	}

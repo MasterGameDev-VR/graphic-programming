@@ -73,6 +73,9 @@
     <Filter Include="scene">
       <UniqueIdentifier>{f635e4b9-0043-41e1-b2ea-f0084251bb04}</UniqueIdentifier>
     </Filter>
+    <Filter Include="demo\alpha_demo">
+      <UniqueIdentifier>{6d6b2b0d-17ec-4e8a-9ad9-8fb15b805c63}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\resources\Resource.h">
@@ -245,6 +248,9 @@
     <ClInclude Include="scene\bounding_sphere.h">
       <Filter>scene</Filter>
     </ClInclude>
+    <ClInclude Include="demo\alpha_demo\alpha_demo_app.h">
+      <Filter>demo\alpha_demo</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -354,6 +360,9 @@
     <ClCompile Include="scene\bounding_sphere.cpp">
       <Filter>scene</Filter>
     </ClCompile>
+    <ClCompile Include="demo\alpha_demo\alpha_demo_app.cpp">
+      <Filter>demo\alpha_demo</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="application\resources\small.ico">
@@ -395,6 +404,15 @@
     </FxCompile>
     <FxCompile Include="demo\shadow_demo\shadow_demo_shadowmap_VS.hlsl">
       <Filter>demo\shadow_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\alpha_demo_PS.hlsl">
+      <Filter>demo\alpha_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\alpha_demo_shadowmap_VS.hlsl">
+      <Filter>demo\alpha_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\alpha_demo_VS.hlsl">
+      <Filter>demo\alpha_demo</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
