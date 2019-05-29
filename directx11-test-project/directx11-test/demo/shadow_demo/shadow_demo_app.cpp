@@ -153,7 +153,7 @@ void ShadowDemoApp::InitShadowRenderTechnique()
 	XTEST_D3D_CHECK(m_d3dDevice->CreateDepthStencilView(m_shadowDepthTextureBuffer.Get(), &shadowDepthBufferViewDesc, m_shadowDepthStencilBufferView.GetAddressOf()));
 	//
 
-	m_shadowRenderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_shadowsViewPort, std::make_shared<SolidCullBackRS>(), nullptr, m_shadowDepthStencilBufferView.Get()));
+	m_shadowRenderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_shadowsViewPort, std::make_shared<ShadowAcneCorrectionRS>(), nullptr, m_shadowDepthStencilBufferView.Get()));
 	m_shadowRenderPass.SetVertexShader(vertexShader);
 	m_shadowRenderPass.SetPixelShader(pixelShader);
 	m_shadowRenderPass.Init();
@@ -526,7 +526,7 @@ ShadowDemoApp::PerObjectData ShadowDemoApp::ToPerObjectData(const render::Render
 
 void ShadowDemoApp::InitShadowBuffersAndViews() {
 	//m_d3dDevice = Locator::GetD3DDevice();
-	m_shadowsTextureResolution = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+	m_shadowsTextureResolution = D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION/8;
 	m_shadowDepthTextureBuffer.Reset();
 	m_shadowDepthStencilBufferView.Reset();
 	m_shadowShaderResourceView.Reset();

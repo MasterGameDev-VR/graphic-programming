@@ -85,7 +85,8 @@ Texture2D glossTexture : register(t2);
 SamplerState textureSampler : register(s0);
 
 Texture2D shadowMapTexture : register(t10);
-SamplerState shadowSampler : register(s10);
+SamplerComparisonState shadowSampler : register(s10);
+//SamplerState shadowSampler : register(s10);
 
 
 
@@ -266,13 +267,16 @@ float4 main(VertexOut pin) : SV_TARGET
 	}
 	//shadow map usage - first directional light
 	pin.shadowPosH.xyz /= pin.shadowPosH.w;
-	float depthNDC = pin.shadowPosH.z;
+	float1 depthNDC = pin.shadowPosH.z;
+	/*
 	float shadowDepthNDC = shadowMapTexture.Sample(shadowSampler,pin.shadowPosH.xy).r;
 	float litFactor = 0.0f;
 	[flatten]
 	if (shadowDepthNDC >= depthNDC) {
 		litFactor = 1.0f;
 	}
+	*/
+	float litFactor = shadowMapTexture.SampleCmpLevelZero(shadowSampler, pin.shadowPosH.xy, depthNDC).r;
 
 	float glossSample = glossTexture.Sample(textureSampler, pin.uv).r;
 	float3 toEyeW = normalize(eyePosW - pin.posW);
