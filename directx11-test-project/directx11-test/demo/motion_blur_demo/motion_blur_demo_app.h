@@ -6,6 +6,8 @@
 #include <mesh/mesh_generator.h>
 #include <mesh/mesh_format.h>
 #include <render/renderable.h>
+#include <render/shading/render_pass.h>
+
 /*
 Il motion blur è una tecnica di post - processing che si realizza su oggetti in movimento e permette a questi ultimi
 di lasciare una scia semi - invisibile durante il loro movimento
@@ -29,11 +31,78 @@ questa texture deve essere riempita con una passata di rendering
 namespace xtest {
 	namespace demo {
 
-		class motion_blur_demo_app : public application::DirectxApp, public input::KeyboardListener, public input::MouseListener
+		class MotionBlurDemoApp : public application::DirectxApp, public input::KeyboardListener, public input::MouseListener
 		{
 		public:
-			motion_blur_demo_app();
-			virtual ~motion_blur_demo_app();
+			struct DirectionalLight
+			{
+				DirectX::XMFLOAT4 ambient;
+				DirectX::XMFLOAT4 diffuse;
+				DirectX::XMFLOAT4 specular;
+				DirectX::XMFLOAT3 dirW;
+				float _explicit_pad_;
+			};
+
+			struct Material
+			{
+				DirectX::XMFLOAT4 ambient;
+				DirectX::XMFLOAT4 diffuse;
+				DirectX::XMFLOAT4 specular;
+			};
+
+			struct PerObjectData
+			{
+				DirectX::XMFLOAT4X4 W;
+				DirectX::XMFLOAT4X4 W_inverseTraspose;
+				DirectX::XMFLOAT4X4 WVP;
+				DirectX::XMFLOAT4X4 TexcoordMatrix;
+				DirectX::XMFLOAT4X4 WVPT_shadowMap;
+				Material material;
+			};
+
+			
+
+			struct RarelyChangedData
+			{
+				int32 useMotionBlurMap;
+				float _explicit_pad_[3];
+			};
+
+			MotionBlurDemoApp(HINSTANCE instance, const application::WindowSettings& windowSettings, const application::DirectxSettings& directxSettings, uint32 fps = 60);
+			virtual ~MotionBlurDemoApp();
+
+			MotionBlurDemoApp(MotionBlurDemoApp&&) = delete;
+			MotionBlurDemoApp(const MotionBlurDemoApp&) = delete;
+			MotionBlurDemoApp operator=(MotionBlurDemoApp&&) = delete;
+			MotionBlurDemoApp operator=(const MotionBlurDemoApp&) = delete;
+
+			virtual void Init() override;
+			virtual void OnResized() override;
+			virtual void UpdateScene(float deltaSeconds) override;
+			virtual void RenderScene() override;
+
+			virtual void OnWheelScroll(input::ScrollStatus scroll) override;
+			virtual void OnMouseMove(const DirectX::XMINT2& movement, const DirectX::XMINT2& currentPos) override;
+			virtual void OnKeyStatusChange(input::Key key, const input::KeyStatus& status) override;
+
+		private:
+
+			void InitRenderTechnique();
+			void InitRenderables();
+			void InitLights();
+
+			PerObjectData ToPerObjectData(const render::Renderable& renderable, const std::string& meshName);
+			
+			DirectionalLight m_dirKeyLight;
+			DirectionalLight m_dirFillLight;
+			RarelyChangedData m_rarelyChangedData;
+			bool m_isRarelyChangedDataDirty;
+
+			camera::SphericalCamera m_camera;
+			std::vector<render::Renderable> m_objects;
+			render::shading::RenderPass m_renderPass;
+			render::shading::RenderPass m_motionBlurPass;
+
 		};
 	}
 }

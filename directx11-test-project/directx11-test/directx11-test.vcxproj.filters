@@ -245,6 +245,8 @@
     <ClInclude Include="scene\bounding_sphere.h">
       <Filter>scene</Filter>
     </ClInclude>
+    <ClInclude Include="demo\motion_blur_demo\motion_blur_demo_app.h" />
+    <ClInclude Include="render\shading\motion_blur_map.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -354,6 +356,8 @@
     <ClCompile Include="scene\bounding_sphere.cpp">
       <Filter>scene</Filter>
     </ClCompile>
+    <ClCompile Include="demo\motion_blur_demo\motion_blur_demo_app.cpp" />
+    <ClCompile Include="render\shading\motion_blur_map.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="application\resources\small.ico">
