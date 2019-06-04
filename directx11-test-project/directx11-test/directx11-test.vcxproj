@@ -102,6 +102,10 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="alpha\alpha_types.h" />
+    <ClInclude Include="alpha\alpha_vertex_input_types.h" />
+    <ClInclude Include="alpha\texture_renderable.h" />
+    <ClInclude Include="alpha\texture_render_buffer.h" />
     <ClInclude Include="application\directx_app.h" />
     <ClInclude Include="application\directx_settings.h" />
     <ClInclude Include="application\windows_app.h" />
@@ -163,6 +167,8 @@
     <ClInclude Include="time\time_span.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="alpha\texture_renderable.cpp" />
+    <ClCompile Include="alpha\texture_render_buffer.cpp" />
     <ClCompile Include="application\directx_app.cpp" />
     <ClCompile Include="application\windows_app.cpp" />
     <ClCompile Include="camera\camera.cpp" />
@@ -218,6 +224,12 @@
     <Image Include="application\resources\small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="demo\alpha_demo\alpha_demo_postprocessing_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\alpha_demo_postprocessing_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
     <FxCompile Include="demo\alpha_demo\alpha_demo_PS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>

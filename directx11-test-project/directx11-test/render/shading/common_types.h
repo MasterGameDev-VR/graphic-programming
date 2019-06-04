@@ -33,6 +33,7 @@ namespace shading {
 		normal = 1,
 		glossiness = 2,
 		shadow_map = 10,
+		texture_map = 20,
 		uknown
 	};
 

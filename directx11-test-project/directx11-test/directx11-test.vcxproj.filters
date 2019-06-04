@@ -76,6 +76,9 @@
     <Filter Include="demo\alpha_demo">
       <UniqueIdentifier>{6d6b2b0d-17ec-4e8a-9ad9-8fb15b805c63}</UniqueIdentifier>
     </Filter>
+    <Filter Include="alpha">
+      <UniqueIdentifier>{7a3f100a-ea0a-4e80-a1d6-87ec6bbd2027}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\resources\Resource.h">
@@ -251,6 +254,18 @@
     <ClInclude Include="demo\alpha_demo\alpha_demo_app.h">
       <Filter>demo\alpha_demo</Filter>
     </ClInclude>
+    <ClInclude Include="alpha\alpha_vertex_input_types.h">
+      <Filter>alpha</Filter>
+    </ClInclude>
+    <ClInclude Include="alpha\alpha_types.h">
+      <Filter>alpha</Filter>
+    </ClInclude>
+    <ClInclude Include="alpha\texture_renderable.h">
+      <Filter>alpha</Filter>
+    </ClInclude>
+    <ClInclude Include="alpha\texture_render_buffer.h">
+      <Filter>alpha</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -363,6 +378,12 @@
     <ClCompile Include="demo\alpha_demo\alpha_demo_app.cpp">
       <Filter>demo\alpha_demo</Filter>
     </ClCompile>
+    <ClCompile Include="alpha\texture_renderable.cpp">
+      <Filter>alpha</Filter>
+    </ClCompile>
+    <ClCompile Include="alpha\texture_render_buffer.cpp">
+      <Filter>alpha</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="application\resources\small.ico">
@@ -412,6 +433,12 @@
       <Filter>demo\alpha_demo</Filter>
     </FxCompile>
     <FxCompile Include="demo\alpha_demo\alpha_demo_VS.hlsl">
+      <Filter>demo\alpha_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\alpha_demo_postprocessing_PS.hlsl">
+      <Filter>demo\alpha_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\alpha_demo_postprocessing_VS.hlsl">
       <Filter>demo\alpha_demo</Filter>
     </FxCompile>
   </ItemGroup>

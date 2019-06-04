@@ -7,6 +7,7 @@
 #include <render/shading/rasterizer_state_types.h>
 #include <render/shading/sampler_types.h>
 #include <external_libs/directxtk/WICTextureLoader.h>
+#include <alpha/alpha_vertex_input_types.h>
 
 
 using namespace DirectX;
@@ -31,6 +32,7 @@ AlphaDemoApp::AlphaDemoApp(HINSTANCE instance,
 	, m_renderPass()
 	, m_shadowMap(2048)
 	, m_sceneBoundingSphere({ 0.f, 0.f, 0.f }, 21.f)
+	, m_textureRenderable()
 {}
 
 
@@ -47,6 +49,7 @@ void AlphaDemoApp::Init()
 	InitLights();
 	InitRenderTechnique();
 	InitRenderables();
+	InitRenderToTexture();
 
 	service::Locator::GetMouse()->AddListener(this);
 	service::Locator::GetKeyboard()->AddListener(this, { input::Key::F, input::Key::F1 });
@@ -94,6 +97,8 @@ void AlphaDemoApp::InitRenderTechnique()
 
 	// render pass
 	{
+		m_textureRender.Init(GetCurrentWidth(), GetCurrentHeight());
+
 		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_VS.cso")));
 		vertexShader->SetVertexInput(std::make_shared<MeshDataVertexInput>());
 		vertexShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectData>>());
@@ -105,10 +110,23 @@ void AlphaDemoApp::InitRenderTechnique()
 		pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<AnisotropicSampler>());
 		pixelShader->AddSampler(SamplerUsage::shadow_map, std::make_shared<PCFSampler>());
 
-		m_renderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_backBufferView.Get(), m_depthBufferView.Get()));
+		m_renderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_textureRender.AsRenderTargetView(), m_depthBufferView.Get()));
 		m_renderPass.SetVertexShader(vertexShader);
 		m_renderPass.SetPixelShader(pixelShader);
 		m_renderPass.Init();
+	}
+
+	// postprocessing pass
+	{
+		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_postprocessing_VS.cso")));
+		vertexShader->SetVertexInput(std::make_shared<alpha::TextureDataVertexInput>());
+
+		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_postprocessing_PS.cso")));
+
+		m_PostPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_backBufferView.Get(), m_depthBufferView.Get()));
+		m_PostPass.SetVertexShader(vertexShader);
+		m_PostPass.SetPixelShader(pixelShader);
+		m_PostPass.Init();
 	}
 }
 
@@ -129,6 +147,11 @@ void AlphaDemoApp::InitRenderables()
 	soldier2.SetTransform(XMMatrixRotationY(math::ToRadians(135.f)) * XMMatrixTranslation(10.f, 0.35f, -10.f));
 	soldier2.Init();
 	m_objects.push_back(std::move(soldier2));
+}
+
+void AlphaDemoApp::InitRenderToTexture()
+{
+	m_textureRenderable.Init();
 }
 
 
@@ -276,6 +299,18 @@ void AlphaDemoApp::RenderScene()
 		}
 	}
 	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, nullptr); // explicit unbind the shadow map to suppress warning
+	m_d3dAnnotation->EndEvent();
+
+
+	m_d3dAnnotation->BeginEvent(L"render-from-texture");
+	m_PostPass.Bind();
+	m_PostPass.GetState()->ClearDepthOnly();
+	m_PostPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
+	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::texture_map, m_textureRender.AsShaderView());
+
+	m_textureRenderable.Draw();
+
+	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::texture_map, nullptr);
 	m_d3dAnnotation->EndEvent();
 
 	XTEST_D3D_CHECK(m_swapChain->Present(0, 0));

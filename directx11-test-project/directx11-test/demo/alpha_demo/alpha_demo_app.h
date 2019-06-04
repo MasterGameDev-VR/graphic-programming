@@ -12,7 +12,8 @@
 #include <render/shading/render_pass.h>
 #include <scene/bounding_sphere.h>
 #include <render/shading/shadow_map.h>
-
+#include <alpha/texture_render_buffer.h>
+#include <alpha/texture_renderable.h>
 
 namespace xtest {
 	namespace demo {
@@ -102,6 +103,7 @@ namespace xtest {
 			void InitRenderTechnique();
 			void InitRenderables();
 			void InitLights();
+			void InitRenderToTexture();
 			PerObjectData ToPerObjectData(const render::Renderable& renderable, const std::string& meshName);
 			PerObjectShadowMapData ToPerObjectShadowMapData(const render::Renderable& renderable, const std::string& meshName);
 
@@ -113,9 +115,12 @@ namespace xtest {
 
 			camera::SphericalCamera m_camera;
 			std::vector<render::Renderable> m_objects;
+			alpha::TextureRenderable m_textureRenderable;
 			render::shading::RenderPass m_shadowPass;
 			render::shading::RenderPass m_renderPass;
+			render::shading::RenderPass m_PostPass;
 			render::shading::ShadowMap m_shadowMap;
+			alpha::TextureRenderBuffer m_textureRender;
 			scene::BoundingSphere m_sceneBoundingSphere;
 		};
 
