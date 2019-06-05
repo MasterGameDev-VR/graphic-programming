@@ -7,6 +7,7 @@
 #include <mesh/mesh_format.h>
 #include <render/renderable.h>
 #include <render/shading/render_pass.h>
+#include <render/shading/motion_blur_map.h>
 
 /*
 Il motion blur è una tecnica di post - processing che si realizza su oggetti in movimento e permette a questi ultimi
@@ -60,6 +61,14 @@ namespace xtest {
 				Material material;
 			};
 
+			static const int k_pointLightCount = 4;
+			static const int k_dirLightCount = 2;
+			struct PerFrameData
+			{
+				DirectionalLight dirLights[k_dirLightCount];
+				DirectX::XMFLOAT3 eyePosW;
+				float _explicit_pad_;
+			};
 			
 
 			struct RarelyChangedData
@@ -102,6 +111,7 @@ namespace xtest {
 			std::vector<render::Renderable> m_objects;
 			render::shading::RenderPass m_renderPass;
 			render::shading::RenderPass m_motionBlurPass;
+			render::shading::MotionBlurMap m_motionBlurMap;
 
 		};
 	}

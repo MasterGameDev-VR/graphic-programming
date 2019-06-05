@@ -19,17 +19,22 @@ namespace xtest {
 					float _explicit_pad_[3];
 				};
 
-				explicit MotionBlurMap(uint32 width, uint32 height);
+				explicit MotionBlurMap(uint32 resolution);
 
 				void Init();
 
-				void SetViewAndProjectionMatrices(const SphericalCamera& camera);
+				void SetViewAndProjectionMatrices(const xtest::camera::SphericalCamera& camera);
 				PerObjectMotionBlurMapData ToPerObjectMotionBlurMapData(const render::Renderable& renderable, const std::string& meshName);
+
+				ID3D11ShaderResourceView* AsMotionBlurView();
+				ID3D11DepthStencilView* AsDepthStencilView();
+				D3D11_VIEWPORT Viewport() const;
 
 			private:
 
-				uint32 m_width;
-				uint32 m_height;
+				//uint32 m_width;
+				//uint32 m_height;
+				uint32 m_resolution;
 				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_motionBlurView;
 				Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_depthStencilView;
 				D3D11_VIEWPORT m_viewport;

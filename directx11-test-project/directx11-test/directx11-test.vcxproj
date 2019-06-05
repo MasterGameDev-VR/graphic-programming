@@ -134,13 +134,13 @@
     <ClInclude Include="math\math_utils.h" />
     <ClInclude Include="mesh\mesh_format.h" />
     <ClInclude Include="mesh\mesh_generator.h" />
-    <ClInclude Include="render\shading\motion_blur_map.h" />
     <ClInclude Include="render\directx_backend.h" />
     <ClInclude Include="render\renderable.h" />
     <ClInclude Include="render\render_macros.h" />
     <ClInclude Include="render\render_resource.h" />
     <ClInclude Include="render\shading\cbuffer.h" />
     <ClInclude Include="render\shading\common_types.h" />
+    <ClInclude Include="render\shading\motion_blur_map.h" />
     <ClInclude Include="render\shading\pixel_shader.h" />
     <ClInclude Include="render\shading\rasterizer_state.h" />
     <ClInclude Include="render\shading\render_pass.h" />
@@ -192,9 +192,9 @@
     <ClCompile Include="math\math_utils.cpp" />
     <ClCompile Include="mesh\mesh_format.cpp" />
     <ClCompile Include="mesh\mesh_generator.cpp" />
-    <ClCompile Include="render\shading\motion_blur_map.cpp" />
     <ClCompile Include="render\directx_backend.cpp" />
     <ClCompile Include="render\renderable.cpp" />
+    <ClCompile Include="render\shading\motion_blur_map.cpp" />
     <ClCompile Include="render\shading\pixel_shader.cpp" />
     <ClCompile Include="render\shading\render_pass.cpp" />
     <ClCompile Include="render\shading\render_pass_state.cpp" />
@@ -237,6 +237,9 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>
+    <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_motionblurmap_VS.hlsl" />
+    <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_PS.hlsl" />
+    <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_VS.hlsl" />
     <FxCompile Include="demo\shadow_demo\shadow_demo_PS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>

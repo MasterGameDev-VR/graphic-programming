@@ -8,14 +8,26 @@ using namespace xtest;
 using namespace xtest::camera;
 
 
-MotionBlurMap::MotionBlurMap(uint32 width, uint32 height):
-	m_width(width),
-	m_height(height),
-	m_motionBlurView(nullptr)
+MotionBlurMap::MotionBlurMap(uint32 resolution):
+	//  m_width(width)
+	//, m_height(height)
+	  m_resolution(resolution)
+	, m_motionBlurView(nullptr)
+	, m_depthStencilView(nullptr)
+	, m_V()
+	, m_P()
+	, m_VPT()
 {
 	//è necessario settare questi due dati con la matrice identità
 	XMStoreFloat4x4(&m_data.WVP_previousFrame, XMMatrixIdentity());
 	XMStoreFloat4x4(&m_data.WVP_currentFrame, XMMatrixIdentity());
+
+	m_viewport.TopLeftX = 0.f;
+	m_viewport.TopLeftY = 0.f;
+	m_viewport.Width = static_cast<float>(m_resolution);
+	m_viewport.Height = static_cast<float>(m_resolution);
+	m_viewport.MinDepth = 0.f;
+	m_viewport.MaxDepth = 1.f;
 }
 
 
@@ -32,10 +44,41 @@ void MotionBlurMap::Init()
 
 	// create the shadow map texture
 	D3D11_TEXTURE2D_DESC textureDesc;
-	textureDesc.Width = m_width;
-	textureDesc.Height = m_height;
+	textureDesc.Width = m_resolution;
+	textureDesc.Height = m_resolution;
 	textureDesc.MipLevels = 1;
 	textureDesc.ArraySize = 1;
+	textureDesc.Format = DXGI_FORMAT_R32G32_FLOAT; // typeless is required since the shader view and the depth stencil view will interpret it differently
+	textureDesc.SampleDesc.Count = 1;
+	textureDesc.SampleDesc.Quality = 0;
+	textureDesc.Usage = D3D11_USAGE_DEFAULT;
+	textureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+	textureDesc.CPUAccessFlags = 0;
+	textureDesc.MiscFlags = 0;
+
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
+	XTEST_D3D_CHECK(d3dDevice->CreateTexture2D(&textureDesc, nullptr, &texture));
+
+
+
+	// create the view used by the output merger state
+	D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
+	depthStencilViewDesc.Flags = 0;
+	depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+	depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	depthStencilViewDesc.Texture2D.MipSlice = 0;
+
+	XTEST_D3D_CHECK(d3dDevice->CreateDepthStencilView(texture.Get(), &depthStencilViewDesc, &m_depthStencilView));
+
+	//create the view used by the shader
+	D3D11_SHADER_RESOURCE_VIEW_DESC motionBlurViewDesc;
+	motionBlurViewDesc.Format = DXGI_FORMAT_R32G32_FLOAT; // 24bit red channel (depth), 8 bit unused (stencil)
+	motionBlurViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	motionBlurViewDesc.Texture2D.MipLevels = 1;
+	motionBlurViewDesc.Texture2D.MostDetailedMip = 0;
+
+	XTEST_D3D_CHECK(d3dDevice->CreateShaderResourceView(texture.Get(), &motionBlurViewDesc, &m_motionBlurView));
+
 }
 
 //qui è necessario risolvere un problema riguardante il dato da inviare al buffer:
@@ -57,6 +100,23 @@ void MotionBlurMap::SetViewAndProjectionMatrices(const SphericalCamera& camera)
 	XMStoreFloat4x4(&m_V, camera.GetViewMatrix());
 	XMStoreFloat4x4(&m_P, camera.GetProjectionMatrix());
 
+}
+
+ID3D11ShaderResourceView* MotionBlurMap::AsMotionBlurView()
+{
+	XTEST_ASSERT(m_motionBlurView, L"shadow map uninitialized");
+	return m_motionBlurView.Get();
+}
+
+
+ID3D11DepthStencilView* MotionBlurMap::AsDepthStencilView()
+{
+	XTEST_ASSERT(m_depthStencilView, L"shadow map uninitialized");
+	return m_depthStencilView.Get();
+}
+D3D11_VIEWPORT MotionBlurMap::Viewport() const
+{
+	return m_viewport;
 }
 
 MotionBlurMap::PerObjectMotionBlurMapData MotionBlurMap::ToPerObjectMotionBlurMapData(const render::Renderable& renderable, const std::string& meshName)
