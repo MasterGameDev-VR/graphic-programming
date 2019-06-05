@@ -1,4 +1,5 @@
 #pragma once
+#include <render/renderable.h>
 
 namespace alpha
 {
@@ -6,5 +7,15 @@ namespace alpha
 	{
 		DirectX::XMFLOAT3 position;
 		DirectX::XMFLOAT2 uv;
+	};
+
+	struct GlowObject
+	{
+		
+		xtest::render::Renderable* renderable;
+		std::string meshName;
+		Microsoft::WRL::ComPtr<ID3D11Resource> glowTexture;
+		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> glowTextureView;
+		
 	};
 } 

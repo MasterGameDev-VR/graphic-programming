@@ -14,6 +14,7 @@
 #include <render/shading/shadow_map.h>
 #include <alpha/texture_render_buffer.h>
 #include <alpha/texture_renderable.h>
+#include <alpha/alpha_types.h>
 
 namespace xtest {
 	namespace demo {
@@ -104,6 +105,7 @@ namespace xtest {
 			void InitRenderables();
 			void InitLights();
 			void InitRenderToTexture();
+			void InitGlowMap();
 			PerObjectData ToPerObjectData(const render::Renderable& renderable, const std::string& meshName);
 			PerObjectShadowMapData ToPerObjectShadowMapData(const render::Renderable& renderable, const std::string& meshName);
 
@@ -115,12 +117,15 @@ namespace xtest {
 
 			camera::SphericalCamera m_camera;
 			std::vector<render::Renderable> m_objects;
+			std::vector<alpha::GlowObject> m_glowObjects;
 			alpha::TextureRenderable m_textureRenderable;
 			render::shading::RenderPass m_shadowPass;
 			render::shading::RenderPass m_renderPass;
+			render::shading::RenderPass m_glowPass;
 			render::shading::RenderPass m_PostPass;
 			render::shading::ShadowMap m_shadowMap;
-			alpha::TextureRenderBuffer m_textureRender;
+			alpha::TextureRenderBuffer m_sceneTexture;
+			alpha::TextureRenderBuffer m_glowmap;
 			scene::BoundingSphere m_sceneBoundingSphere;
 		};
 

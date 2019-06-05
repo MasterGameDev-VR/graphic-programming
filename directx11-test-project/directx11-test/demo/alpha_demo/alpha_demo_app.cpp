@@ -8,6 +8,7 @@
 #include <render/shading/sampler_types.h>
 #include <external_libs/directxtk/WICTextureLoader.h>
 #include <alpha/alpha_vertex_input_types.h>
+#include <external_libs/directxtk/WICTextureLoader.h>
 
 
 using namespace DirectX;
@@ -50,6 +51,7 @@ void AlphaDemoApp::Init()
 	InitRenderTechnique();
 	InitRenderables();
 	InitRenderToTexture();
+	InitGlowMap();
 
 	service::Locator::GetMouse()->AddListener(this);
 	service::Locator::GetKeyboard()->AddListener(this, { input::Key::F, input::Key::F1 });
@@ -97,7 +99,7 @@ void AlphaDemoApp::InitRenderTechnique()
 
 	// render pass
 	{
-		m_textureRender.Init(GetCurrentWidth(), GetCurrentHeight());
+		m_sceneTexture.Init(GetCurrentWidth(), GetCurrentHeight());
 
 		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_VS.cso")));
 		vertexShader->SetVertexInput(std::make_shared<MeshDataVertexInput>());
@@ -110,10 +112,28 @@ void AlphaDemoApp::InitRenderTechnique()
 		pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<AnisotropicSampler>());
 		pixelShader->AddSampler(SamplerUsage::shadow_map, std::make_shared<PCFSampler>());
 
-		m_renderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_textureRender.AsRenderTargetView(), m_depthBufferView.Get()));
+		m_renderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_sceneTexture.AsRenderTargetView(), m_depthBufferView.Get()));
 		m_renderPass.SetVertexShader(vertexShader);
 		m_renderPass.SetPixelShader(pixelShader);
 		m_renderPass.Init();
+	}
+
+	// glow pass
+	{
+		m_glowmap.Init(GetCurrentWidth(), GetCurrentHeight());
+
+		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_glow_VS.cso")));
+		vertexShader->SetVertexInput(std::make_shared<MeshDataVertexInput>());
+		vertexShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectData>>());
+
+		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_glow_PS.cso")));
+		pixelShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectData>>());
+		pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<AnisotropicSampler>());
+
+		m_glowPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_glowmap.AsRenderTargetView(), m_depthBufferView.Get()));
+		m_glowPass.SetVertexShader(vertexShader);
+		m_glowPass.SetPixelShader(pixelShader);(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_sceneTexture.AsRenderTargetView(), m_depthBufferView.Get()));
+		m_glowPass.Init();
 	}
 
 	// postprocessing pass
@@ -152,8 +172,37 @@ void AlphaDemoApp::InitRenderables()
 void AlphaDemoApp::InitRenderToTexture()
 {
 	m_textureRenderable.Init();
-}
+}		
 
+void AlphaDemoApp::InitGlowMap()
+{
+	//init of the glowmap for the head of the character
+	Microsoft::WRL::ComPtr<ID3D11Resource> headGlowTexture;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> headGlowTextureView;
+	XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(xtest::service::Locator::GetD3DDevice(), xtest::service::Locator::GetD3DContext(), 
+		GetRootDir().append(LR"(\3d-objects\gdc_female\textures\head_glow.png)").c_str(), headGlowTexture.GetAddressOf(), headGlowTextureView.GetAddressOf()));
+
+	//INIT OF GLOWOBJECTS
+	{
+		alpha::GlowObject glowObject;
+		glowObject.renderable = &m_objects[1];
+		glowObject.meshName = "head";
+		glowObject.glowTexture = headGlowTexture;
+		glowObject.glowTextureView = headGlowTextureView;
+
+		m_glowObjects.push_back(glowObject);
+	}
+
+	{
+		alpha::GlowObject glowObject;
+		glowObject.renderable = &m_objects[2];
+		glowObject.meshName = "head";
+		glowObject.glowTexture = headGlowTexture;
+		glowObject.glowTextureView = headGlowTextureView;
+
+		m_glowObjects.push_back(glowObject);
+	}
+}
 
 void AlphaDemoApp::OnResized()
 {
@@ -259,12 +308,12 @@ void AlphaDemoApp::UpdateScene(float deltaSeconds)
 
 void AlphaDemoApp::RenderScene()
 {
-
+	// draw shawdowmap
 	m_d3dAnnotation->BeginEvent(L"shadow-map");
 	m_shadowPass.Bind();
 	m_shadowPass.GetState()->ClearDepthOnly();
 
-	// draw objects
+	
 	for (render::Renderable& renderable : m_objects)
 	{
 		for (const std::string& meshName : renderable.GetMeshNames())
@@ -277,14 +326,14 @@ void AlphaDemoApp::RenderScene()
 	m_d3dAnnotation->EndEvent();
 
 
-
+	// draw objects to texture
 	m_d3dAnnotation->BeginEvent(L"render-scene");
 	m_renderPass.Bind();
 	m_renderPass.GetState()->ClearDepthOnly();
 	m_renderPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
 	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, m_shadowMap.AsShaderView());
 
-	// draw objects
+	
 	for (render::Renderable& renderable : m_objects)
 	{
 		for (const std::string& meshName : renderable.GetMeshNames())
@@ -302,11 +351,34 @@ void AlphaDemoApp::RenderScene()
 	m_d3dAnnotation->EndEvent();
 
 
+	//Drawing the glowing objects on texture
+	m_d3dAnnotation->BeginEvent(L"render-glowmap");
+	m_glowPass.Bind();
+	m_glowPass.GetState()->ClearDepthOnly();
+	m_glowPass.GetState()->ClearRenderTarget(DirectX::Colors::Transparent);
+	
+	for (alpha::GlowObject glowObject : m_glowObjects)
+	{
+		render::Renderable& renderable = *glowObject.renderable;
+		const std::string& meshName = glowObject.meshName;
+
+		PerObjectData data = ToPerObjectData(renderable, meshName);
+		m_glowPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+		m_glowPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+		m_glowPass.GetPixelShader()->BindTexture(TextureUsage::color, renderable.GetTextureView(TextureUsage::color, meshName));
+		m_glowPass.GetPixelShader()->BindTexture(TextureUsage::glow_map, glowObject.glowTextureView.Get());
+		renderable.Draw(meshName);
+	}
+	m_d3dAnnotation->EndEvent();
+
+
+	//Drawing all the textures together
 	m_d3dAnnotation->BeginEvent(L"render-from-texture");
 	m_PostPass.Bind();
 	m_PostPass.GetState()->ClearDepthOnly();
 	m_PostPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
-	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::texture_map, m_textureRender.AsShaderView());
+	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::texture_map, m_sceneTexture.AsShaderView());
+	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::bloom, m_glowmap.AsShaderView());
 
 	m_textureRenderable.Draw();
 
