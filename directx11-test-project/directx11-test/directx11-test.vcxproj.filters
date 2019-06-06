@@ -73,6 +73,9 @@
     <Filter Include="scene">
       <UniqueIdentifier>{f635e4b9-0043-41e1-b2ea-f0084251bb04}</UniqueIdentifier>
     </Filter>
+    <Filter Include="demo\motion_blur_demo">
+      <UniqueIdentifier>{8a851bd4-3bed-4bb3-9e99-66e555d9116d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\resources\Resource.h">
@@ -245,6 +248,12 @@
     <ClInclude Include="scene\bounding_sphere.h">
       <Filter>scene</Filter>
     </ClInclude>
+    <ClInclude Include="demo\motion_blur_demo\motion_blur_demo_app.h">
+      <Filter>demo\motion_blur_demo</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\motion_blur_map.h">
+      <Filter>render\shading</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -354,6 +363,12 @@
     <ClCompile Include="scene\bounding_sphere.cpp">
       <Filter>scene</Filter>
     </ClCompile>
+    <ClCompile Include="demo\motion_blur_demo\motion_blur_demo_app.cpp">
+      <Filter>demo\motion_blur_demo</Filter>
+    </ClCompile>
+    <ClCompile Include="render\shading\motion_blur_map.cpp">
+      <Filter>render\shading</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="application\resources\small.ico">
@@ -395,6 +410,18 @@
     </FxCompile>
     <FxCompile Include="demo\shadow_demo\shadow_demo_shadowmap_VS.hlsl">
       <Filter>demo\shadow_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_motionblurmap_VS.hlsl">
+      <Filter>demo\motion_blur_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_PS.hlsl">
+      <Filter>demo\motion_blur_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_VS.hlsl">
+      <Filter>demo\motion_blur_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\motion_blur_demo\shadow_VS.hlsl">
+      <Filter>demo\motion_blur_demo</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
