@@ -116,7 +116,7 @@ void MotionBlurDemoApp::OnResized()
 
 	//update the projection matrix with the new aspect ratio
 	m_camera.SetPerspectiveProjection(math::ToRadians(45.f), AspectRatio(), 1.f, 1000.f);
-	m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
+	//m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
 
 }
 
@@ -127,7 +127,7 @@ void MotionBlurDemoApp::OnWheelScroll(input::ScrollStatus scroll)
 	if (service::Locator::GetMouse()->IsInClientArea())
 	{
 		m_camera.IncreaseRadiusBy(scroll.isScrollingUp ? -0.5f : 0.5f);
-		m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
+		//m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
 
 	}
 }
@@ -141,7 +141,7 @@ void MotionBlurDemoApp::OnMouseMove(const DirectX::XMINT2& movement, const Direc
 	if (mouse->GetButtonStatus(input::MouseButton::left_button).isDown && mouse->IsInClientArea())
 	{
 		m_camera.RotateBy(math::ToRadians(movement.y * -0.25f), math::ToRadians(movement.x * 0.25f));
-		m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
+		//m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
 
 	}
 
@@ -158,7 +158,7 @@ void MotionBlurDemoApp::OnMouseMove(const DirectX::XMINT2& movement, const Direc
 		XMFLOAT3 panTranslation;
 		XMStoreFloat3(&panTranslation, XMVectorAdd(xPanTranslation, yPanTranslation));
 		m_camera.TranslatePivotBy(panTranslation);
-		m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
+		//m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
 	}
 }
 void MotionBlurDemoApp::OnKeyStatusChange(input::Key key, const input::KeyStatus& status)
@@ -166,7 +166,7 @@ void MotionBlurDemoApp::OnKeyStatusChange(input::Key key, const input::KeyStatus
 	if (key == input::Key::F && status.isDown)
 	{
 		m_camera.SetPivot({ 5.f, 4.f, -5.f });
-		m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
+		//m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
 
 	}
 	else if (key == input::Key::F1 && status.isDown)
@@ -176,6 +176,55 @@ void MotionBlurDemoApp::OnKeyStatusChange(input::Key key, const input::KeyStatus
 	}
 }
 
+void MotionBlurDemoApp::UpdateScene(float deltaSeconds)
+{
+}
+void MotionBlurDemoApp::RenderScene()
+{
+
+	m_d3dAnnotation->BeginEvent(L"motion-blur-map");
+	m_motionBlurPass.Bind();
+	m_motionBlurPass.GetState()->ClearDepthOnly();
+
+	// draw objects
+	for (render::RenderableInMotion& renderableInMotion : m_objectsInMotion)
+	{
+		for (const std::string& meshName : renderableInMotion.GetMeshNames())
+		{
+			MotionBlurMap::PerObjectMotionBlurMapData data = m_motionBlurMap.ToPerObjectMotionBlurMapData(renderableInMotion, meshName,m_camera);
+			m_motionBlurPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+			renderableInMotion.Draw(meshName);
+		}
+	}
+	m_d3dAnnotation->EndEvent();
+
+
+
+	m_d3dAnnotation->BeginEvent(L"render-scene");
+	m_renderPass.Bind();
+	m_renderPass.GetState()->ClearDepthOnly();
+	m_renderPass.GetState()->ClearRenderTarget(DirectX::Colors::DarkGray);
+	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, m_shadowMap.AsShaderView());
+
+	// draw objects
+	for (render::Renderable& renderable : m_objects)
+	{
+		for (const std::string& meshName : renderable.GetMeshNames())
+		{
+			PerObjectData data = ToPerObjectData(renderable, meshName);
+			m_renderPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+			m_renderPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+			m_renderPass.GetPixelShader()->BindTexture(TextureUsage::color, renderable.GetTextureView(TextureUsage::color, meshName));
+			m_renderPass.GetPixelShader()->BindTexture(TextureUsage::normal, renderable.GetTextureView(TextureUsage::normal, meshName));
+			m_renderPass.GetPixelShader()->BindTexture(TextureUsage::glossiness, renderable.GetTextureView(TextureUsage::glossiness, meshName));
+			renderable.Draw(meshName);
+		}
+	}
+	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, nullptr); // explicit unbind the shadow map to suppress warning
+	m_d3dAnnotation->EndEvent();
+
+	XTEST_D3D_CHECK(m_swapChain->Present(0, 0));
+}
 
 MotionBlurDemoApp::PerObjectData MotionBlurDemoApp::ToPerObjectData(const render::Renderable& renderable, const std::string& meshName)
 {

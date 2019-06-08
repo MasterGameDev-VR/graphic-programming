@@ -247,6 +247,7 @@
     </ClInclude>
     <ClInclude Include="render\shading\motion_blur_map.h" />
     <ClInclude Include="demo\motion_blur_demo\motion_blur_demo_app.h" />
+    <ClInclude Include="render\renderable_in_motion.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -358,6 +359,7 @@
     </ClCompile>
     <ClCompile Include="render\shading\motion_blur_map.cpp" />
     <ClCompile Include="demo\motion_blur_demo\motion_blur_demo_app.cpp" />
+    <ClCompile Include="render\renderable_in_motion.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="application\resources\small.ico">

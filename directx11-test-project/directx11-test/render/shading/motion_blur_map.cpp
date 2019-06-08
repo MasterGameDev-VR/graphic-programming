@@ -14,13 +14,11 @@ MotionBlurMap::MotionBlurMap(uint32 resolution):
 	  m_resolution(resolution)
 	, m_motionBlurView(nullptr)
 	, m_depthStencilView(nullptr)
-	, m_V()
-	, m_P()
+	, m_V(XMMatrixIdentity())
+	, m_P(XMMatrixIdentity())
 	, m_VPT()
 {
-	//è necessario settare questi due dati con la matrice identità
-	XMStoreFloat4x4(&m_data.WVP_previousFrame, XMMatrixIdentity());
-	XMStoreFloat4x4(&m_data.WVP_currentFrame, XMMatrixIdentity());
+
 
 	m_viewport.TopLeftX = 0.f;
 	m_viewport.TopLeftY = 0.f;
@@ -119,23 +117,34 @@ D3D11_VIEWPORT MotionBlurMap::Viewport() const
 	return m_viewport;
 }
 
-MotionBlurMap::PerObjectMotionBlurMapData MotionBlurMap::ToPerObjectMotionBlurMapData(const render::Renderable& renderable, const std::string& meshName)
+MotionBlurMap::PerObjectMotionBlurMapData MotionBlurMap::ToPerObjectMotionBlurMapData(const render::RenderableInMotion& renderableInMotion, const std::string& meshName, const xtest::camera::SphericalCamera& cameraRef)
 {
 	XTEST_UNUSED_VAR(meshName);
+	PerObjectMotionBlurMapData m_data;
+
 	m_data.dataSetFilled = false;
 
 	//in teoria basta passare una sola matrice W per volta
 	//questa, moltiplicata per V e P verrà salvata in WVP_currentFrame e poi passerà a previousFrame
-	XMMATRIX W = XMLoadFloat4x4(&renderable.GetTransform());
-	XMMATRIX WVP = W * XMLoadFloat4x4(&m_V)*  XMLoadFloat4x4(&m_P);
+	XMMATRIX W_PreviousFrame = XMLoadFloat4x4(&renderableInMotion.GetTransformPreviousFrame());
+	XMMATRIX WVP_PreviousFrame = W_PreviousFrame * XMLoadFloat4x4(&m_V)*  XMLoadFloat4x4(&m_P);
 
-	m_data.WVP_previousFrame = m_data.WVP_currentFrame;
-	XMStoreFloat4x4(&m_data.WVP_currentFrame, XMMatrixTranspose(WVP));
-	XMFLOAT4X4 identityMatrix;
-	XMStoreFloat4x4(&identityMatrix, XMMatrixIdentity());
+	XMMATRIX W_CurrentFrame = XMLoadFloat4x4(&renderableInMotion.GetTransform());
+	XMMATRIX WVP_CurrentFrame = W_CurrentFrame * cameraRef.GetViewMatrix() *cameraRef.GetProjectionMatrix();
+
+	XMStoreFloat4x4(&m_data.WVP_currentFrame, XMMatrixTranspose(WVP_CurrentFrame));
+	XMStoreFloat4x4(&m_data.WVP_previousFrame, XMMatrixTranspose(WVP_PreviousFrame));
+
+	//XMFLOAT4X4 identityMatrix;
+	//XMStoreFloat4x4(&identityMatrix, XMMatrixIdentity());
 	//questa 'if' serve per dire al vertex shader che sono pronte le matrici relative ai due frame consecutivi
+	if (m_V.m != m_P.m ) {
+		m_data.dataSetFilled = true;
+	}
+	/*
 	if (m_data.WVP_previousFrame.m != identityMatrix.m) {
 		m_data.dataSetFilled = true;
 	}
+	*/
 	return m_data;
 }
