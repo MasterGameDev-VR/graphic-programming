@@ -1,5 +1,6 @@
 #pragma once
 #include <render/renderable.h>
+#include <render/renderable_in_motion.h>
 #include <application/directx_app.h>
 #include <camera/spherical_camera.h>
 
@@ -24,7 +25,7 @@ namespace xtest {
 				void Init();
 
 				void SetViewAndProjectionMatrices(const xtest::camera::SphericalCamera& camera);
-				PerObjectMotionBlurMapData ToPerObjectMotionBlurMapData(const render::Renderable& renderable, const std::string& meshName);
+				PerObjectMotionBlurMapData ToPerObjectMotionBlurMapData(const render::RenderableInMotion& renderable, const std::string& meshName, const xtest::camera::SphericalCamera& cameraRef);
 
 				ID3D11ShaderResourceView* AsMotionBlurView();
 				ID3D11DepthStencilView* AsDepthStencilView();
@@ -50,7 +51,6 @@ namespace xtest {
 				DirectX::XMFLOAT4X4 m_P;
 				DirectX::XMFLOAT4X4 m_VPT;
 				bool m_isDirty;
-				PerObjectMotionBlurMapData m_data;
 
 			};
 		}

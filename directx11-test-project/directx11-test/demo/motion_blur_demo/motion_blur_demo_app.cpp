@@ -111,7 +111,7 @@ void MotionBlurDemoApp::InitRenderTechnique()
 
 
 	m_rarelyChangedData.useMotionBlurMap = true;
-	/*
+	
 	// motion blur pass
 	{
 	// inizializzo la motion blur map
@@ -126,7 +126,7 @@ void MotionBlurDemoApp::InitRenderTechnique()
 		m_motionBlurPass.SetVertexShader(vertexShader);
 		m_motionBlurPass.Init();
 	}
-	*/
+	
 }
 void MotionBlurDemoApp::InitLights()
 {
@@ -244,25 +244,25 @@ void MotionBlurDemoApp::UpdateScene(float deltaSeconds)
 		m_renderPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::rarely_changed)->UpdateBuffer(m_rarelyChangedData);
 		m_isRarelyChangedDataDirty = false;
 	}
-
+	
 }
 
 
 void MotionBlurDemoApp::RenderScene()
 {
 
-	m_d3dAnnotation->BeginEvent(L"shadow-map");
-	m_shadowPass.Bind();
-	m_shadowPass.GetState()->ClearDepthOnly();
+	m_d3dAnnotation->BeginEvent(L"motion-blur-map");
+	m_motionBlurPass.Bind();
+	m_motionBlurPass.GetState()->ClearDepthOnly();
 
 	// draw objects
-	for (render::Renderable& renderable : m_objects)
+	for (render::RenderableInMotion& renderableInMotion : m_objectsInMotion)
 	{
-		for (const std::string& meshName : renderable.GetMeshNames())
+		for (const std::string& meshName : renderableInMotion.GetMeshNames())
 		{
-			PerObjectShadowMapData data = ToPerObjectShadowMapData(renderable, meshName);
-			m_shadowPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
-			renderable.Draw(meshName);
+			MotionBlurMap::PerObjectMotionBlurMapData data = m_motionBlurMap.ToPerObjectMotionBlurMapData(renderableInMotion, meshName, m_camera);
+			m_motionBlurPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+			renderableInMotion.Draw(meshName);
 		}
 	}
 	m_d3dAnnotation->EndEvent();

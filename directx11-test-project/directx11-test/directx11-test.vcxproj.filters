@@ -254,6 +254,9 @@
     <ClInclude Include="render\shading\motion_blur_map.h">
       <Filter>render\shading</Filter>
     </ClInclude>
+    <ClInclude Include="render\renderable_in_motion.h">
+      <Filter>render</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -368,6 +371,9 @@
     </ClCompile>
     <ClCompile Include="render\shading\motion_blur_map.cpp">
       <Filter>render\shading</Filter>
+    </ClCompile>
+    <ClCompile Include="render\renderable_in_motion.cpp">
+      <Filter>render</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
