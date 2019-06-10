@@ -267,6 +267,19 @@ void MotionBlurDemoApp::RenderScene()
 	}
 	m_d3dAnnotation->EndEvent();
 
+	m_d3dAnnotation->BeginEvent(L"shadow-map");
+	m_shadowPass.Bind();
+	m_shadowPass.GetState()->ClearDepthOnly();
+
+	// draw objects
+	for (render::Renderable& renderable : m_objects) {
+		for (const std::string& meshName : renderable.GetMeshNames()) {
+			PerObjectShadowMapData data = ToPerObjectShadowMapData(renderable, meshName);
+			m_shadowPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+			renderable.Draw(meshName);
+		}
+	}
+	m_d3dAnnotation->EndEvent();
 
 
 	m_d3dAnnotation->BeginEvent(L"render-scene");
