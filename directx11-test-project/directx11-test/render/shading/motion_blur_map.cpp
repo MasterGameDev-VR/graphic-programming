@@ -7,23 +7,20 @@ using namespace DirectX;
 using namespace xtest;
 using namespace xtest::camera;
 
-
 MotionBlurMap::MotionBlurMap(uint32 resolution) :
 	//  m_width(width)
 	//, m_height(height)
 	m_resolution(resolution)
 	, m_motionBlurView(nullptr)
-	, m_depthStencilView(nullptr)
 	, m_V()
 	, m_P()
-	, m_VPT()
 {
 
 
 	m_viewport.TopLeftX = 0.f;
 	m_viewport.TopLeftY = 0.f;
-	m_viewport.Width = static_cast<float>(m_resolution);
-	m_viewport.Height = static_cast<float>(m_resolution);
+	m_viewport.Width = static_cast<float>(1080);
+	m_viewport.Height = static_cast<float>(1080);
 	m_viewport.MinDepth = 0.f;
 	m_viewport.MaxDepth = 1.f;
 }
@@ -42,15 +39,15 @@ void MotionBlurMap::Init()
 
 	// create the shadow map texture
 	D3D11_TEXTURE2D_DESC textureDesc;
-	textureDesc.Width = m_resolution;
-	textureDesc.Height = m_resolution;
+	textureDesc.Width = 1080;
+	textureDesc.Height = 1080;
 	textureDesc.MipLevels = 1;
 	textureDesc.ArraySize = 1;
-	textureDesc.Format = DXGI_FORMAT_R24G8_TYPELESS; // typeless is required since the shader view and the depth stencil view will interpret it differently
+	textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT; // typeless is required since the shader view and the depth stencil view will interpret it differently
 	textureDesc.SampleDesc.Count = 1;
 	textureDesc.SampleDesc.Quality = 0;
 	textureDesc.Usage = D3D11_USAGE_DEFAULT;
-	textureDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+	textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
 	textureDesc.CPUAccessFlags = 0;
 	textureDesc.MiscFlags = 0;
 
@@ -59,23 +56,22 @@ void MotionBlurMap::Init()
 
 
 
-	// create the view used by the output merger state
-	D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
-	depthStencilViewDesc.Flags = 0;
-	depthStencilViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-	depthStencilViewDesc.Texture2D.MipSlice = 0;
-
-	XTEST_D3D_CHECK(d3dDevice->CreateDepthStencilView(texture.Get(), &depthStencilViewDesc, &m_depthStencilView));
+// 	// create the view used by the output merger state
+// 	D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
+// 	depthStencilViewDesc.Flags = 0;
+// 	depthStencilViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+// 	depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+// 	depthStencilViewDesc.Texture2D.MipSlice = 0;
+// 
+// 	XTEST_D3D_CHECK(d3dDevice->CreateDepthStencilView(texture.Get(), &depthStencilViewDesc, &m_depthStencilView));
 
 	//create the view used by the shader
-	D3D11_SHADER_RESOURCE_VIEW_DESC motionBlurViewDesc;
-	motionBlurViewDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS; // 24bit red channel (depth), 8 bit unused (stencil)
-	motionBlurViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-	motionBlurViewDesc.Texture2D.MipLevels = 1;
-	motionBlurViewDesc.Texture2D.MostDetailedMip = 0;
+	D3D11_RENDER_TARGET_VIEW_DESC motionBlurViewDesc;
+	motionBlurViewDesc.Format = textureDesc.Format;
+	motionBlurViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+	motionBlurViewDesc.Texture2D.MipSlice = 0;
 
-	XTEST_D3D_CHECK(d3dDevice->CreateShaderResourceView(texture.Get(), &motionBlurViewDesc, &m_motionBlurView));
+	XTEST_D3D_CHECK(d3dDevice->CreateRenderTargetView(texture.Get(), &motionBlurViewDesc, &m_motionBlurView));
 
 }
 
@@ -100,18 +96,12 @@ void MotionBlurMap::SetViewAndProjectionMatrices(const SphericalCamera& camera)
 
 }
 
-ID3D11ShaderResourceView* MotionBlurMap::AsMotionBlurView()
+ID3D11RenderTargetView* MotionBlurMap::AsMotionBlurView()
 {
 	XTEST_ASSERT(m_motionBlurView, L"shadow map uninitialized");
 	return m_motionBlurView.Get();
 }
 
-
-ID3D11DepthStencilView* MotionBlurMap::AsDepthStencilView()
-{
-	XTEST_ASSERT(m_depthStencilView, L"shadow map uninitialized");
-	return m_depthStencilView.Get();
-}
 D3D11_VIEWPORT MotionBlurMap::Viewport() const
 {
 	return m_viewport;
@@ -121,8 +111,6 @@ MotionBlurMap::PerObjectMotionBlurMapData MotionBlurMap::ToPerObjectMotionBlurMa
 {
 	XTEST_UNUSED_VAR(meshName);
 	PerObjectMotionBlurMapData m_data;
-
-	m_data.dataSetFilled = false;
 
 	//in teoria basta passare una sola matrice W per volta
 	//questa, moltiplicata per V e P verrà salvata in WVP_currentFrame e poi passerà a previousFrame
@@ -138,9 +126,9 @@ MotionBlurMap::PerObjectMotionBlurMapData MotionBlurMap::ToPerObjectMotionBlurMa
 	//XMFLOAT4X4 identityMatrix;
 	//XMStoreFloat4x4(&identityMatrix, XMMatrixIdentity());
 	//questa 'if' serve per dire al vertex shader che sono pronte le matrici relative ai due frame consecutivi
-	if (m_V.m != m_P.m) {
-		m_data.dataSetFilled = true;
-	}
+// 	if (m_V.m != m_P.m) {
+// 		m_data.dataSetFilled = true;
+// 	}
 	/*
 	if (m_data.WVP_previousFrame.m != identityMatrix.m) {
 		m_data.dataSetFilled = true;

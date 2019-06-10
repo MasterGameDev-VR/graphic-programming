@@ -50,20 +50,25 @@ void MotionBlurDemoApp::Init()
 
 void MotionBlurDemoApp::InitRenderables()
 {
-	render::Renderable ground{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\rocks_dorama\rocks_composition.gpf)"))) };
+	render::RenderableInMotion ground{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\rocks_dorama\rocks_composition.gpf)"))) };
 	ground.SetTransform(XMMatrixScaling(1.5f, 1.5f, 1.5f) * XMMatrixTranslation(3.f, 0.f, 2.5f));
+	ground.SetTransformPreviousFrame(XMMatrixScaling(1.5f, 1.5f, 1.5f) * XMMatrixTranslation(3.f, 0.f, 2.5f));
 	ground.Init();
 	m_objects.push_back(ground);
 
 	render::RenderableInMotion soldier1{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\gdc_female\gdc_female_posed_2.gpf)"))) };
 	soldier1.SetTransform(XMMatrixRotationY(math::ToRadians(-12.f)) * XMMatrixTranslation(0.f, 0.4f, 0.f));
+	soldier1.SetTransformPreviousFrame(XMMatrixRotationY(math::ToRadians(-12.f)) * XMMatrixTranslation(0.f, 0.4f, 0.f));
 	soldier1.Init();
 	m_objects.push_back(std::move(soldier1));
+	m_objectsInMotion.push_back(std::move(soldier1));
 
 	render::RenderableInMotion soldier2{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\gdc_female\gdc_female_posed.gpf)"))) };
 	soldier2.SetTransform(XMMatrixRotationY(math::ToRadians(135.f)) * XMMatrixTranslation(10.f, 0.35f, -10.f));
+	soldier2.SetTransformPreviousFrame(XMMatrixRotationY(math::ToRadians(135.f)) * XMMatrixTranslation(10.f, 0.35f, -10.f));
 	soldier2.Init();
 	m_objects.push_back(std::move(soldier2));
+	m_objectsInMotion.push_back(std::move(soldier2));
 }
 
 void MotionBlurDemoApp::InitRenderTechnique()
@@ -122,8 +127,11 @@ void MotionBlurDemoApp::InitRenderTechnique()
 		vertexShader->SetVertexInput(std::make_shared<PosOnlyVertexInput>());
 		vertexShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<MotionBlurMap::PerObjectMotionBlurMapData>>());
 
-		m_motionBlurPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_motionBlurMap.Viewport(), std::make_shared<SolidCullBackDepthBiasRS>(), nullptr, m_motionBlurMap.AsDepthStencilView()));
+		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\motion_blur_demo_motionblurmap_PS.cso")));
+
+		m_motionBlurPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_motionBlurMap.Viewport(), std::make_shared<SolidCullBackDepthBiasRS>(), m_motionBlurMap.AsMotionBlurView(), m_depthBufferView.Get()));
 		m_motionBlurPass.SetVertexShader(vertexShader);
+		m_motionBlurPass.SetPixelShader(pixelShader);
 		m_motionBlurPass.Init();
 	}
 	
@@ -304,6 +312,8 @@ void MotionBlurDemoApp::RenderScene()
 	}
 	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, nullptr); // explicit unbind the shadow map to suppress warning
 	m_d3dAnnotation->EndEvent();
+
+	m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
 
 	XTEST_D3D_CHECK(m_swapChain->Present(0, 0));
 }

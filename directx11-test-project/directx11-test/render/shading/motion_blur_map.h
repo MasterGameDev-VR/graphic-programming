@@ -16,8 +16,6 @@ namespace xtest {
 				{
 					DirectX::XMFLOAT4X4 WVP_currentFrame;
 					DirectX::XMFLOAT4X4 WVP_previousFrame;
-					int32 dataSetFilled;
-					float _explicit_pad_[3];
 				};
 
 				explicit MotionBlurMap(uint32 resolution);
@@ -27,8 +25,7 @@ namespace xtest {
 				void SetViewAndProjectionMatrices(const xtest::camera::SphericalCamera& camera);
 				PerObjectMotionBlurMapData ToPerObjectMotionBlurMapData(const render::RenderableInMotion& renderable, const std::string& meshName, const xtest::camera::SphericalCamera& cameraRef);
 
-				ID3D11ShaderResourceView* AsMotionBlurView();
-				ID3D11DepthStencilView* AsDepthStencilView();
+				ID3D11RenderTargetView* AsMotionBlurView();
 				D3D11_VIEWPORT Viewport() const;
 
 			private:
@@ -36,8 +33,7 @@ namespace xtest {
 				//uint32 m_width;
 				//uint32 m_height;
 				uint32 m_resolution;
-				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_motionBlurView;
-				Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_depthStencilView;
+				Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_motionBlurView;
 				D3D11_VIEWPORT m_viewport;
 
 				//la mappa deve essere realizzata usando come punto di vista quello della camera
@@ -49,7 +45,6 @@ namespace xtest {
 				//questi vanno cambiati solo se si muove la camera
 				DirectX::XMFLOAT4X4 m_V;
 				DirectX::XMFLOAT4X4 m_P;
-				DirectX::XMFLOAT4X4 m_VPT;
 				bool m_isDirty;
 
 			};
