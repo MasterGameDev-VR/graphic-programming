@@ -107,14 +107,14 @@ D3D11_VIEWPORT MotionBlurMap::Viewport() const
 	return m_viewport;
 }
 
-MotionBlurMap::PerObjectMotionBlurMapData MotionBlurMap::ToPerObjectMotionBlurMapData(const render::RenderableInMotion& renderableInMotion, const std::string& meshName, const xtest::camera::SphericalCamera& cameraRef)
+MotionBlurMap::PerObjectMotionBlurMapData MotionBlurMap::ToPerObjectMotionBlurMapData(const render::Renderable& renderableInMotion, const std::string& meshName, const xtest::camera::SphericalCamera& cameraRef, const DirectX::XMFLOAT4X4& prevoius)
 {
 	XTEST_UNUSED_VAR(meshName);
 	PerObjectMotionBlurMapData m_data;
 
 	//in teoria basta passare una sola matrice W per volta
 	//questa, moltiplicata per V e P verrà salvata in WVP_currentFrame e poi passerà a previousFrame
-	XMMATRIX W_PreviousFrame = XMLoadFloat4x4(&renderableInMotion.GetTransformPreviousFrame());
+	XMMATRIX W_PreviousFrame = XMLoadFloat4x4(&prevoius);
 	XMMATRIX WVP_PreviousFrame = W_PreviousFrame * XMLoadFloat4x4(&m_V)*  XMLoadFloat4x4(&m_P);
 
 	XMMATRIX W_CurrentFrame = XMLoadFloat4x4(&renderableInMotion.GetTransform());

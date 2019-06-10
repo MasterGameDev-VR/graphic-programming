@@ -50,25 +50,23 @@ void MotionBlurDemoApp::Init()
 
 void MotionBlurDemoApp::InitRenderables()
 {
-	render::RenderableInMotion ground{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\rocks_dorama\rocks_composition.gpf)"))) };
+	render::Renderable ground{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\rocks_dorama\rocks_composition.gpf)"))) };
 	ground.SetTransform(XMMatrixScaling(1.5f, 1.5f, 1.5f) * XMMatrixTranslation(3.f, 0.f, 2.5f));
-	ground.SetTransformPreviousFrame(XMMatrixScaling(1.5f, 1.5f, 1.5f) * XMMatrixTranslation(3.f, 0.f, 2.5f));
 	ground.Init();
-	m_objects.push_back(ground);
+	previous_Transforms.push_back(ground.GetTransform());
+	m_objects.push_back(std::move(ground));
 
-	render::RenderableInMotion soldier1{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\gdc_female\gdc_female_posed_2.gpf)"))) };
+	render::Renderable soldier1{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\gdc_female\gdc_female_posed_2.gpf)"))) };
 	soldier1.SetTransform(XMMatrixRotationY(math::ToRadians(-12.f)) * XMMatrixTranslation(0.f, 0.4f, 0.f));
-	soldier1.SetTransformPreviousFrame(XMMatrixRotationY(math::ToRadians(-12.f)) * XMMatrixTranslation(0.f, 0.4f, 0.f));
 	soldier1.Init();
+	previous_Transforms.push_back(soldier1.GetTransform());
 	m_objects.push_back(std::move(soldier1));
-	m_objectsInMotion.push_back(std::move(soldier1));
 
-	render::RenderableInMotion soldier2{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\gdc_female\gdc_female_posed.gpf)"))) };
+	render::Renderable soldier2{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\gdc_female\gdc_female_posed.gpf)"))) };
 	soldier2.SetTransform(XMMatrixRotationY(math::ToRadians(135.f)) * XMMatrixTranslation(10.f, 0.35f, -10.f));
-	soldier2.SetTransformPreviousFrame(XMMatrixRotationY(math::ToRadians(135.f)) * XMMatrixTranslation(10.f, 0.35f, -10.f));
 	soldier2.Init();
+	previous_Transforms.push_back(soldier2.GetTransform());
 	m_objects.push_back(std::move(soldier2));
-	m_objectsInMotion.push_back(std::move(soldier2));
 }
 
 void MotionBlurDemoApp::InitRenderTechnique()
@@ -188,7 +186,6 @@ void MotionBlurDemoApp::OnMouseMove(const DirectX::XMINT2& movement, const Direc
 	{
 		m_camera.RotateBy(math::ToRadians(movement.y * -0.25f), math::ToRadians(movement.x * 0.25f));
 		m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
-
 	}
 
 	// pan the camera 
@@ -262,16 +259,20 @@ void MotionBlurDemoApp::RenderScene()
 	m_d3dAnnotation->BeginEvent(L"motion-blur-map");
 	m_motionBlurPass.Bind();
 	m_motionBlurPass.GetState()->ClearDepthOnly();
+	m_motionBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
 
+	int i = 0;
 	// draw objects
-	for (render::RenderableInMotion& renderableInMotion : m_objectsInMotion)
+	for (render::Renderable& renderable : m_objects)
 	{
-		for (const std::string& meshName : renderableInMotion.GetMeshNames())
+		for (const std::string& meshName : renderable.GetMeshNames())
 		{
-			MotionBlurMap::PerObjectMotionBlurMapData data = m_motionBlurMap.ToPerObjectMotionBlurMapData(renderableInMotion, meshName, m_camera);
+			MotionBlurMap::PerObjectMotionBlurMapData data = m_motionBlurMap.ToPerObjectMotionBlurMapData(renderable, meshName, m_camera, previous_Transforms[i]);
 			m_motionBlurPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
-			renderableInMotion.Draw(meshName);
+			renderable.Draw(meshName);
 		}
+		previous_Transforms[i] = renderable.GetTransform();
+		i++;
 	}
 	m_d3dAnnotation->EndEvent();
 

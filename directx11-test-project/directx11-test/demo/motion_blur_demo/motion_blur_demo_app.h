@@ -131,7 +131,7 @@ namespace xtest {
 
 			camera::SphericalCamera m_camera;
 			std::vector<render::Renderable> m_objects;
-			std::vector<render::RenderableInMotion> m_objectsInMotion;
+			std::vector<DirectX::XMFLOAT4X4> previous_Transforms;
 			render::shading::RenderPass m_shadowPass;
 			render::shading::RenderPass m_renderPass;
 			render::shading::RenderPass m_motionBlurPass;

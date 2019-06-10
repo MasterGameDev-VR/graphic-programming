@@ -23,8 +23,7 @@ namespace xtest {
 				void Init();
 
 				void SetViewAndProjectionMatrices(const xtest::camera::SphericalCamera& camera);
-				PerObjectMotionBlurMapData ToPerObjectMotionBlurMapData(const render::RenderableInMotion& renderable, const std::string& meshName, const xtest::camera::SphericalCamera& cameraRef);
-
+				PerObjectMotionBlurMapData ToPerObjectMotionBlurMapData(const render::Renderable& renderableInMotion, const std::string& meshName, const xtest::camera::SphericalCamera& cameraRef, const DirectX::XMFLOAT4X4& prevoius);
 				ID3D11RenderTargetView* AsMotionBlurView();
 				D3D11_VIEWPORT Viewport() const;
 
