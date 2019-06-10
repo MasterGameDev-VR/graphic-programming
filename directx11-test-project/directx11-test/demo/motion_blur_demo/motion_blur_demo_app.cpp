@@ -27,7 +27,7 @@ MotionBlurDemoApp::MotionBlurDemoApp(HINSTANCE instance,
 	, m_shadowPass()
 	, m_renderPass()
 	, m_shadowMap(2048)
-	, m_motionBlurMap(2048)
+	, m_motionBlurMap()
 	, m_sceneBoundingSphere({ 0.f, 0.f, 0.f }, 21.f)
 {}
 

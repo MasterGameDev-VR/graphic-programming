@@ -18,7 +18,7 @@ namespace xtest {
 					DirectX::XMFLOAT4X4 WVP_previousFrame;
 				};
 
-				explicit MotionBlurMap(uint32 resolution);
+				explicit MotionBlurMap();
 
 				void Init();
 

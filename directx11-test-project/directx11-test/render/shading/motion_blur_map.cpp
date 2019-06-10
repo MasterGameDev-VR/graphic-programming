@@ -7,11 +7,8 @@ using namespace DirectX;
 using namespace xtest;
 using namespace xtest::camera;
 
-MotionBlurMap::MotionBlurMap(uint32 resolution) :
-	//  m_width(width)
-	//, m_height(height)
-	m_resolution(resolution)
-	, m_motionBlurView(nullptr)
+MotionBlurMap::MotionBlurMap() :
+	m_motionBlurView(nullptr)
 	, m_V()
 	, m_P()
 {
@@ -37,13 +34,13 @@ void MotionBlurMap::Init()
 	ID3D11Device* d3dDevice = service::Locator::GetD3DDevice();
 
 
-	// create the shadow map texture
+	// create the velocity buffer texture
 	D3D11_TEXTURE2D_DESC textureDesc;
 	textureDesc.Width = 1080;
 	textureDesc.Height = 1080;
 	textureDesc.MipLevels = 1;
 	textureDesc.ArraySize = 1;
-	textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT; // typeless is required since the shader view and the depth stencil view will interpret it differently
+	textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	textureDesc.SampleDesc.Count = 1;
 	textureDesc.SampleDesc.Quality = 0;
 	textureDesc.Usage = D3D11_USAGE_DEFAULT;
