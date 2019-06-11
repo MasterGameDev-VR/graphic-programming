@@ -25,6 +25,10 @@ namespace xtest {
 				PerObjectMotionBlurMapData ToPerObjectMotionBlurMapData(const render::Renderable& renderableInMotion, const std::string& meshName, const xtest::camera::SphericalCamera& cameraRef, const DirectX::XMFLOAT4X4& prevoius);
 				ID3D11RenderTargetView* AsMotionBlurView();
 				ID3D11ShaderResourceView* AsShaderView();
+
+				ID3D11RenderTargetView* GetColorRenderTargetView();
+				ID3D11ShaderResourceView* GetColorShaderView();
+
 				D3D11_VIEWPORT Viewport() const;
 
 			private:
@@ -32,8 +36,10 @@ namespace xtest {
 				uint32 m_width;
 				uint32 m_height;
 				uint32 m_resolution;
-				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_shaderView;
+				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_colorShaderView;
+				Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_motionBlurShaderView;
 				Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_motionBlurView;
+				Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_colorRenderView;
 				D3D11_VIEWPORT m_viewport;
 
 				//la mappa deve essere realizzata usando come punto di vista quello della camera

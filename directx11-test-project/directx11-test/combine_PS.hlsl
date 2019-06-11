@@ -1,4 +1,5 @@
-Texture2D motionBlurTexture : register(t0);
+Texture2D colorTexture : register(t0);
+Texture2D motionBlurTexture : register(t3);
 
 SamplerState textureSampler : register(s0);
 
