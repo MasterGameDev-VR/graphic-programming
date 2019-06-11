@@ -429,7 +429,7 @@
     <FxCompile Include="demo\motion_blur_demo\shadow_VS.hlsl">
       <Filter>demo\motion_blur_demo</Filter>
     </FxCompile>
-    <FxCompile Include="motion_blur_demo_motionblurmap_PS.hlsl">
+    <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_motionblurmap_PS.hlsl">
       <Filter>demo\motion_blur_demo</Filter>
     </FxCompile>
   </ItemGroup>

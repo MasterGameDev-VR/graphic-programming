@@ -224,6 +224,11 @@ void MotionBlurDemoApp::UpdateScene(float deltaSeconds)
 {
 	XTEST_UNUSED_VAR(deltaSeconds);
 
+	//Update previous transform
+	for (int i = 0; i < m_objects.size(); i++) {
+		previous_Transforms[i] = m_objects[i].GetTransform();
+	}
+
 	XMMATRIX R = XMMatrixRotationY(math::ToRadians(120.f) * deltaSeconds);
 	XMMATRIX W = XMLoadFloat4x4(&m_objects[1].GetTransform());
 	W *= R;
@@ -271,7 +276,6 @@ void MotionBlurDemoApp::RenderScene()
 			m_motionBlurPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
 			renderable.Draw(meshName);
 		}
-		previous_Transforms[i] = renderable.GetTransform();
 		i++;
 	}
 	m_d3dAnnotation->EndEvent();
