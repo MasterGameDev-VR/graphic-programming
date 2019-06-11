@@ -78,6 +78,10 @@ namespace xtest {
 				DirectX::XMFLOAT4X4 WVP_lightSpace;
 			};
 
+			struct PerObjectCombineData {
+				DirectX::XMFLOAT4X4 WVP;
+			};
+
 			static const int k_pointLightCount = 4;
 			static const int k_dirLightCount = 2;
 			struct PerFrameData
@@ -122,7 +126,7 @@ namespace xtest {
 			void InitLights();
 			PerObjectData ToPerObjectData(const render::Renderable& renderable, const std::string& meshName);
 			PerObjectShadowMapData ToPerObjectShadowMapData(const render::Renderable& renderable, const std::string& meshName);
-
+			PerObjectCombineData ToPerObjectCombineData(const render::Renderable& renderable, const std::string& meshName);
 
 			DirectionalLight m_dirKeyLight;
 			DirectionalLight m_dirFillLight;
@@ -135,6 +139,7 @@ namespace xtest {
 			render::shading::RenderPass m_shadowPass;
 			render::shading::RenderPass m_renderPass;
 			render::shading::RenderPass m_motionBlurPass;
+			render::shading::RenderPass m_combinePass;
 			render::shading::ShadowMap m_shadowMap;
 			render::shading::MotionBlurMap m_motionBlurMap;
 			scene::BoundingSphere m_sceneBoundingSphere;

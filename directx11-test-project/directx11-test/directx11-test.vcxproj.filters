@@ -432,6 +432,12 @@
     <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_motionblurmap_PS.hlsl">
       <Filter>demo\motion_blur_demo</Filter>
     </FxCompile>
+    <FxCompile Include="combine_PS.hlsl">
+      <Filter>demo\motion_blur_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="combine_VS.hlsl">
+      <Filter>demo\motion_blur_demo</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="math\math_utils.inl">

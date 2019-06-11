@@ -115,10 +115,11 @@ void MotionBlurDemoApp::InitRenderTechnique()
 
 	m_rarelyChangedData.useMotionBlurMap = true;
 	
-	// motion blur pass
+	// motion blur map pass
 	{
 	// inizializzo la motion blur map
 		m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
+		m_motionBlurMap.SetWidthHeight(GetCurrentWidth(), GetCurrentHeight());
 		m_motionBlurMap.Init();
 
 		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\motion_blur_demo_motionblurmap_VS.cso")));
@@ -127,10 +128,27 @@ void MotionBlurDemoApp::InitRenderTechnique()
 
 		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\motion_blur_demo_motionblurmap_PS.cso")));
 
-		m_motionBlurPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_motionBlurMap.Viewport(), std::make_shared<SolidCullBackDepthBiasRS>(), m_motionBlurMap.AsMotionBlurView(), m_depthBufferView.Get()));
+		m_motionBlurPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_motionBlurMap.Viewport(), std::make_shared<SolidCullBackRS>(), m_motionBlurMap.AsMotionBlurView(), m_depthBufferView.Get()));
 		m_motionBlurPass.SetVertexShader(vertexShader);
 		m_motionBlurPass.SetPixelShader(pixelShader);
 		m_motionBlurPass.Init();
+	}
+
+
+	// combine motion blur pass
+	{
+		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\combine_VS.cso")));
+		vertexShader->SetVertexInput(std::make_shared<PosOnlyVertexInput>());
+		vertexShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectCombineData>>());
+
+		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\combine_PS.cso")));
+		pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<AnisotropicSampler>());
+
+
+		m_combinePass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_backBufferView.Get(), m_depthBufferView.Get()));
+		m_combinePass.SetVertexShader(vertexShader);
+		m_combinePass.SetPixelShader(pixelShader);
+		m_combinePass.Init();
 	}
 	
 }
@@ -260,31 +278,11 @@ void MotionBlurDemoApp::UpdateScene(float deltaSeconds)
 
 void MotionBlurDemoApp::RenderScene()
 {
-
-	m_d3dAnnotation->BeginEvent(L"motion-blur-map");
-	m_motionBlurPass.Bind();
-	m_motionBlurPass.GetState()->ClearDepthOnly();
-	m_motionBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
-
-	int i = 0;
-	// draw objects
-	for (render::Renderable& renderable : m_objects)
-	{
-		for (const std::string& meshName : renderable.GetMeshNames())
-		{
-			MotionBlurMap::PerObjectMotionBlurMapData data = m_motionBlurMap.ToPerObjectMotionBlurMapData(renderable, meshName, m_camera, previous_Transforms[i]);
-			m_motionBlurPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
-			renderable.Draw(meshName);
-		}
-		i++;
-	}
-	m_d3dAnnotation->EndEvent();
-
 	m_d3dAnnotation->BeginEvent(L"shadow-map");
 	m_shadowPass.Bind();
 	m_shadowPass.GetState()->ClearDepthOnly();
 
-	// draw objects
+	// draw SHADOW
 	for (render::Renderable& renderable : m_objects) {
 		for (const std::string& meshName : renderable.GetMeshNames()) {
 			PerObjectShadowMapData data = ToPerObjectShadowMapData(renderable, meshName);
@@ -301,7 +299,7 @@ void MotionBlurDemoApp::RenderScene()
 	m_renderPass.GetState()->ClearRenderTarget(DirectX::Colors::DarkGray);
 	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, m_shadowMap.AsShaderView());
 
-	// draw objects
+	// draw OBJECTS
 	for (render::Renderable& renderable : m_objects)
 	{
 		for (const std::string& meshName : renderable.GetMeshNames())
@@ -319,6 +317,38 @@ void MotionBlurDemoApp::RenderScene()
 	m_d3dAnnotation->EndEvent();
 
 	m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
+
+	m_d3dAnnotation->BeginEvent(L"motion-blur-map");
+	m_motionBlurPass.Bind();
+	m_motionBlurPass.GetState()->ClearDepthOnly();
+	m_motionBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
+
+	int i = 0;
+	// draw MOTIONBLURMAP
+	for (render::Renderable& renderable : m_objects) {
+		for (const std::string& meshName : renderable.GetMeshNames()) {
+			MotionBlurMap::PerObjectMotionBlurMapData data = m_motionBlurMap.ToPerObjectMotionBlurMapData(renderable, meshName, m_camera, previous_Transforms[i]);
+			m_motionBlurPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+			renderable.Draw(meshName);
+		}
+		i++;
+	}
+	m_d3dAnnotation->EndEvent();
+
+	m_d3dAnnotation->BeginEvent(L"combine");
+	m_combinePass.Bind();
+	m_combinePass.GetState()->ClearDepthOnly();
+	m_combinePass.GetPixelShader()->BindTexture(TextureUsage::color, m_motionBlurMap.AsShaderView());
+
+	// draw COMBINE
+	for (render::Renderable& renderable : m_objects) {
+		for (const std::string& meshName : renderable.GetMeshNames()) {
+			MotionBlurDemoApp::PerObjectCombineData data = ToPerObjectCombineData(renderable, meshName);
+			m_combinePass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+			renderable.Draw(meshName);
+		}
+	}
+	m_d3dAnnotation->EndEvent();
 
 	XTEST_D3D_CHECK(m_swapChain->Present(0, 0));
 }
@@ -356,5 +386,18 @@ MotionBlurDemoApp::PerObjectShadowMapData MotionBlurDemoApp::ToPerObjectShadowMa
 	XMMATRIX WVP = W * m_shadowMap.LightViewMatrix() * m_shadowMap.LightProjMatrix();
 
 	XMStoreFloat4x4(&data.WVP_lightSpace, XMMatrixTranspose(WVP));
+	return data;
+}
+
+MotionBlurDemoApp::PerObjectCombineData MotionBlurDemoApp::ToPerObjectCombineData(const render::Renderable& renderable, const std::string& meshName) {
+	XTEST_UNUSED_VAR(meshName);
+	PerObjectCombineData data;
+
+	XMMATRIX W = XMLoadFloat4x4(&renderable.GetTransform());
+	XMMATRIX V = m_camera.GetViewMatrix();
+	XMMATRIX P = m_camera.GetProjectionMatrix();
+	XMMATRIX WVP = W * V*P;
+
+	XMStoreFloat4x4(&data.WVP, XMMatrixTranspose(WVP));
 	return data;
 }

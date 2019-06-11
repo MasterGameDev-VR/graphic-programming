@@ -7,6 +7,6 @@ float4 main(VertexOut pin) : SV_TARGET
 {
 	pin.posH.xyz /= pin.posH.w;
 	pin.prevposH.xyz /= pin.prevposH.w;
-
-	return pin.prevposH - pin.posH;
+	float4 vel = pin.posH - pin.prevposH;
+	return float4(vel.x, vel.y, 0.0f, 0.0f);
 }

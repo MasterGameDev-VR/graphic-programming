@@ -16,10 +16,18 @@ MotionBlurMap::MotionBlurMap() :
 
 	m_viewport.TopLeftX = 0.f;
 	m_viewport.TopLeftY = 0.f;
-	m_viewport.Width = static_cast<float>(1080);
-	m_viewport.Height = static_cast<float>(1080);
+	m_viewport.Width = static_cast<float>(m_width);
+	m_viewport.Height = static_cast<float>(m_height);
 	m_viewport.MinDepth = 0.f;
 	m_viewport.MaxDepth = 1.f;
+}
+
+void xtest::render::shading::MotionBlurMap::SetWidthHeight(uint32 width, uint32 height) {
+	m_width = width;
+	m_height = height;
+
+	m_viewport.Width = static_cast<float>(m_width);
+	m_viewport.Height = static_cast<float>(m_height);
 }
 
 
@@ -36,8 +44,8 @@ void MotionBlurMap::Init()
 
 	// create the velocity buffer texture
 	D3D11_TEXTURE2D_DESC textureDesc;
-	textureDesc.Width = 1080;
-	textureDesc.Height = 1080;
+	textureDesc.Width = (UINT)m_width;
+	textureDesc.Height = (UINT)m_height;
 	textureDesc.MipLevels = 1;
 	textureDesc.ArraySize = 1;
 	textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -51,17 +59,6 @@ void MotionBlurMap::Init()
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
 	XTEST_D3D_CHECK(d3dDevice->CreateTexture2D(&textureDesc, nullptr, &texture));
 
-
-
-// 	// create the view used by the output merger state
-// 	D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
-// 	depthStencilViewDesc.Flags = 0;
-// 	depthStencilViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-// 	depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-// 	depthStencilViewDesc.Texture2D.MipSlice = 0;
-// 
-// 	XTEST_D3D_CHECK(d3dDevice->CreateDepthStencilView(texture.Get(), &depthStencilViewDesc, &m_depthStencilView));
-
 	//create the view used by the shader
 	D3D11_RENDER_TARGET_VIEW_DESC motionBlurViewDesc;
 	motionBlurViewDesc.Format = textureDesc.Format;
@@ -69,6 +66,16 @@ void MotionBlurMap::Init()
 	motionBlurViewDesc.Texture2D.MipSlice = 0;
 
 	XTEST_D3D_CHECK(d3dDevice->CreateRenderTargetView(texture.Get(), &motionBlurViewDesc, &m_motionBlurView));
+
+
+	//create the view used by the shader
+	D3D11_SHADER_RESOURCE_VIEW_DESC shaderViewDesc;
+	shaderViewDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT; // 24bit red channel (depth), 8 bit unused (stencil)
+	shaderViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	shaderViewDesc.Texture2D.MipLevels = 1;
+	shaderViewDesc.Texture2D.MostDetailedMip = 0;
+
+	XTEST_D3D_CHECK(d3dDevice->CreateShaderResourceView(texture.Get(), &shaderViewDesc, &m_shaderView));
 
 }
 
@@ -97,6 +104,11 @@ ID3D11RenderTargetView* MotionBlurMap::AsMotionBlurView()
 {
 	XTEST_ASSERT(m_motionBlurView, L"shadow map uninitialized");
 	return m_motionBlurView.Get();
+}
+
+ID3D11ShaderResourceView* MotionBlurMap::AsShaderView() {
+	XTEST_ASSERT(m_shaderView, L"shadow map uninitialized");
+	return m_shaderView.Get();
 }
 
 D3D11_VIEWPORT MotionBlurMap::Viewport() const
