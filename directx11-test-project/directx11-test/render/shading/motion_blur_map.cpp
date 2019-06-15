@@ -56,8 +56,8 @@ void MotionBlurMap::Init()
 	textureDesc.CPUAccessFlags = 0;
 	textureDesc.MiscFlags = 0;
 
-	Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
-	XTEST_D3D_CHECK(d3dDevice->CreateTexture2D(&textureDesc, nullptr, &texture));
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> motionVector;
+	XTEST_D3D_CHECK(d3dDevice->CreateTexture2D(&textureDesc, nullptr, &motionVector));
 
 	//create the view used by the shader
 	D3D11_RENDER_TARGET_VIEW_DESC motionBlurViewDesc;
@@ -65,7 +65,7 @@ void MotionBlurMap::Init()
 	motionBlurViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 	motionBlurViewDesc.Texture2D.MipSlice = 0;
 
-	XTEST_D3D_CHECK(d3dDevice->CreateRenderTargetView(texture.Get(), &motionBlurViewDesc, &m_motionBlurView));
+	XTEST_D3D_CHECK(d3dDevice->CreateRenderTargetView(motionVector.Get(), &motionBlurViewDesc, &m_motionBlurView));
 
 
 	// create the color buffer texture
@@ -103,7 +103,7 @@ void MotionBlurMap::Init()
 	shaderViewDesc.Texture2D.MostDetailedMip = 0;
 
 	XTEST_D3D_CHECK(d3dDevice->CreateShaderResourceView(colorTexture.Get(), &shaderViewDesc, &m_colorShaderView));
-	XTEST_D3D_CHECK(d3dDevice->CreateShaderResourceView(texture.Get(), &shaderViewDesc, &m_motionBlurShaderView));
+	XTEST_D3D_CHECK(d3dDevice->CreateShaderResourceView(motionVector.Get(), &shaderViewDesc, &m_motionBlurShaderView));
 
 }
 

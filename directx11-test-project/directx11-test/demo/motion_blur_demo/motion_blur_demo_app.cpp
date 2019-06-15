@@ -338,6 +338,7 @@ void MotionBlurDemoApp::RenderScene()
 
 	m_d3dAnnotation->BeginEvent(L"combine");
 	m_combinePass.Bind();
+	m_combinePass.GetState()->ClearRenderTarget(DirectX::Colors::White);
 	m_combinePass.GetState()->ClearDepthOnly();
 	m_combinePass.GetPixelShader()->BindTexture(TextureUsage::color, m_motionBlurMap.GetColorShaderView());
 	m_combinePass.GetPixelShader()->BindTexture(TextureUsage::motionblur, m_motionBlurMap.AsShaderView());
