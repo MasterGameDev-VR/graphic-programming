@@ -441,6 +441,12 @@
     <FxCompile Include="demo\alpha_demo\alpha_demo_postprocessing_VS.hlsl">
       <Filter>demo\alpha_demo</Filter>
     </FxCompile>
+    <FxCompile Include="demo\alpha_demo\alpha_demo_glow_PS.hlsl">
+      <Filter>demo\alpha_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\alpha_demo_glow_VS.hlsl">
+      <Filter>demo\alpha_demo</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="math\math_utils.inl">

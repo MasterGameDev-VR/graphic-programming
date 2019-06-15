@@ -34,6 +34,8 @@ namespace shading {
 		glossiness = 2,
 		shadow_map = 10,
 		texture_map = 20,
+		glow_map = 30,
+		bloom = 40,
 		uknown
 	};
 
