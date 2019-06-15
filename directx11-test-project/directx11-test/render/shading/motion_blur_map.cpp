@@ -48,7 +48,7 @@ void MotionBlurMap::Init()
 	textureDesc.Height = (UINT)m_height;
 	textureDesc.MipLevels = 1;
 	textureDesc.ArraySize = 1;
-	textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	textureDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
 	textureDesc.SampleDesc.Count = 1;
 	textureDesc.SampleDesc.Quality = 0;
 	textureDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -87,7 +87,7 @@ void MotionBlurMap::Init()
 
 	//create the view used by the shader
 	D3D11_RENDER_TARGET_VIEW_DESC colorRenderViewDesc;
-	colorRenderViewDesc.Format = textureDesc.Format;
+	colorRenderViewDesc.Format = colorTextureDesc.Format;
 	colorRenderViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 	colorRenderViewDesc.Texture2D.MipSlice = 0;
 
@@ -102,8 +102,15 @@ void MotionBlurMap::Init()
 	shaderViewDesc.Texture2D.MipLevels = 1;
 	shaderViewDesc.Texture2D.MostDetailedMip = 0;
 
+	//create the view used by the shader
+	D3D11_SHADER_RESOURCE_VIEW_DESC shaderViewMotionDesc;
+	shaderViewMotionDesc.Format = DXGI_FORMAT_R32G32_FLOAT; // 24bit red channel (depth), 8 bit unused (stencil)
+	shaderViewMotionDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	shaderViewMotionDesc.Texture2D.MipLevels = 1;
+	shaderViewMotionDesc.Texture2D.MostDetailedMip = 0;
+
 	XTEST_D3D_CHECK(d3dDevice->CreateShaderResourceView(colorTexture.Get(), &shaderViewDesc, &m_colorShaderView));
-	XTEST_D3D_CHECK(d3dDevice->CreateShaderResourceView(motionVector.Get(), &shaderViewDesc, &m_motionBlurShaderView));
+	XTEST_D3D_CHECK(d3dDevice->CreateShaderResourceView(motionVector.Get(), &shaderViewMotionDesc, &m_motionBlurShaderView));
 
 }
 
