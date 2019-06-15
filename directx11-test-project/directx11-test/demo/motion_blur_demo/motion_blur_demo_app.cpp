@@ -243,11 +243,6 @@ void MotionBlurDemoApp::UpdateScene(float deltaSeconds)
 {
 	XTEST_UNUSED_VAR(deltaSeconds);
 
-	//Update previous transform
-	for (int i = 0; i < m_objects.size(); i++) {
-		previous_Transforms[i] = m_objects[i].GetTransform();
-	}
-
 	XMMATRIX R = XMMatrixRotationY(math::ToRadians(120.f) * deltaSeconds);
 	XMMATRIX W = XMLoadFloat4x4(&m_objects[1].GetTransform());
 	W *= R;
@@ -317,7 +312,7 @@ void MotionBlurDemoApp::RenderScene()
 	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, nullptr); // explicit unbind the shadow map to suppress warning
 	m_d3dAnnotation->EndEvent();
 
-	m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
+
 
 	m_d3dAnnotation->BeginEvent(L"motion-blur-map");
 	m_motionBlurPass.Bind();
@@ -352,6 +347,13 @@ void MotionBlurDemoApp::RenderScene()
 		}
 	}
 	m_d3dAnnotation->EndEvent();
+
+	//Update previous transform
+	for (int k = 0; k < m_objects.size(); k++) {
+		previous_Transforms[k] = m_objects[k].GetTransform();
+	}
+
+	m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
 
 	XTEST_D3D_CHECK(m_swapChain->Present(0, 0));
 }
