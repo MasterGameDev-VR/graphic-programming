@@ -208,16 +208,10 @@ void AlphaDemoApp::OnResized()
 {
 	application::DirectxApp::OnResized();
 
-	//update the shadow pass state with the resized render target and depth buffer
-	m_shadowPass.GetState()->ChangeRenderTargetView(m_backBufferView.Get());
-	m_shadowPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
-	m_shadowPass.GetState()->ChangeViewPort(m_viewport);
-
 	//update the render pass state with the resized render target and depth buffer
 	m_renderPass.GetState()->ChangeRenderTargetView(m_backBufferView.Get());
 	m_renderPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
 	m_renderPass.GetState()->ChangeViewPort(m_viewport);
-
 
 	//update the glow pass state with the resized render target and depth buffer
 	m_glowPass.GetState()->ChangeRenderTargetView(m_backBufferView.Get());
@@ -398,6 +392,7 @@ void AlphaDemoApp::RenderScene()
 
 	m_textureRenderable.Draw();
 
+	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::bloom, nullptr); // explicit unbind bloom to suppress warning
 	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::texture_map, nullptr);
 	m_d3dAnnotation->EndEvent();
 
