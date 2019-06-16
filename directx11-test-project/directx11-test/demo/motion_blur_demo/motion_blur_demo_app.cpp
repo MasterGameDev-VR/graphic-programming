@@ -92,9 +92,6 @@ void MotionBlurDemoApp::InitRenderTechnique()
 		m_shadowPass.Init();
 	}
 
-
-
-	
 	// motion blur map pass
 	{
 		m_rarelyChangedData.useMotionBlurMap = true;
@@ -243,6 +240,11 @@ void MotionBlurDemoApp::UpdateScene(float deltaSeconds)
 {
 	XTEST_UNUSED_VAR(deltaSeconds);
 
+	//Update previous transform
+	for (int k = 0; k < m_objects.size(); k++) {
+		previous_Transforms[k] = m_objects[k].GetTransform();
+	}
+
 	XMMATRIX R = XMMatrixRotationY(math::ToRadians(120.f) * deltaSeconds);
 	XMMATRIX W = XMLoadFloat4x4(&m_objects[1].GetTransform());
 	W *= R;
@@ -250,6 +252,8 @@ void MotionBlurDemoApp::UpdateScene(float deltaSeconds)
 	W = XMLoadFloat4x4(&m_objects[2].GetTransform());
 	W *= R;
 	m_objects[2].SetTransform(W);
+
+	m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
 
 	// PerFrameCB
 	{
@@ -347,13 +351,6 @@ void MotionBlurDemoApp::RenderScene()
 		}
 	}
 	m_d3dAnnotation->EndEvent();
-
-	//Update previous transform
-	for (int k = 0; k < m_objects.size(); k++) {
-		previous_Transforms[k] = m_objects[k].GetTransform();
-	}
-
-	m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
 
 	XTEST_D3D_CHECK(m_swapChain->Present(0, 0));
 }
