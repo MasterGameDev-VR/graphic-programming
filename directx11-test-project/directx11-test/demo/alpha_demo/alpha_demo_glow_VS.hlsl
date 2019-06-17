@@ -1,11 +1,4 @@
 
-struct Material
-{
-	float4 ambient;
-	float4 diffuse;
-	float4 specular;
-};
-
 struct VertexIn
 {
 	float3 posL : POSITION;
@@ -23,12 +16,9 @@ struct VertexOut
 
 cbuffer PerObjectCB : register(b0)
 {
-	float4x4 W;
-	float4x4 W_inverseTraspose;
 	float4x4 WVP;
 	float4x4 TexcoordMatrix;
-	float4x4 WVPT_shadowMap;
-	Material material;
+	bool useGlow;
 };
 
 

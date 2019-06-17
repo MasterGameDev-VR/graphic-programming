@@ -31,6 +31,7 @@ namespace xtest {
 		{
 		public:
 
+			typedef std::pair<const render::Renderable*, std::string> GlowObjectKey;
 
 			struct DirectionalLight
 			{
@@ -56,6 +57,14 @@ namespace xtest {
 				DirectX::XMFLOAT4X4 TexcoordMatrix;
 				DirectX::XMFLOAT4X4 WVPT_shadowMap;
 				Material material;
+			};
+
+			struct PerObjectGlowData
+			{
+				DirectX::XMFLOAT4X4 WVP;
+				DirectX::XMFLOAT4X4 TexcoordMatrix;
+				int32 useGlow;
+				float _explicit_pad_[3];
 			};
 
 			struct PerObjectShadowMapData
@@ -107,6 +116,7 @@ namespace xtest {
 			void InitRenderToTexture();
 			void InitGlowMap();
 			PerObjectData ToPerObjectData(const render::Renderable& renderable, const std::string& meshName);
+			PerObjectGlowData ToPerObjectGlowData(const render::Renderable& renderable, const std::string& meshName);
 			PerObjectShadowMapData ToPerObjectShadowMapData(const render::Renderable& renderable, const std::string& meshName);
 
 
@@ -117,7 +127,7 @@ namespace xtest {
 
 			camera::SphericalCamera m_camera;
 			std::vector<render::Renderable> m_objects;
-			std::vector<alpha::GlowObject> m_glowObjects;
+			std::map<GlowObjectKey, alpha::GlowObject> m_glowObjectsMap;
 			alpha::TextureRenderable m_textureRenderable;
 			render::shading::RenderPass m_shadowPass;
 			render::shading::RenderPass m_renderPass;

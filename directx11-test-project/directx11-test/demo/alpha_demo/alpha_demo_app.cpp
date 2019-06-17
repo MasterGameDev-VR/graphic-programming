@@ -34,6 +34,7 @@ AlphaDemoApp::AlphaDemoApp(HINSTANCE instance,
 	, m_shadowMap(2048)
 	, m_sceneBoundingSphere({ 0.f, 0.f, 0.f }, 21.f)
 	, m_textureRenderable()
+	, m_glowObjectsMap()
 {}
 
 
@@ -124,10 +125,10 @@ void AlphaDemoApp::InitRenderTechnique()
 
 		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_glow_VS.cso")));
 		vertexShader->SetVertexInput(std::make_shared<MeshDataVertexInput>());
-		vertexShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectData>>());
+		vertexShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectGlowData>>());
 
 		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_glow_PS.cso")));
-		pixelShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectData>>());
+		pixelShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectGlowData>>());
 		pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<AnisotropicSampler>());
 
 		m_glowPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_glowmap.AsRenderTargetView(), m_depthBufferView.Get()));
@@ -184,23 +185,25 @@ void AlphaDemoApp::InitGlowMap()
 
 	//INIT OF GLOWOBJECTS
 	{
+		std::pair<render::Renderable*, std::string> glowObjectKey;
 		alpha::GlowObject glowObject;
-		glowObject.renderable = &m_objects[1];
-		glowObject.meshName = "head";
+		glowObjectKey.first = &m_objects[1];
+		glowObjectKey.second = "head";
 		glowObject.glowTexture = headGlowTexture;
 		glowObject.glowTextureView = headGlowTextureView;
 
-		m_glowObjects.push_back(glowObject);
+		m_glowObjectsMap.emplace(glowObjectKey, glowObject);
 	}
 
 	{
+		std::pair<render::Renderable*, std::string> glowObjectKey;
 		alpha::GlowObject glowObject;
-		glowObject.renderable = &m_objects[2];
-		glowObject.meshName = "head";
+		glowObjectKey.first = &m_objects[2];
+		glowObjectKey.second = "head";
 		glowObject.glowTexture = headGlowTexture;
 		glowObject.glowTextureView = headGlowTextureView;
 
-		m_glowObjects.push_back(glowObject);
+		m_glowObjectsMap.emplace(glowObjectKey, glowObject);
 	}
 }
 
@@ -368,21 +371,28 @@ void AlphaDemoApp::RenderScene()
 	m_glowPass.Bind();
 	m_glowPass.GetState()->ClearDepthOnly();
 	m_glowPass.GetState()->ClearRenderTarget(DirectX::Colors::Transparent);
-	
-	for (alpha::GlowObject glowObject : m_glowObjects)
-	{
-		render::Renderable& renderable = *glowObject.renderable;
-		const std::string& meshName = glowObject.meshName;
 
-		PerObjectData data = ToPerObjectData(renderable, meshName);
-		m_glowPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
-		m_glowPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
-		m_glowPass.GetPixelShader()->BindTexture(TextureUsage::color, renderable.GetTextureView(TextureUsage::color, meshName));
-		m_glowPass.GetPixelShader()->BindTexture(TextureUsage::glow_map, glowObject.glowTextureView.Get());
-		renderable.Draw(meshName);
+	for (render::Renderable& renderable : m_objects)
+	{
+		for (const std::string& meshName : renderable.GetMeshNames())
+		{
+			PerObjectGlowData data = ToPerObjectGlowData(renderable, meshName);
+			m_glowPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+			m_glowPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+
+			if (data.useGlow)
+			{
+				GlowObjectKey glowObjectKey (&renderable, meshName);
+				const alpha::GlowObject glowObject = m_glowObjectsMap.at(glowObjectKey);
+
+				m_glowPass.GetPixelShader()->BindTexture(TextureUsage::color, renderable.GetTextureView(TextureUsage::color, meshName));
+				m_glowPass.GetPixelShader()->BindTexture(TextureUsage::glow_map, glowObject.glowTextureView.Get());
+			}
+
+			renderable.Draw(meshName);
+		}
 	}
 	m_d3dAnnotation->EndEvent();
-
 
 	//Drawing all the textures together
 	m_d3dAnnotation->BeginEvent(L"render-from-texture");
@@ -435,6 +445,28 @@ AlphaDemoApp::PerObjectShadowMapData AlphaDemoApp::ToPerObjectShadowMapData(cons
 	XMMATRIX WVP = W * m_shadowMap.LightViewMatrix() * m_shadowMap.LightProjMatrix();
 
 	XMStoreFloat4x4(&data.WVP_lightSpace, XMMatrixTranspose(WVP));
+	return data;
+}
+
+//Returns the data for the glow, and the useglow flag as true if the object is inside the glowobject map
+AlphaDemoApp::PerObjectGlowData AlphaDemoApp::ToPerObjectGlowData(const render::Renderable& renderable, const std::string& meshName)
+{
+	PerObjectGlowData data;
+
+	XMMATRIX W = XMLoadFloat4x4(&renderable.GetTransform());
+	XMMATRIX T = XMLoadFloat4x4(&renderable.GetTexcoordTransform(meshName));
+	XMMATRIX V = m_camera.GetViewMatrix();
+	XMMATRIX P = m_camera.GetProjectionMatrix();
+	XMMATRIX WVP = W * V*P;
+
+	XMStoreFloat4x4(&data.WVP, XMMatrixTranspose(WVP));
+	XMStoreFloat4x4(&data.TexcoordMatrix, XMMatrixTranspose(T));
+
+	GlowObjectKey glowObjectKey(&renderable, meshName);
+
+	data.useGlow = m_glowObjectsMap.count(glowObjectKey) > 0;
+
+
 	return data;
 }
 
