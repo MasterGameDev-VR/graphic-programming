@@ -275,6 +275,7 @@ void MotionBlurDemoApp::UpdateScene(float deltaSeconds)
 	if (m_isRarelyChangedDataDirty)
 	{
 		m_renderPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::rarely_changed)->UpdateBuffer(m_rarelyChangedData);
+		m_combinePass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::rarely_changed)->UpdateBuffer(m_rarelyChangedData);
 		m_isRarelyChangedDataDirty = false;
 	}
 	

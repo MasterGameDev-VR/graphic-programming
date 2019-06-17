@@ -29,29 +29,33 @@ cbuffer RarelyChangedCB : register(b2)
 {
 	bool useShadowMap;
 	float shadowMapResolution;
+	bool useMotionBlurMap;
 }
 
 float4 main(VertexOut pin) : SV_TARGET {
 	float3 finalColor = colorTexture.Sample(textureSampler, pin.uv.xy).rgb;
 
-	float w;
-	float h;
-	colorTexture.GetDimensions(w, h);
-	float2 texelSize = float2(1.0f, 1.0f) / float2(w, h);
-	float2 screenTexCoords = pin.pos.xy * texelSize;
+	if (useMotionBlurMap)
+	{
+		float w;
+		float h;
+		colorTexture.GetDimensions(w, h);
+		float2 texelSize = float2(1.0f, 1.0f) / float2(w, h);
+		float2 screenTexCoords = pin.pos.xy * texelSize;
 
-	float2 vel = motionBlurTexture.Sample(textureSampler, pin.uv.xy).rg;
-	vel *= 1.12f;
+		float2 vel = motionBlurTexture.Sample(textureSampler, pin.uv.xy).rg;
+		vel *= 1.5f;
 
-	float speed = length(vel / texelSize);
-	int nSamples = clamp(int(speed), 1, 5);
+		float speed = length(vel / texelSize);
+		int nSamples = clamp(int(speed), 1, 5);
 
-	[unroll]
-	for (int i = 1; i < nSamples; ++i) {
-		float2 offset = vel * (float(i) / float(nSamples - 1) - 0.5);
-		finalColor += colorTexture.Sample(textureSampler, pin.uv.xy + offset).rgb;
+		[unroll]
+		for (int i = 1; i < nSamples; ++i) {
+			float2 offset = vel * (float(i) / float(nSamples - 1) - 0.5);
+			finalColor += colorTexture.Sample(textureSampler, pin.uv.xy + offset).rgb;
+		}
+		finalColor /= float(nSamples);
 	}
-	finalColor /= float(nSamples);
 
 	return float4(finalColor, 1.0f);
 }

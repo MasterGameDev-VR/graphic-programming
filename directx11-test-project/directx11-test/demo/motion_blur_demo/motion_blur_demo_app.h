@@ -87,6 +87,7 @@ namespace xtest {
 
 			static const int k_pointLightCount = 4;
 			static const int k_dirLightCount = 2;
+			
 			struct PerFrameData
 			{
 				DirectionalLight dirLights[k_dirLightCount];
