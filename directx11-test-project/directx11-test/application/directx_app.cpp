@@ -46,7 +46,7 @@ void DirectxApp::InitDirectX()
 #endif
 
 	// we support only directx 11
-	D3D_FEATURE_LEVEL featureLevels[] = { D3D_FEATURE_LEVEL_11_1 };
+	D3D_FEATURE_LEVEL featureLevels[] = { D3D_FEATURE_LEVEL_11_1 , D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_12_0 };
 
 	// create device and context
 	XTEST_D3D_CHECK(D3D11CreateDevice(

@@ -50,7 +50,9 @@ Renderable::Renderable(
 	for (mesh::GPFMesh::DescriptorMap::const_reference meshNamePairWithDescriptor : m_mesh.meshDescriptorMapByName)
 	{
 		m_meshNames.push_back(meshNamePairWithDescriptor.first);
-		m_texcoordMatrixMapByMeshName[meshNamePairWithDescriptor.first] = {};
+		DirectX::XMFLOAT4X4 mat;
+		XMStoreFloat4x4(&mat, DirectX::XMMatrixIdentity());
+		m_texcoordMatrixMapByMeshName[meshNamePairWithDescriptor.first] = {mat};
 	}
 
 }

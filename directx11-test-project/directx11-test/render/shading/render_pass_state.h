@@ -33,6 +33,7 @@ namespace shading {
 		void ClearStencilOnly(uint8 value = 0);
 		void ClearDepthStencil(float depthValue = 1.f, uint8 stencilValue = 0.f);
 		void ClearRenderTarget(const DirectX::XMFLOAT4& color);
+		void ClearRenderTarget(const float *color );
 		void ClearRenderTarget(const DirectX::XMVECTORF32& color);
 
 

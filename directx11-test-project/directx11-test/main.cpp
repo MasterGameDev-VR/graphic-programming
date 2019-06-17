@@ -3,6 +3,7 @@
 #include <demo/lights_demo/lights_demo_app.h>
 #include <demo/textures_demo/textures_demo_app.h>
 #include <demo/shadow_demo/shadow_demo_app.h>
+#include <demo/SSAO_demo/SSAO_demo_app.h>
 
 
 #include <file/file_utils.h>
@@ -28,7 +29,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	DirectxSettings directxSettings;
 	directxSettings.showFrameStats = true;
 	
-	typedef xtest::demo::ShadowDemoApp TestApp;
+	typedef xtest::demo::SSAODemoApp TestApp;
 
 	TestApp app(hInstance, windowSettings, directxSettings);
 	app.Init();
