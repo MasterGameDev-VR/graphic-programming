@@ -459,22 +459,6 @@ void AlphaDemoApp::RenderScene()
 		}
 	}
 	m_d3dAnnotation->EndEvent();
-	
-	// Drawing horizontal blur
-	m_d3dAnnotation->BeginEvent(L"horizontal-blur");
-	m_horizontalBlurPass.Bind();
-	m_horizontalBlurPass.GetState()->ClearDepthOnly();
-	m_horizontalBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
-	m_horizontalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, m_glowmap.AsShaderView());
-
-	PerFrameBlurData frameData;
-	frameData.resolution = GetCurrentWidth();
-	m_horizontalBlurPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(frameData);
-
-	m_textureRenderable.Draw();
-
-	m_horizontalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, nullptr);
-	m_d3dAnnotation->EndEvent();
 
 	//Drawing the downsample texture
 	m_d3dAnnotation->BeginEvent(L"down-sample");
@@ -488,12 +472,28 @@ void AlphaDemoApp::RenderScene()
 	m_downPass.GetPixelShader()->BindTexture(TextureUsage::scaleSample, nullptr);
 	m_d3dAnnotation->EndEvent();
 
+	// Drawing horizontal blur
+	m_d3dAnnotation->BeginEvent(L"horizontal-blur");
+	m_horizontalBlurPass.Bind();
+	m_horizontalBlurPass.GetState()->ClearDepthOnly();
+	m_horizontalBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
+	m_horizontalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, m_downsampledGlowTexture.AsShaderView());
+
+	PerFrameBlurData frameData;
+	frameData.resolution = GetCurrentWidth();
+	m_horizontalBlurPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(frameData);
+
+	m_textureRenderable.Draw();
+
+	m_horizontalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, nullptr);
+	m_d3dAnnotation->EndEvent();
+
 	//Drawing the upsample texture
 	m_d3dAnnotation->BeginEvent(L"up-sample");
 	m_upPass.Bind();
 	m_upPass.GetState()->ClearDepthOnly();
 	m_upPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
-	m_upPass.GetPixelShader()->BindTexture(TextureUsage::scaleSample, m_downsampledGlowTexture.AsShaderView());
+	m_upPass.GetPixelShader()->BindTexture(TextureUsage::scaleSample, m_horizontalBlurTexture.AsShaderView());
 
 	m_textureRenderable.Draw();
 
@@ -507,8 +507,6 @@ void AlphaDemoApp::RenderScene()
 	m_PostPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
 	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::texture_map, m_sceneTexture.AsShaderView());
 	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::bloom, m_upsampledGlowTexture.AsShaderView());
-
-	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::bloom, m_horizontalBlurTexture.AsShaderView());
 	   
 	m_textureRenderable.Draw();
 
