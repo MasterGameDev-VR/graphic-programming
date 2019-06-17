@@ -159,10 +159,17 @@ void AlphaDemoApp::OnResized()
 {
 	application::DirectxApp::OnResized();
 
+	m_textureRender.Resize(GetCurrentWidth(), GetCurrentHeight());
+	//m_textureRender.Init(GetCurrentWidth(), GetCurrentHeight());
 	//update the render pass state with the resized render target and depth buffer
-	m_renderPass.GetState()->ChangeRenderTargetView(m_backBufferView.Get());
+	m_renderPass.GetState()->ChangeRenderTargetView(m_textureRender.AsRenderTargetView());
 	m_renderPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
 	m_renderPass.GetState()->ChangeViewPort(m_viewport);
+
+	//update the render pass state with the resized render target and depth buffer
+	m_PostPass.GetState()->ChangeRenderTargetView(m_backBufferView.Get());
+	m_PostPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
+	m_PostPass.GetState()->ChangeViewPort(m_viewport);
 
 	//update the projection matrix with the new aspect ratio
 	m_camera.SetPerspectiveProjection(math::ToRadians(45.f), AspectRatio(), 1.f, 1000.f);
