@@ -9,6 +9,8 @@ namespace alpha {
 
 		void Init(uint32 width, uint32 height);
 
+		void Resize(uint32 width, uint32 height);
+
 		ID3D11ShaderResourceView* AsShaderView();
 		ID3D11RenderTargetView* AsRenderTargetView();
 

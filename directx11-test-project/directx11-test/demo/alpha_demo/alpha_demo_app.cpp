@@ -208,8 +208,10 @@ void AlphaDemoApp::OnResized()
 {
 	application::DirectxApp::OnResized();
 
+	m_textureRender.Resize(GetCurrentWidth(), GetCurrentHeight());
+	//m_textureRender.Init(GetCurrentWidth(), GetCurrentHeight());
 	//update the render pass state with the resized render target and depth buffer
-	m_renderPass.GetState()->ChangeRenderTargetView(m_backBufferView.Get());
+	m_renderPass.GetState()->ChangeRenderTargetView(m_textureRender.AsRenderTargetView());
 	m_renderPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
 	m_renderPass.GetState()->ChangeViewPort(m_viewport);
 
