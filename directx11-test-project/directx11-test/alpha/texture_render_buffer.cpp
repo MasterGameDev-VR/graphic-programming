@@ -58,6 +58,16 @@ void alpha::TextureRenderBuffer::Init(uint32 width, uint32 height)
 	shaderResourceViewDesc.Texture2D.MipLevels = 1;
 
 	XTEST_D3D_CHECK(d3dDevice->CreateShaderResourceView(texture.Get(), &shaderResourceViewDesc, &m_shaderView));
+	
+}
+
+
+void alpha::TextureRenderBuffer::Resize(uint32 width, uint32 height) {
+
+	m_renderTargetView.Reset();
+	m_shaderView.Reset();
+
+	Init(width, height);
 }
 
 ID3D11ShaderResourceView * alpha::TextureRenderBuffer::AsShaderView()
@@ -71,3 +81,4 @@ ID3D11RenderTargetView * alpha::TextureRenderBuffer::AsRenderTargetView()
 	XTEST_ASSERT(m_shaderView, L"shadow map uninitialized");
 	return m_renderTargetView.Get();
 }
+
