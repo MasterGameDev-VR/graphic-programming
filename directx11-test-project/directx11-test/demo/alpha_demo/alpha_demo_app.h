@@ -67,6 +67,12 @@ namespace xtest {
 				float _explicit_pad_[3];
 			};
 
+			struct PerFrameBlurData
+			{
+				float resolution;
+				float _explicit_pad_[3];
+			};
+
 			struct PerObjectShadowMapData
 			{
 				DirectX::XMFLOAT4X4 WVP_lightSpace;
@@ -136,12 +142,14 @@ namespace xtest {
 			render::shading::RenderPass m_glowPass;
 			render::shading::RenderPass m_downPass;
 			render::shading::RenderPass m_upPass;
+			render::shading::RenderPass m_horizontalBlurPass;
 			render::shading::RenderPass m_PostPass;
 			render::shading::ShadowMap m_shadowMap;
 			alpha::TextureRenderBuffer m_sceneTexture;
 			alpha::TextureRenderBuffer m_downsampledGlowTexture; 
 			alpha::TextureRenderBuffer m_upsampledGlowTexture;
 			alpha::TextureRenderBuffer m_glowmap;
+			alpha::TextureRenderBuffer m_horizontalBlurTexture;
 			scene::BoundingSphere m_sceneBoundingSphere;
 		};
 

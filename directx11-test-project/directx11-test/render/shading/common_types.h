@@ -36,6 +36,7 @@ namespace shading {
 		texture_map = 20,
 		glow_map = 30,
 		bloom = 40,
+		blur = 50,
 		scaleSample = 60,
 		uknown
 	};

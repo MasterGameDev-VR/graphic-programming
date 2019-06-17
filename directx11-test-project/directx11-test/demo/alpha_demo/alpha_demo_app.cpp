@@ -174,6 +174,22 @@ void AlphaDemoApp::InitRenderTechnique()
 		m_upPass.Init();
 	}
 
+	// Horizontal blur pass
+	{
+		m_horizontalBlurTexture.Init(GetCurrentWidth(), GetCurrentHeight());
+
+		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_postprocessing_VS.cso")));
+		vertexShader->SetVertexInput(std::make_shared<alpha::TextureDataVertexInput>());
+		
+		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_horizontal_blur_PS.cso")));
+		pixelShader->AddConstantBuffer(CBufferFrequency::per_frame, std::make_unique<CBuffer<PerFrameBlurData>>());
+
+		m_horizontalBlurPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_horizontalBlurTexture.AsRenderTargetView(), m_depthBufferView.Get()));
+		m_horizontalBlurPass.SetVertexShader(vertexShader);
+		m_horizontalBlurPass.SetPixelShader(pixelShader);
+		m_horizontalBlurPass.Init();
+	}
+
 	// postprocessing pass
 	{
 		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_postprocessing_VS.cso")));
@@ -443,6 +459,13 @@ void AlphaDemoApp::RenderScene()
 		}
 	}
 	m_d3dAnnotation->EndEvent();
+	
+	// Drawing horizontal blur
+	m_d3dAnnotation->BeginEvent(L"horizontal-blur");
+	m_horizontalBlurPass.Bind();
+	m_horizontalBlurPass.GetState()->ClearDepthOnly();
+	m_horizontalBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
+	m_horizontalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, m_glowmap.AsShaderView());
 
 	//Drawing the downsample texture
 	m_d3dAnnotation->BeginEvent(L"down-sample");
@@ -468,6 +491,15 @@ void AlphaDemoApp::RenderScene()
 	m_upPass.GetPixelShader()->BindTexture(TextureUsage::scaleSample, nullptr);
 	m_d3dAnnotation->EndEvent();
 
+	PerFrameBlurData frameData;
+	frameData.resolution = GetCurrentWidth();
+	m_horizontalBlurPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(frameData);
+
+	m_textureRenderable.Draw();
+
+	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::blur, nullptr);
+	m_d3dAnnotation->EndEvent();
+	   
 	//Drawing all the textures together
 	m_d3dAnnotation->BeginEvent(L"render-from-texture");
 	m_PostPass.Bind();
@@ -476,6 +508,8 @@ void AlphaDemoApp::RenderScene()
 	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::texture_map, m_sceneTexture.AsShaderView());
 	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::bloom, m_upsampledGlowTexture.AsShaderView());
 
+	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::bloom, m_horizontalBlurTexture.AsShaderView());
+	   
 	m_textureRenderable.Draw();
 
 	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::bloom, nullptr); // explicit unbind bloom to suppress warning
