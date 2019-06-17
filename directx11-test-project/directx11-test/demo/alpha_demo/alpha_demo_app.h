@@ -125,6 +125,8 @@ namespace xtest {
 			RarelyChangedData m_rarelyChangedData;
 			bool m_isRarelyChangedDataDirty;
 
+			D3D11_VIEWPORT m_downViewport;
+
 			camera::SphericalCamera m_camera;
 			std::vector<render::Renderable> m_objects;
 			std::map<GlowObjectKey, alpha::GlowObject> m_glowObjectsMap;
@@ -132,9 +134,13 @@ namespace xtest {
 			render::shading::RenderPass m_shadowPass;
 			render::shading::RenderPass m_renderPass;
 			render::shading::RenderPass m_glowPass;
+			render::shading::RenderPass m_downPass;
+			render::shading::RenderPass m_upPass;
 			render::shading::RenderPass m_PostPass;
 			render::shading::ShadowMap m_shadowMap;
 			alpha::TextureRenderBuffer m_sceneTexture;
+			alpha::TextureRenderBuffer m_downsampledGlowTexture; 
+			alpha::TextureRenderBuffer m_upsampledGlowTexture;
 			alpha::TextureRenderBuffer m_glowmap;
 			scene::BoundingSphere m_sceneBoundingSphere;
 		};

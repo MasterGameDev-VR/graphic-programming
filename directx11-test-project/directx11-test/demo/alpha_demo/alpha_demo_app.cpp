@@ -133,8 +133,45 @@ void AlphaDemoApp::InitRenderTechnique()
 
 		m_glowPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_glowmap.AsRenderTargetView(), m_depthBufferView.Get()));
 		m_glowPass.SetVertexShader(vertexShader);
-		m_glowPass.SetPixelShader(pixelShader);(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_sceneTexture.AsRenderTargetView(), m_depthBufferView.Get()));
+		m_glowPass.SetPixelShader(pixelShader);
 		m_glowPass.Init();
+	}
+
+	// downsample pass
+	{
+		m_downsampledGlowTexture.Init(GetCurrentWidth() / 2, GetCurrentHeight() / 2);
+		m_downViewport.TopLeftX = 0.f;
+		m_downViewport.TopLeftY = 0.f;
+		m_downViewport.Width = static_cast<float>(GetCurrentWidth() / 2);
+		m_downViewport.Height = static_cast<float>(GetCurrentHeight() / 2);
+		m_downViewport.MinDepth = 0.f;
+		m_downViewport.MaxDepth = 1.f;
+		
+
+		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_postprocessing_VS.cso")));
+		vertexShader->SetVertexInput(std::make_shared<alpha::TextureDataVertexInput>());
+
+		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_sample_PS.cso")));
+
+		m_downPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_downViewport, std::make_shared<SolidCullBackRS>(), m_downsampledGlowTexture.AsRenderTargetView(), m_depthBufferView.Get()));
+		m_downPass.SetVertexShader(vertexShader);
+		m_downPass.SetPixelShader(pixelShader);
+		m_downPass.Init();
+	}
+
+	// upsample pass
+	{
+		m_upsampledGlowTexture.Init(GetCurrentWidth(), GetCurrentHeight());
+
+		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_postprocessing_VS.cso")));
+		vertexShader->SetVertexInput(std::make_shared<alpha::TextureDataVertexInput>());
+
+		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_sample_PS.cso")));
+
+		m_upPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_upsampledGlowTexture.AsRenderTargetView(), m_depthBufferView.Get()));
+		m_upPass.SetVertexShader(vertexShader);
+		m_upPass.SetPixelShader(pixelShader);
+		m_upPass.Init();
 	}
 
 	// postprocessing pass
@@ -223,6 +260,18 @@ void AlphaDemoApp::OnResized()
 	m_glowPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
 	m_glowPass.GetState()->ChangeViewPort(m_viewport);
 
+	m_downsampledGlowTexture.Resize(GetCurrentWidth() / 2, GetCurrentHeight() / 2);
+	m_downViewport.Width = static_cast<float>(GetCurrentWidth() / 2);
+	m_downViewport.Height = static_cast<float>(GetCurrentHeight() / 2);
+	m_downPass.GetState()->ChangeRenderTargetView(m_downsampledGlowTexture.AsRenderTargetView());
+	m_downPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
+	m_downPass.GetState()->ChangeViewPort(m_downViewport);
+
+	m_upsampledGlowTexture.Resize(GetCurrentWidth(), GetCurrentHeight());
+	m_upPass.GetState()->ChangeRenderTargetView(m_upsampledGlowTexture.AsRenderTargetView());
+	m_upPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
+	m_upPass.GetState()->ChangeViewPort(m_viewport);
+
 	//update the post pass state with the resized render target and depth buffer
 	m_PostPass.GetState()->ChangeRenderTargetView(m_backBufferView.Get());
 	m_PostPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
@@ -230,6 +279,7 @@ void AlphaDemoApp::OnResized()
 
 	//update the projection matrix with the new aspect ratio
 	m_camera.SetPerspectiveProjection(math::ToRadians(45.f), AspectRatio(), 1.f, 1000.f);
+
 }
 
 
@@ -394,13 +444,37 @@ void AlphaDemoApp::RenderScene()
 	}
 	m_d3dAnnotation->EndEvent();
 
+	//Drawing the downsample texture
+	m_d3dAnnotation->BeginEvent(L"down-sample");
+	m_downPass.Bind();
+	m_downPass.GetState()->ClearDepthOnly();
+	m_downPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
+	m_downPass.GetPixelShader()->BindTexture(TextureUsage::scaleSample, m_glowmap.AsShaderView());
+
+	m_textureRenderable.Draw();
+
+	m_downPass.GetPixelShader()->BindTexture(TextureUsage::scaleSample, nullptr);
+	m_d3dAnnotation->EndEvent();
+
+	//Drawing the upsample texture
+	m_d3dAnnotation->BeginEvent(L"up-sample");
+	m_upPass.Bind();
+	m_upPass.GetState()->ClearDepthOnly();
+	m_upPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
+	m_upPass.GetPixelShader()->BindTexture(TextureUsage::scaleSample, m_downsampledGlowTexture.AsShaderView());
+
+	m_textureRenderable.Draw();
+
+	m_upPass.GetPixelShader()->BindTexture(TextureUsage::scaleSample, nullptr);
+	m_d3dAnnotation->EndEvent();
+
 	//Drawing all the textures together
 	m_d3dAnnotation->BeginEvent(L"render-from-texture");
 	m_PostPass.Bind();
 	m_PostPass.GetState()->ClearDepthOnly();
 	m_PostPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
 	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::texture_map, m_sceneTexture.AsShaderView());
-	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::bloom, m_glowmap.AsShaderView());
+	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::bloom, m_upsampledGlowTexture.AsShaderView());
 
 	m_textureRenderable.Draw();
 

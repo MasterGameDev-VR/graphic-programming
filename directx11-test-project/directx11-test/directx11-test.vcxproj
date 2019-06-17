@@ -224,6 +224,9 @@
     <Image Include="application\resources\small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="demo\alpha_demo\alpha_demo_sample_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
     <FxCompile Include="demo\alpha_demo\alpha_demo_glow_PS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
