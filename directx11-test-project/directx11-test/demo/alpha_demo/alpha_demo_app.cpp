@@ -146,14 +146,15 @@ void AlphaDemoApp::InitRenderTechnique()
 		m_downViewport.Height = static_cast<float>(GetCurrentHeight() / 2);
 		m_downViewport.MinDepth = 0.f;
 		m_downViewport.MaxDepth = 1.f;
-		
+
+		CreateDownDepthStencilBuffer();
 
 		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_postprocessing_VS.cso")));
 		vertexShader->SetVertexInput(std::make_shared<alpha::TextureDataVertexInput>());
 
 		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_sample_PS.cso")));
 
-		m_downPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_downViewport, std::make_shared<SolidCullBackRS>(), m_downsampledGlowTexture.AsRenderTargetView(), m_depthBufferView.Get()));
+		m_downPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_downViewport, std::make_shared<SolidCullBackRS>(), m_downsampledGlowTexture.AsRenderTargetView(), m_depthStencilViewDownsample.Get()));
 		m_downPass.SetVertexShader(vertexShader);
 		m_downPass.SetPixelShader(pixelShader);
 		m_downPass.Init();
@@ -296,6 +297,7 @@ void AlphaDemoApp::OnResized()
 	//update the projection matrix with the new aspect ratio
 	m_camera.SetPerspectiveProjection(math::ToRadians(45.f), AspectRatio(), 1.f, 1000.f);
 
+	CreateDownDepthStencilBuffer();
 }
 
 
@@ -574,5 +576,28 @@ AlphaDemoApp::PerObjectGlowData AlphaDemoApp::ToPerObjectGlowData(const render::
 
 
 	return data;
+}
+
+void xtest::demo::AlphaDemoApp::CreateDownDepthStencilBuffer()
+{
+	m_depthBufferDownsample.Reset();
+	m_depthStencilViewDownsample.Reset();
+
+	D3D11_TEXTURE2D_DESC depthDesc;
+	depthDesc.Width = GetCurrentWidth() / 2;
+	depthDesc.Height = GetCurrentHeight() / 2;
+	depthDesc.MipLevels = 1;
+	depthDesc.ArraySize = 1;
+	depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthDesc.SampleDesc.Count = 1;		// no MSAA
+	depthDesc.SampleDesc.Quality = 0;	// no MSAA
+	depthDesc.Usage = D3D11_USAGE_DEFAULT;
+	depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	depthDesc.CPUAccessFlags = 0;
+	depthDesc.MiscFlags = 0;
+
+	// create the depth buffer and its view
+	XTEST_D3D_CHECK(m_d3dDevice->CreateTexture2D(&depthDesc, nullptr, &m_depthBufferDownsample));
+	XTEST_D3D_CHECK(m_d3dDevice->CreateDepthStencilView(m_depthBufferDownsample.Get(), nullptr, &m_depthStencilViewDownsample));
 }
 

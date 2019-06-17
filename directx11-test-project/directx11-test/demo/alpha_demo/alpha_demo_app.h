@@ -121,6 +121,7 @@ namespace xtest {
 			void InitLights();
 			void InitRenderToTexture();
 			void InitGlowMap();
+			void CreateDownDepthStencilBuffer();
 			PerObjectData ToPerObjectData(const render::Renderable& renderable, const std::string& meshName);
 			PerObjectGlowData ToPerObjectGlowData(const render::Renderable& renderable, const std::string& meshName);
 			PerObjectShadowMapData ToPerObjectShadowMapData(const render::Renderable& renderable, const std::string& meshName);
@@ -137,6 +138,8 @@ namespace xtest {
 			std::vector<render::Renderable> m_objects;
 			std::map<GlowObjectKey, alpha::GlowObject> m_glowObjectsMap;
 			alpha::TextureRenderable m_textureRenderable;
+			Microsoft::WRL::ComPtr<ID3D11Texture2D> m_depthBufferDownsample;
+			Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_depthStencilViewDownsample;
 			render::shading::RenderPass m_shadowPass;
 			render::shading::RenderPass m_renderPass;
 			render::shading::RenderPass m_glowPass;
