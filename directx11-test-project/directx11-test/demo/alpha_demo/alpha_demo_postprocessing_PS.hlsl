@@ -17,8 +17,10 @@ Texture2D bloomTexture : register(t40);
 
 float4 main(VertexOut pin) : SV_TARGET
 {
-	float4 finalColor = texctureRenderMap.Sample(TextureSampler, pin.uv);
-	finalColor += bloomTexture.Sample(TextureSampler, pin.uv);
+	float4 textureColor = texctureRenderMap.Sample(TextureSampler, pin.uv);
+	float4 bloomColor = bloomTexture.Sample(TextureSampler, pin.uv);
+
+	float4 finalColor = saturate(textureColor + bloomColor);
 
 	return finalColor;
 }
