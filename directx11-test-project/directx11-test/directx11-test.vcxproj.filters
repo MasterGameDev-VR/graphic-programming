@@ -257,6 +257,7 @@
     <ClInclude Include="render\renderable_in_motion.h">
       <Filter>render</Filter>
     </ClInclude>
+    <ClInclude Include="render\shading\color_map.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -375,6 +376,7 @@
     <ClCompile Include="render\renderable_in_motion.cpp">
       <Filter>render</Filter>
     </ClCompile>
+    <ClCompile Include="render\shading\color_map.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="application\resources\small.ico">
@@ -432,10 +434,10 @@
     <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_motionblurmap_PS.hlsl">
       <Filter>demo\motion_blur_demo</Filter>
     </FxCompile>
-    <FxCompile Include="combine_PS.hlsl">
+    <FxCompile Include="demo\motion_blur_demo\combine_PS.hlsl">
       <Filter>demo\motion_blur_demo</Filter>
     </FxCompile>
-    <FxCompile Include="combine_VS.hlsl">
+    <FxCompile Include="demo\motion_blur_demo\combine_VS.hlsl">
       <Filter>demo\motion_blur_demo</Filter>
     </FxCompile>
   </ItemGroup>

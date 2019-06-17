@@ -107,6 +107,7 @@
     <ClInclude Include="application\windows_app.h" />
     <ClInclude Include="camera\camera.h" />
     <ClInclude Include="camera\spherical_camera.h" />
+    <ClInclude Include="render\shading\color_map.h" />
     <ClInclude Include="common\assert.h" />
     <ClInclude Include="common\common_macros.h" />
     <ClInclude Include="common\int_types.h" />
@@ -169,6 +170,7 @@
     <ClCompile Include="application\windows_app.cpp" />
     <ClCompile Include="camera\camera.cpp" />
     <ClCompile Include="camera\spherical_camera.cpp" />
+    <ClCompile Include="render\shading\color_map.cpp" />
     <ClCompile Include="common\assert.cpp" />
     <ClCompile Include="common\utils.cpp" />
     <ClCompile Include="demo\box_demo\box_demo_app.cpp" />
@@ -222,13 +224,13 @@
     <Image Include="application\resources\small.ico" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="combine_PS.hlsl">
+    <FxCompile Include="demo\motion_blur_demo\combine_PS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="combine_VS.hlsl">
+    <FxCompile Include="demo\motion_blur_demo\combine_VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>

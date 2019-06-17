@@ -9,6 +9,8 @@
 #include <render/shading/render_pass.h>
 #include <render/shading/shadow_map.h>
 #include <render/shading/motion_blur_map.h>
+#include <render/shading/color_map.h>
+
 
 /*
 Il motion blur è una tecnica di post - processing che si realizza su oggetti in movimento e permette a questi ultimi
@@ -142,6 +144,11 @@ namespace xtest {
 			render::shading::RenderPass m_combinePass;
 			render::shading::ShadowMap m_shadowMap;
 			render::shading::MotionBlurMap m_motionBlurMap;
+
+			render::shading::ColorMap m_colorRenderMap;
+			mesh::MeshData m_quad;
+			render::Renderable m_combineRenderable;
+
 			scene::BoundingSphere m_sceneBoundingSphere;
 		};
 

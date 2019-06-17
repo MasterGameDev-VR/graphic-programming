@@ -28,6 +28,7 @@ MotionBlurDemoApp::MotionBlurDemoApp(HINSTANCE instance,
 	, m_renderPass()
 	, m_shadowMap(2048)
 	, m_motionBlurMap()
+	,m_colorRenderMap()
 	, m_sceneBoundingSphere({ 0.f, 0.f, 0.f }, 21.f)
 {}
 
@@ -40,9 +41,13 @@ void MotionBlurDemoApp::Init()
 	application::DirectxApp::Init();
 
 	m_camera.SetPerspectiveProjection(math::ToRadians(45.f), AspectRatio(), 1.f, 1000.f);
+	
 	InitLights();
 	InitRenderTechnique();
 	InitRenderables();
+
+	m_quad = mesh::GeneratePlane(1.0f, 1.0f, 2, 2);
+	m_combineRenderable = render::Renderable(m_quad, mesh::MeshMaterial());
 
 	service::Locator::GetMouse()->AddListener(this);
 	service::Locator::GetKeyboard()->AddListener(this, { input::Key::F, input::Key::F1 });
@@ -116,6 +121,9 @@ void MotionBlurDemoApp::InitRenderTechnique()
 
 	// render pass
 	{
+		m_colorRenderMap.SetWidthHeight(GetCurrentWidth(), GetCurrentHeight());
+		m_colorRenderMap.Init();
+
 		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\motion_blur_demo_VS.cso")));
 		vertexShader->SetVertexInput(std::make_shared<MeshDataVertexInput>());
 		vertexShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectData>>());
@@ -127,7 +135,7 @@ void MotionBlurDemoApp::InitRenderTechnique()
 		pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<AnisotropicSampler>());
 		pixelShader->AddSampler(SamplerUsage::shadow_map, std::make_shared<PCFSampler>());
 
-		m_renderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_motionBlurMap.GetColorRenderTargetView(), m_depthBufferView.Get()));
+		m_renderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_colorRenderMap.Viewport(), std::make_shared<SolidCullBackRS>(), m_colorRenderMap.AsColorRenderTargetView(), m_depthBufferView.Get()));
 		m_renderPass.SetVertexShader(vertexShader);
 		m_renderPass.SetPixelShader(pixelShader);
 		m_renderPass.Init();
@@ -136,7 +144,7 @@ void MotionBlurDemoApp::InitRenderTechnique()
 	// combine motion blur pass
 	{
 		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\combine_VS.cso")));
-		vertexShader->SetVertexInput(std::make_shared<PosOnlyVertexInput>());
+		vertexShader->SetVertexInput(std::make_shared<MeshDataVertexInput>());
 		vertexShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectCombineData>>());
 
 		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\combine_PS.cso")));
@@ -339,17 +347,19 @@ void MotionBlurDemoApp::RenderScene()
 	m_combinePass.Bind();
 	m_combinePass.GetState()->ClearRenderTarget(DirectX::Colors::White);
 	m_combinePass.GetState()->ClearDepthOnly();
-	m_combinePass.GetPixelShader()->BindTexture(TextureUsage::color, m_motionBlurMap.GetColorShaderView());
+	m_combinePass.GetPixelShader()->BindTexture(TextureUsage::color, m_colorRenderMap.AsColorShaderView());
 	m_combinePass.GetPixelShader()->BindTexture(TextureUsage::motionblur, m_motionBlurMap.AsShaderView());
 
+	MotionBlurDemoApp::PerObjectData data = ToPerObjectData(m_combineRenderable, m_combineRenderable.GetMeshNames().front());
 	// draw COMBINE
+	/*
 	for (render::Renderable& renderable : m_objects) {
 		for (const std::string& meshName : renderable.GetMeshNames()) {
 			MotionBlurDemoApp::PerObjectCombineData data = ToPerObjectCombineData(renderable, meshName);
 			m_combinePass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
 			renderable.Draw(meshName);
 		}
-	}
+	}*/
 	m_d3dAnnotation->EndEvent();
 
 	XTEST_D3D_CHECK(m_swapChain->Present(0, 0));
