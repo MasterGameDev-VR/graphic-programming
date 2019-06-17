@@ -1,8 +1,19 @@
-cbuffer PerObjectCB : register(b0) {
-	float4x4 WVP;
+struct VertexIn
+{
+	float3 pos : POSITION;
+	float2 uv : TEXCOORD;
 };
 
-float4 main(float3 posL : POSITION) : SV_POSITION
+struct VertexOut
 {
-	return mul(float4(posL, 1.0f), WVP);
+	float4 pos : SV_POSITION;
+	float2 uv : TEXCOORD;
+};
+
+VertexOut main(VertexIn pin)
+{
+	VertexOut vout;
+	vout.pos = float4(pin.pos, 1.0f);
+	vout.uv = pin.uv;
+	return vout;
 }

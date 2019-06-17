@@ -46,9 +46,6 @@ void MotionBlurDemoApp::Init()
 	InitRenderTechnique();
 	InitRenderables();
 
-	m_quad = mesh::GeneratePlane(1.0f, 1.0f, 2, 2);
-	m_combineRenderable = render::Renderable(m_quad, mesh::MeshMaterial());
-
 	service::Locator::GetMouse()->AddListener(this);
 	service::Locator::GetKeyboard()->AddListener(this, { input::Key::F, input::Key::F1 });
 }
@@ -144,8 +141,8 @@ void MotionBlurDemoApp::InitRenderTechnique()
 	// combine motion blur pass
 	{
 		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\combine_VS.cso")));
-		vertexShader->SetVertexInput(std::make_shared<MeshDataVertexInput>());
-		vertexShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectCombineData>>());
+		vertexShader->SetVertexInput(std::make_shared<PosTexVertexInput>());
+		//vertexShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectCombineData>>());
 
 		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\combine_PS.cso")));
 		pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<AnisotropicSampler>());
@@ -350,7 +347,26 @@ void MotionBlurDemoApp::RenderScene()
 	m_combinePass.GetPixelShader()->BindTexture(TextureUsage::color, m_colorRenderMap.AsColorShaderView());
 	m_combinePass.GetPixelShader()->BindTexture(TextureUsage::motionblur, m_motionBlurMap.AsShaderView());
 
-	MotionBlurDemoApp::PerObjectData data = ToPerObjectData(m_combineRenderable, m_combineRenderable.GetMeshNames().front());
+	D3D11_BUFFER_DESC vertexBufferDesc;
+	vertexBufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+	vertexBufferDesc.ByteWidth = sizeof(m_quad.vertices);
+	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	vertexBufferDesc.CPUAccessFlags = 0;
+	vertexBufferDesc.MiscFlags = 0;
+	vertexBufferDesc.StructureByteStride = 0;
+
+	D3D11_SUBRESOURCE_DATA vertexInitData;
+	vertexInitData.pSysMem = m_quad.vertices;
+	XTEST_D3D_CHECK(m_d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexInitData, &m_quadVertexBuffer));
+
+	UINT stride = sizeof(Quad::VertexIn);
+	UINT offset = 0;
+	m_d3dContext->IASetVertexBuffers(0, 1, m_quadVertexBuffer.GetAddressOf(), &stride, &offset);
+	m_d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// draw and present the frame
+	m_d3dContext->Draw(6, 0);
+
 	// draw COMBINE
 	/*
 	for (render::Renderable& renderable : m_objects) {

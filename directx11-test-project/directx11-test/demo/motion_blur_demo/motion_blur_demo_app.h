@@ -10,6 +10,7 @@
 #include <render/shading/shadow_map.h>
 #include <render/shading/motion_blur_map.h>
 #include <render/shading/color_map.h>
+#include "Quad.h"
 
 
 /*
@@ -146,8 +147,8 @@ namespace xtest {
 			render::shading::MotionBlurMap m_motionBlurMap;
 
 			render::shading::ColorMap m_colorRenderMap;
-			mesh::MeshData m_quad;
-			render::Renderable m_combineRenderable;
+			Quad m_quad;
+			Microsoft::WRL::ComPtr<ID3D11Buffer> m_quadVertexBuffer;
 
 			scene::BoundingSphere m_sceneBoundingSphere;
 		};

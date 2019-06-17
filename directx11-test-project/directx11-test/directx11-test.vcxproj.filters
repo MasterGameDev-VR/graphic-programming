@@ -258,6 +258,9 @@
       <Filter>render</Filter>
     </ClInclude>
     <ClInclude Include="render\shading\color_map.h" />
+    <ClInclude Include="Quad.h">
+      <Filter>demo\motion_blur_demo</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
