@@ -143,6 +143,7 @@ namespace xtest {
 			render::shading::RenderPass m_downPass;
 			render::shading::RenderPass m_upPass;
 			render::shading::RenderPass m_horizontalBlurPass;
+			render::shading::RenderPass m_verticalBlurPass;
 			render::shading::RenderPass m_PostPass;
 			render::shading::ShadowMap m_shadowMap;
 			alpha::TextureRenderBuffer m_sceneTexture;
@@ -150,6 +151,7 @@ namespace xtest {
 			alpha::TextureRenderBuffer m_upsampledGlowTexture;
 			alpha::TextureRenderBuffer m_glowmap;
 			alpha::TextureRenderBuffer m_horizontalBlurTexture;
+			alpha::TextureRenderBuffer m_verticalBlurTexture;
 			scene::BoundingSphere m_sceneBoundingSphere;
 		};
 
