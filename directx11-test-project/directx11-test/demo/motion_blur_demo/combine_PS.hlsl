@@ -1,3 +1,5 @@
+#define DIRECTIONAL_LIGHT_COUNT 2
+
 Texture2D colorTexture : register(t0);
 Texture2D motionBlurTexture : register(t3);
 
@@ -9,7 +11,29 @@ struct VertexOut
 	float2 uv : TEXCOORD;
 };
 
+struct DirectionalLight
+{
+	float4 ambient;
+	float4 diffuse;
+	float4 specular;
+	float3 dirW;
+};
+
+cbuffer PerFrameCB : register(b1)
+{
+	DirectionalLight dirLights[DIRECTIONAL_LIGHT_COUNT];
+	float3 eyePosW;
+};
+
+cbuffer RarelyChangedCB : register(b2)
+{
+	bool useShadowMap;
+	float shadowMapResolution;
+}
+
 float4 main(VertexOut pin) : SV_TARGET {
+	float3 finalColor = colorTexture.Sample(textureSampler, pin.uv.xy).rgb;
+
 	float w;
 	float h;
 	colorTexture.GetDimensions(w, h);
@@ -17,12 +41,11 @@ float4 main(VertexOut pin) : SV_TARGET {
 	float2 screenTexCoords = pin.pos.xy * texelSize;
 
 	float2 vel = motionBlurTexture.Sample(textureSampler, pin.uv.xy).rg;
-	vel *= 1.2f;
+	vel *= 1.12f;
 
 	float speed = length(vel / texelSize);
 	int nSamples = clamp(int(speed), 1, 5);
 
-	float3 finalColor = colorTexture.Sample(textureSampler, pin.uv.xy).rgb;
 	[unroll]
 	for (int i = 1; i < nSamples; ++i) {
 		float2 offset = vel * (float(i) / float(nSamples - 1) - 0.5);
