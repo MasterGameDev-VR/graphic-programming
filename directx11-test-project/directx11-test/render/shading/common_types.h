@@ -33,6 +33,7 @@ namespace shading {
 		normal = 1,
 		glossiness = 2,
 		shadow_map = 10,
+		light_occlusion_map = 11,
 		uknown
 	};
 
@@ -43,6 +44,7 @@ namespace shading {
 	{
 		common_textures = 0,
 		shadow_map = 10,
+		light_occlusion_map = 11,
 		unknown
 	};
 
