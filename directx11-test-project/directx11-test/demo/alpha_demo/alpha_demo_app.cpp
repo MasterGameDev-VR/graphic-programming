@@ -467,6 +467,15 @@ void AlphaDemoApp::RenderScene()
 	m_horizontalBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
 	m_horizontalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, m_glowmap.AsShaderView());
 
+	PerFrameBlurData frameData;
+	frameData.resolution = GetCurrentWidth();
+	m_horizontalBlurPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(frameData);
+
+	m_textureRenderable.Draw();
+
+	m_horizontalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, nullptr);
+	m_d3dAnnotation->EndEvent();
+
 	//Drawing the downsample texture
 	m_d3dAnnotation->BeginEvent(L"down-sample");
 	m_downPass.Bind();
@@ -489,15 +498,6 @@ void AlphaDemoApp::RenderScene()
 	m_textureRenderable.Draw();
 
 	m_upPass.GetPixelShader()->BindTexture(TextureUsage::scaleSample, nullptr);
-	m_d3dAnnotation->EndEvent();
-
-	PerFrameBlurData frameData;
-	frameData.resolution = GetCurrentWidth();
-	m_horizontalBlurPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(frameData);
-
-	m_textureRenderable.Draw();
-
-	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::blur, nullptr);
 	m_d3dAnnotation->EndEvent();
 	   
 	//Drawing all the textures together
