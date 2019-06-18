@@ -12,6 +12,7 @@ using namespace DirectX;
 using namespace xtest;
 using namespace xtest::demo;
 using namespace xtest::render::shading;
+using namespace xtest::file;
 
 MotionBlurDemoApp::MotionBlurDemoApp(HINSTANCE instance,
 	const application::WindowSettings& windowSettings,
@@ -44,8 +45,9 @@ void MotionBlurDemoApp::Init()
 	
 	InitLights();
 	InitRenderTechnique();
+	//CreateNewGPFMeshes();
 	InitRenderables();
-
+	
 	service::Locator::GetMouse()->AddListener(this);
 	service::Locator::GetKeyboard()->AddListener(this, { input::Key::F, input::Key::F1 });
 }
@@ -70,7 +72,11 @@ void MotionBlurDemoApp::InitRenderables()
 	previous_Transforms.push_back(soldier2.GetTransform());
 	m_objects.push_back(std::move(soldier2));
 }
+void MotionBlurDemoApp::CreateNewGPFMeshes() {
+	file::WriteGPFOnDiskFromObj(GetRootDir().append(LR"(\IZen2.obj)"), GetRootDir().append(LR"(\IZen2.gpf)"), false);
+	file::WriteGPFOnDiskFromObj(GetRootDir().append(LR"(\huracan.obj)"), GetRootDir().append(LR"(\huracan.gpf)"), false);
 
+}
 void MotionBlurDemoApp::InitRenderTechnique()
 {
 
@@ -144,7 +150,7 @@ void MotionBlurDemoApp::InitRenderTechnique()
 		vertexShader->SetVertexInput(std::make_shared<PosTexVertexInput>());
 
 		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\combine_PS.cso")));
-		pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<AnisotropicSampler>());
+		pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<MotionBlurSampler>());
 		pixelShader->AddConstantBuffer(CBufferFrequency::per_frame, std::make_unique<CBuffer<PerFrameData>>());
 		pixelShader->AddConstantBuffer(CBufferFrequency::rarely_changed, std::make_unique<CBuffer<RarelyChangedData>>());
 

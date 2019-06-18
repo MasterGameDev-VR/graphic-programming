@@ -128,6 +128,9 @@ namespace xtest {
 			void InitRenderTechnique();
 			void InitRenderables();
 			void InitLights();
+
+			void CreateNewGPFMeshes();
+
 			PerObjectData ToPerObjectData(const render::Renderable& renderable, const std::string& meshName);
 			PerObjectShadowMapData ToPerObjectShadowMapData(const render::Renderable& renderable, const std::string& meshName);
 			PerObjectCombineData ToPerObjectCombineData(const render::Renderable& renderable, const std::string& meshName);
