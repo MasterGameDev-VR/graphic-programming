@@ -259,7 +259,7 @@ void AlphaDemoApp::InitRenderables()
 		mat.glossMap = GetRootDir().append(LR"(\3d-objects\plastic-cover\plastic_cover_gloss.png)");
 
 		render::Renderable sphere(mesh::GenerateSphere(3.f, 30, 30), mat);
-		sphere.SetTransform(XMMatrixScaling(0.15f, 0.15f, 0.15f) * XMMatrixTranslation(5.f, 1.5f, -5.f)  );
+		sphere.SetTransform(XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixTranslation(3.75f, 7.5f, -3.f)  );
 		sphere.SetTexcoordTransform(XMMatrixIdentity());
 		sphere.Init();
 		m_objects.push_back(sphere);
@@ -490,7 +490,7 @@ void AlphaDemoApp::RenderScene()
 	m_d3dAnnotation->BeginEvent(L"render-scene");
 	m_renderPass.Bind();
 	m_renderPass.GetState()->ClearDepthOnly();
-	m_renderPass.GetState()->ClearRenderTarget(DirectX::Colors::Gray);
+	m_renderPass.GetState()->ClearRenderTarget(DirectX::Colors::DarkSlateGray);
 	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, m_shadowMap.AsShaderView());
 
 	
