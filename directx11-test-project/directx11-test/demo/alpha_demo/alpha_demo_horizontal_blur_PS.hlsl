@@ -22,15 +22,16 @@ SamplerState TextureSampler
 float4 main(VertexOut pin) : SV_TARGET
 {
 	float4 color = float4(0.f, 0.f, 0.f, 0.f);
-	float weight0, weight1, weight2, weight3, weight4;
+	float weight0, weight1, weight2, weight3, weight4, weight5;
 	float normalization;
 
 	// Create the weights that each neighbor pixel will contribute to the blur.
 	weight0 = 1.0f;
 	weight1 = 0.9f;
 	weight2 = 0.55f;
-	weight3 = 0.18f;
-	weight4 = 0.1f;
+	weight3 = 0.40f;
+	weight4 = 0.18f;
+	weight5 = 0.1f;
 
 	// Create a normalized value to average the weights out a bit.
 	normalization = (weight0 + 2.0f * (weight1 + weight2 + weight3 + weight4));
@@ -41,29 +42,30 @@ float4 main(VertexOut pin) : SV_TARGET
 	weight2 = weight2 / normalization;
 	weight3 = weight3 / normalization;
 	weight4 = weight4 / normalization;
+	weight5 = weight5 / normalization;
 	
 	// Add the nine horizontal pixels to the color by the specific weight of each.
 	// color += glowTexture.Sample(TextureSampler, pin.uv + float2(+12 / horizontalResolution, 0.0f)) * weight4;
 	// color += glowTexture.Sample(TextureSampler, pin.uv + float2(+11 / horizontalResolution, 0.0f)) * weight4;
 	// color += glowTexture.Sample(TextureSampler, pin.uv + float2(+10 / horizontalResolution, 0.0f)) * weight4;
 	// color += glowTexture.Sample(TextureSampler, pin.uv + float2(+9 / horizontalResolution, 0.0f)) * weight3;
-	color += glowTexture.Sample(TextureSampler, pin.uv + float2(+8 / horizontalResolution, 0.0f)) * weight4;
-	color += glowTexture.Sample(TextureSampler, pin.uv + float2(+7 / horizontalResolution, 0.0f)) * weight4;
-	color += glowTexture.Sample(TextureSampler, pin.uv + float2(+6 / horizontalResolution, 0.0f)) * weight3;
-	color += glowTexture.Sample(TextureSampler, pin.uv + float2(+5 / horizontalResolution, 0.0f)) * weight3;
-	color += glowTexture.Sample(TextureSampler, pin.uv + float2(+4 / horizontalResolution, 0.0f)) * weight2;
-	color += glowTexture.Sample(TextureSampler, pin.uv + float2(+3 / horizontalResolution, 0.0f)) * weight2;
-	color += glowTexture.Sample(TextureSampler, pin.uv + float2(+2 / horizontalResolution, 0.0f)) * weight1;
+	//color += glowTexture.Sample(TextureSampler, pin.uv + float2(+8 / horizontalResolution, 0.0f)) * weight4;
+	//color += glowTexture.Sample(TextureSampler, pin.uv + float2(+7 / horizontalResolution, 0.0f)) * weight4;
+	//color += glowTexture.Sample(TextureSampler, pin.uv + float2(+6 / horizontalResolution, 0.0f)) * weight3;
+	color += glowTexture.Sample(TextureSampler, pin.uv + float2(+5 / horizontalResolution, 0.0f)) * weight5;
+	color += glowTexture.Sample(TextureSampler, pin.uv + float2(+4 / horizontalResolution, 0.0f)) * weight4;
+	color += glowTexture.Sample(TextureSampler, pin.uv + float2(+3 / horizontalResolution, 0.0f)) * weight3;
+	color += glowTexture.Sample(TextureSampler, pin.uv + float2(+2 / horizontalResolution, 0.0f)) * weight2;
 	color += glowTexture.Sample(TextureSampler, pin.uv + float2(+1 / horizontalResolution, 0.0f)) * weight1;
 	color += glowTexture.Sample(TextureSampler, pin.uv) * weight0;
 	color += glowTexture.Sample(TextureSampler, pin.uv + float2(-1 / horizontalResolution, 0.0f)) * weight1;
-	color += glowTexture.Sample(TextureSampler, pin.uv + float2(-2 / horizontalResolution, 0.0f)) * weight1;
-	color += glowTexture.Sample(TextureSampler, pin.uv + float2(-3 / horizontalResolution, 0.0f)) * weight2;
-	color += glowTexture.Sample(TextureSampler, pin.uv + float2(-4 / horizontalResolution, 0.0f)) * weight2;
-	color += glowTexture.Sample(TextureSampler, pin.uv + float2(-5 / horizontalResolution, 0.0f)) * weight3;
-	color += glowTexture.Sample(TextureSampler, pin.uv + float2(-6 / horizontalResolution, 0.0f)) * weight3;
-	color += glowTexture.Sample(TextureSampler, pin.uv + float2(-7 / horizontalResolution, 0.0f)) * weight4;
-	color += glowTexture.Sample(TextureSampler, pin.uv + float2(-8 / horizontalResolution, 0.0f)) * weight4;
+	color += glowTexture.Sample(TextureSampler, pin.uv + float2(-2 / horizontalResolution, 0.0f)) * weight2;
+	color += glowTexture.Sample(TextureSampler, pin.uv + float2(-3 / horizontalResolution, 0.0f)) * weight3;
+	color += glowTexture.Sample(TextureSampler, pin.uv + float2(-4 / horizontalResolution, 0.0f)) * weight4;
+	color += glowTexture.Sample(TextureSampler, pin.uv + float2(-5 / horizontalResolution, 0.0f)) * weight5;
+	//color += glowTexture.Sample(TextureSampler, pin.uv + float2(-6 / horizontalResolution, 0.0f)) * weight3;
+	//color += glowTexture.Sample(TextureSampler, pin.uv + float2(-7 / horizontalResolution, 0.0f)) * weight4;
+	//color += glowTexture.Sample(TextureSampler, pin.uv + float2(-8 / horizontalResolution, 0.0f)) * weight4;
 	// color += glowTexture.Sample(TextureSampler, pin.uv + float2(-9 / horizontalResolution, 0.0f)) * weight3;
 	// color += glowTexture.Sample(TextureSampler, pin.uv + float2(-10 / horizontalResolution, 0.0f)) * weight4;
 	// color += glowTexture.Sample(TextureSampler, pin.uv + float2(-11 / horizontalResolution, 0.0f)) * weight4;
