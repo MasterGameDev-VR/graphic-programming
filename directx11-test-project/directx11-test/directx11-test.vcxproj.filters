@@ -266,6 +266,9 @@
     <ClInclude Include="alpha\texture_render_buffer.h">
       <Filter>alpha</Filter>
     </ClInclude>
+    <ClInclude Include="alpha\alpha_sampler_types.h">
+      <Filter>alpha</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
