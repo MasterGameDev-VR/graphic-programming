@@ -12,7 +12,7 @@ namespace alpha
 	struct GlowObject
 	{
 		
-		Microsoft::WRL::ComPtr<ID3D11Resource> glowTexture;
+		Microsoft::WRL::ComPtr<ID3D11Resource> glowTexture; 
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> glowTextureView;
 		
 	};

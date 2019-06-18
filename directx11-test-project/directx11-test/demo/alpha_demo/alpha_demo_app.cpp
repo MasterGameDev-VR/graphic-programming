@@ -562,7 +562,7 @@ void AlphaDemoApp::RenderScene()
 		m_horizontalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, m_downsampledGlowTexture.AsShaderView());
 
 		PerFrameBlurData horizontalData;
-		horizontalData.resolution = GetCurrentWidth();
+		horizontalData.resolution = static_cast<float>(GetCurrentWidth());
 		m_horizontalBlurPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(horizontalData);
 
 		m_textureRenderable.Draw();
@@ -579,7 +579,7 @@ void AlphaDemoApp::RenderScene()
 		m_verticalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, m_horizontalBlurTexture.AsShaderView());
 
 		PerFrameBlurData verticalCData;
-		verticalCData.resolution = GetCurrentHeight();
+		verticalCData.resolution = static_cast<float>(GetCurrentHeight());
 		m_verticalBlurPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(verticalCData);
 
 		m_textureRenderable.Draw();
