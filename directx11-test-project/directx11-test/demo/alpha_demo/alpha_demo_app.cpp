@@ -238,6 +238,24 @@ void AlphaDemoApp::InitRenderables()
 	soldier2.SetTransform(XMMatrixRotationY(math::ToRadians(135.f)) * XMMatrixTranslation(10.f, 0.35f, -10.f));
 	soldier2.Init();
 	m_objects.push_back(std::move(soldier2));
+
+
+	//SPHERE
+	{
+		mesh::MeshMaterial mat;
+		mat.ambient = { 0.8f, 0.8f, 0.8f, 1.f };
+		mat.diffuse = { 0.52f, 0.52f, 0.48f, 1.f };
+		mat.specular = { 0.5f, 0.5f, 0.5f, 1.f };
+		mat.diffuseMap = GetRootDir().append(LR"(\3d-objects\plastic-cover\plastic_cover_color.png)");
+		mat.normalMap = GetRootDir().append(LR"(\3d-objects\plastic-cover\plastic_cover_norm.png)");
+		mat.glossMap = GetRootDir().append(LR"(\3d-objects\plastic-cover\plastic_cover_gloss.png)");
+
+		render::Renderable sphere(mesh::GenerateSphere(3.f, 30, 30), mat);
+		sphere.SetTransform(XMMatrixScaling(0.15f, 0.15f, 0.15f) * XMMatrixTranslation(5.f, 1.5f, -5.f)  );
+		sphere.SetTexcoordTransform(XMMatrixIdentity());
+		sphere.Init();
+		m_objects.push_back(sphere);
+	}
 }
 
 void AlphaDemoApp::InitRenderToTexture()
@@ -252,6 +270,12 @@ void AlphaDemoApp::InitGlowMap()
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> headGlowTextureView;
 	XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(xtest::service::Locator::GetD3DDevice(), xtest::service::Locator::GetD3DContext(), 
 		GetRootDir().append(LR"(\3d-objects\gdc_female\textures\head_glow.png)").c_str(), headGlowTexture.GetAddressOf(), headGlowTextureView.GetAddressOf()));
+
+	//init of the glowmap for the sphere
+	Microsoft::WRL::ComPtr<ID3D11Resource> sphereGlowTexture;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> sphereGlowTextureView;
+	XTEST_D3D_CHECK(DirectX::CreateWICTextureFromFile(xtest::service::Locator::GetD3DDevice(), xtest::service::Locator::GetD3DContext(),
+		GetRootDir().append(LR"(\3d-objects\plastic-cover\plastic_cover_glow.png)").c_str(), sphereGlowTexture.GetAddressOf(), sphereGlowTextureView.GetAddressOf()));
 
 	//INIT OF GLOWOBJECTS
 	{
@@ -272,6 +296,17 @@ void AlphaDemoApp::InitGlowMap()
 		glowObjectKey.second = "head";
 		glowObject.glowTexture = headGlowTexture;
 		glowObject.glowTextureView = headGlowTextureView;
+
+		m_glowObjectsMap.emplace(glowObjectKey, glowObject);
+	}
+
+	{
+		std::pair<render::Renderable*, std::string> glowObjectKey;
+		alpha::GlowObject glowObject;
+		glowObjectKey.first = &m_objects[3];
+		glowObjectKey.second = "";
+		glowObject.glowTexture = sphereGlowTexture;
+		glowObject.glowTextureView = sphereGlowTextureView;
 
 		m_glowObjectsMap.emplace(glowObjectKey, glowObject);
 	}
