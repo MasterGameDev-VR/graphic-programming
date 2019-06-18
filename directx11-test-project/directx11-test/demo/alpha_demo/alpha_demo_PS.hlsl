@@ -48,6 +48,7 @@ cbuffer PerFrameCB : register(b1)
 cbuffer RarelyChangedCB : register(b2)
 {
 	bool useShadowMap;
+	bool useGlowMap;
 	float shadowMapResolution;
 }
 

@@ -90,8 +90,9 @@ namespace xtest {
 			struct RarelyChangedData
 			{
 				int32 useShadowMap;
+				int32 useGlowMap;
 				float shadowMapResolution;
-				float _explicit_pad_[2];
+				float _explicit_pad_;
 			};
 
 
