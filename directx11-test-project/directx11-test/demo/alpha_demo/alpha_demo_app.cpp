@@ -300,6 +300,18 @@ void AlphaDemoApp::OnResized()
 	m_downPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
 	m_downPass.GetState()->ChangeViewPort(m_downViewport);
 
+	m_horizontalBlurTexture.Resize(GetCurrentWidth(), GetCurrentHeight());
+	//update the glow pass state with the resized render target and depth buffer
+	m_horizontalBlurPass.GetState()->ChangeRenderTargetView(m_horizontalBlurTexture.AsRenderTargetView());
+	m_horizontalBlurPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
+	m_horizontalBlurPass.GetState()->ChangeViewPort(m_viewport);
+
+	m_verticalBlurTexture.Resize(GetCurrentWidth(), GetCurrentHeight());
+	//update the glow pass state with the resized render target and depth buffer
+	m_verticalBlurPass.GetState()->ChangeRenderTargetView(m_verticalBlurTexture.AsRenderTargetView());
+	m_verticalBlurPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
+	m_verticalBlurPass.GetState()->ChangeViewPort(m_viewport);
+
 	m_upsampledGlowTexture.Resize(GetCurrentWidth(), GetCurrentHeight());
 	m_upPass.GetState()->ChangeRenderTargetView(m_upsampledGlowTexture.AsRenderTargetView());
 	m_upPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
