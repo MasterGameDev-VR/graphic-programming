@@ -1,4 +1,5 @@
 #define DIRECTIONAL_LIGHT_COUNT 2
+#define TARGET_FPS 60
 
 Texture2D colorTexture : register(t0);
 Texture2D motionBlurTexture : register(t3);
@@ -23,6 +24,7 @@ cbuffer PerFrameCB : register(b1)
 {
 	DirectionalLight dirLights[DIRECTIONAL_LIGHT_COUNT];
 	float3 eyePosW;
+	float fps;
 };
 
 cbuffer RarelyChangedCB : register(b2)
@@ -44,7 +46,7 @@ float4 main(VertexOut pin) : SV_TARGET {
 		float2 screenTexCoords = pin.pos.xy * texelSize;
 
 		float2 vel = motionBlurTexture.Sample(textureSampler, pin.uv.xy).rg;
-		vel *= 1.5f;
+		vel *= (fps / TARGET_FPS);
 
 		float speed = length(vel / texelSize);
 		int nSamples = clamp(int(speed), 1, 5);

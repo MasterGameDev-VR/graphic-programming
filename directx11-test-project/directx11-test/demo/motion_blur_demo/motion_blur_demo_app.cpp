@@ -71,12 +71,21 @@ void MotionBlurDemoApp::InitRenderables()
 	soldier2.Init();
 	previous_Transforms.push_back(soldier2.GetTransform());
 	m_objects.push_back(std::move(soldier2));
+
+	/*render::Renderable Aircraft{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\E-45-Aircraft\E 45 Aircraft.gpf)"))) };
+	Aircraft.SetTransform(XMMatrixRotationY(math::ToRadians(45.f)) * XMMatrixTranslation(15.f, 10.f, -15.f));
+	Aircraft.Init();
+	previous_Transforms.push_back(Aircraft.GetTransform());
+	m_objects.push_back(std::move(Aircraft));*/
 }
+
+
 void MotionBlurDemoApp::CreateNewGPFMeshes() {
-	file::WriteGPFOnDiskFromObj(GetRootDir().append(LR"(\IZen2.obj)"), GetRootDir().append(LR"(\IZen2.gpf)"), false);
-	file::WriteGPFOnDiskFromObj(GetRootDir().append(LR"(\huracan.obj)"), GetRootDir().append(LR"(\huracan.gpf)"), false);
+	file::WriteGPFOnDiskFromObj(GetRootDir().append(LR"(\3d-objects\E-45-Aircraft\E 45 Aircraft_obj.obj)"), GetRootDir().append(LR"(\3d-objects\E-45-Aircraft\E 45 Aircraft.gpf)"), true);
 
 }
+
+
 void MotionBlurDemoApp::InitRenderTechnique()
 {
 
@@ -264,6 +273,11 @@ void MotionBlurDemoApp::UpdateScene(float deltaSeconds)
 	W *= R;
 	m_objects[2].SetTransform(W);
 
+	// Aircraft
+	/*W = XMLoadFloat4x4(&m_objects[3].GetTransform());
+	W *= R;
+	m_objects[3].SetTransform(W)*/;
+
 	m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
 
 	// PerFrameCB
@@ -272,8 +286,10 @@ void MotionBlurDemoApp::UpdateScene(float deltaSeconds)
 		data.dirLights[0] = m_dirKeyLight;
 		data.dirLights[1] = m_dirFillLight;
 		data.eyePosW = m_camera.GetPosition();
+		data.fps = 1.0f / deltaSeconds;
 
 		m_renderPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(data);
+		m_combinePass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(data);
 	}
 
 

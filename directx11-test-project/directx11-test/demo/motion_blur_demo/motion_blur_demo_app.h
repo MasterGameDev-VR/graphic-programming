@@ -92,7 +92,7 @@ namespace xtest {
 			{
 				DirectionalLight dirLights[k_dirLightCount];
 				DirectX::XMFLOAT3 eyePosW;
-				float _explicit_pad_;
+				float fps;
 			};
 
 			struct RarelyChangedData
