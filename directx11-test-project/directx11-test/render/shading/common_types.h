@@ -48,6 +48,7 @@ namespace shading {
 	{
 		common_textures = 0,
 		shadow_map = 10,
+		blur = 11,
 		unknown
 	};
 

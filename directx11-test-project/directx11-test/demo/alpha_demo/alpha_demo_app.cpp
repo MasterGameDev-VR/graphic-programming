@@ -8,6 +8,7 @@
 #include <render/shading/sampler_types.h>
 #include <external_libs/directxtk/WICTextureLoader.h>
 #include <alpha/alpha_vertex_input_types.h>
+#include <alpha/alpha_sampler_types.h>
 #include <external_libs/directxtk/WICTextureLoader.h>
 
 
@@ -188,7 +189,7 @@ void AlphaDemoApp::InitRenderTechnique()
 		
 		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_horizontal_blur_PS.cso")));
 		pixelShader->AddConstantBuffer(CBufferFrequency::per_frame, std::make_unique<CBuffer<PerFrameBlurData>>());
-		// pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<AnisotropicSampler>());
+		pixelShader->AddSampler(SamplerUsage::blur, std::make_shared<alpha::BlurSampler>());
 
 		m_horizontalBlurPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_horizontalBlurTexture.AsRenderTargetView(), m_depthBufferView.Get()));
 		m_horizontalBlurPass.SetVertexShader(vertexShader);
@@ -205,7 +206,7 @@ void AlphaDemoApp::InitRenderTechnique()
 
 		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_vertical_blur_PS.cso")));
 		pixelShader->AddConstantBuffer(CBufferFrequency::per_frame, std::make_unique<CBuffer<PerFrameBlurData>>());
-		// pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<AnisotropicSampler>());
+		pixelShader->AddSampler(SamplerUsage::blur, std::make_shared<alpha::BlurSampler>());
 
 		m_verticalBlurPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_verticalBlurTexture.AsRenderTargetView(), m_depthBufferView.Get()));
 		m_verticalBlurPass.SetVertexShader(vertexShader);

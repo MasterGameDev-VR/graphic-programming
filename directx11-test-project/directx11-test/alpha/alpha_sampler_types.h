@@ -5,7 +5,7 @@
 
 namespace alpha
 {
-	class BlurSampler : public Sampler
+	class BlurSampler : public xtest::render::shading::Sampler
 	{
 	public:
 		virtual void Init() override
@@ -28,7 +28,7 @@ namespace alpha
 			samplerDesc.BorderColor[3] = 0.f;
 			samplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
 
-			XTEST_D3D_CHECK(service::Locator::GetD3DDevice()->CreateSamplerState(&samplerDesc, &m_d3dTextureSampler));
+			XTEST_D3D_CHECK(xtest::service::Locator::GetD3DDevice()->CreateSamplerState(&samplerDesc, &m_d3dTextureSampler));
 		}
 	};
 }
