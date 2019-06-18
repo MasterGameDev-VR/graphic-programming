@@ -12,12 +12,7 @@ cbuffer PerFrameCB : register(b1)
 };
 
 Texture2D glowTexture : register(t50);
-SamplerState TextureSampler
-{
-	Filter = MIN_MAG_MIP_LINEAR;
-	AddressU = Wrap;
-	AddressV = Wrap;
-};
+SamplerState TextureSampler : register(s20);
 
 #define WEIGHTSNUMBER 9
 #define WEIGHT0 0.13298f	
