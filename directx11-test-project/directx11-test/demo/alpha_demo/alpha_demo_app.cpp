@@ -56,6 +56,7 @@ void AlphaDemoApp::Init()
 
 	service::Locator::GetMouse()->AddListener(this);
 	service::Locator::GetKeyboard()->AddListener(this, { input::Key::F, input::Key::F1 });
+	service::Locator::GetKeyboard()->AddListener(this, { input::Key::F, input::Key::F2 });
 }
 
 
@@ -129,12 +130,15 @@ void AlphaDemoApp::InitRenderTechnique()
 
 		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_glow_PS.cso")));
 		pixelShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectGlowData>>());
+
 		pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<AnisotropicSampler>());
 
 		m_glowPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_glowmap.AsRenderTargetView(), m_depthBufferView.Get()));
 		m_glowPass.SetVertexShader(vertexShader);
 		m_glowPass.SetPixelShader(pixelShader);
 		m_glowPass.Init();
+
+		m_rarelyChangedData.useGlowMap = true;
 	}
 
 	// downsample pass
@@ -213,6 +217,7 @@ void AlphaDemoApp::InitRenderTechnique()
 		vertexShader->SetVertexInput(std::make_shared<alpha::TextureDataVertexInput>());
 
 		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_postprocessing_PS.cso")));
+		pixelShader->AddConstantBuffer(CBufferFrequency::rarely_changed, std::make_unique<CBuffer<RarelyChangedData>>());
 
 		m_PostPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_backBufferView.Get(), m_depthBufferView.Get()));
 		m_PostPass.SetVertexShader(vertexShader);
@@ -389,6 +394,11 @@ void AlphaDemoApp::OnKeyStatusChange(input::Key key, const input::KeyStatus& sta
 		m_rarelyChangedData.useShadowMap = !m_rarelyChangedData.useShadowMap;
 		m_isRarelyChangedDataDirty = true;
 	}
+	else if (key == input::Key::F2 && status.isDown)
+	{
+		m_rarelyChangedData.useGlowMap = !m_rarelyChangedData.useGlowMap;
+		m_isRarelyChangedDataDirty = true;
+	}
 }
 
 
@@ -411,6 +421,7 @@ void AlphaDemoApp::UpdateScene(float deltaSeconds)
 	if (m_isRarelyChangedDataDirty)
 	{
 		m_renderPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::rarely_changed)->UpdateBuffer(m_rarelyChangedData);
+		m_PostPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::rarely_changed)->UpdateBuffer(m_rarelyChangedData);
 		m_isRarelyChangedDataDirty = false;
 	}
 
@@ -461,124 +472,125 @@ void AlphaDemoApp::RenderScene()
 	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, nullptr); // explicit unbind the shadow map to suppress warning
 	m_d3dAnnotation->EndEvent();
 
-
-	//Drawing the glowing objects on texture
-	m_d3dAnnotation->BeginEvent(L"render-glowmap");
-	m_glowPass.Bind();
-	m_glowPass.GetState()->ClearDepthOnly();
-	m_glowPass.GetState()->ClearRenderTarget(DirectX::Colors::Transparent);
-
-	for (render::Renderable& renderable : m_objects)
+	if (m_rarelyChangedData.useGlowMap)
 	{
-		for (const std::string& meshName : renderable.GetMeshNames())
+		//Drawing the glowing objects on texture
+		m_d3dAnnotation->BeginEvent(L"render-glowmap");
+		m_glowPass.Bind();
+		m_glowPass.GetState()->ClearDepthOnly();
+		m_glowPass.GetState()->ClearRenderTarget(DirectX::Colors::Transparent);
+
+		for (render::Renderable& renderable : m_objects)
 		{
-			PerObjectGlowData data = ToPerObjectGlowData(renderable, meshName);
-			m_glowPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
-			m_glowPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
-
-			if (data.useGlow)
+			for (const std::string& meshName : renderable.GetMeshNames())
 			{
-				GlowObjectKey glowObjectKey (&renderable, meshName);
-				const alpha::GlowObject glowObject = m_glowObjectsMap.at(glowObjectKey);
+				PerObjectGlowData data = ToPerObjectGlowData(renderable, meshName);
+				m_glowPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+				m_glowPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
 
-				m_glowPass.GetPixelShader()->BindTexture(TextureUsage::color, renderable.GetTextureView(TextureUsage::color, meshName));
-				m_glowPass.GetPixelShader()->BindTexture(TextureUsage::glow_map, glowObject.glowTextureView.Get());
+				if (data.useGlow)
+				{
+					GlowObjectKey glowObjectKey(&renderable, meshName);
+					const alpha::GlowObject glowObject = m_glowObjectsMap.at(glowObjectKey);
+
+					m_glowPass.GetPixelShader()->BindTexture(TextureUsage::color, renderable.GetTextureView(TextureUsage::color, meshName));
+					m_glowPass.GetPixelShader()->BindTexture(TextureUsage::glow_map, glowObject.glowTextureView.Get());
+				}
+
+				renderable.Draw(meshName);
 			}
-
-			renderable.Draw(meshName);
 		}
+		m_d3dAnnotation->EndEvent();
+
+
+		//Drawing the downsample texture
+		m_d3dAnnotation->BeginEvent(L"down-sample");
+		m_downPass.Bind();
+		m_downPass.GetState()->ClearDepthOnly();
+		m_downPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
+		m_downPass.GetPixelShader()->BindTexture(TextureUsage::scaleSample, m_glowmap.AsShaderView());
+
+		m_textureRenderable.Draw();
+
+		m_downPass.GetPixelShader()->BindTexture(TextureUsage::scaleSample, nullptr);
+		m_d3dAnnotation->EndEvent();
+
+
+		// Drawing horizontal blur
+		m_d3dAnnotation->BeginEvent(L"horizontal-blur");
+		m_horizontalBlurPass.Bind();
+		m_horizontalBlurPass.GetState()->ClearDepthOnly();
+		m_horizontalBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
+		m_horizontalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, m_downsampledGlowTexture.AsShaderView());
+
+		PerFrameBlurData horizontalData;
+		horizontalData.resolution = GetCurrentWidth();
+		m_horizontalBlurPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(horizontalData);
+
+		m_textureRenderable.Draw();
+
+		m_horizontalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, nullptr);
+		m_d3dAnnotation->EndEvent();
+
+
+		// Drawing vertical blur
+		m_d3dAnnotation->BeginEvent(L"vertical-blur");
+		m_verticalBlurPass.Bind();
+		m_verticalBlurPass.GetState()->ClearDepthOnly();
+		m_verticalBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
+		m_verticalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, m_horizontalBlurTexture.AsShaderView());
+
+		PerFrameBlurData verticalCData;
+		verticalCData.resolution = GetCurrentHeight();
+		m_verticalBlurPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(verticalCData);
+
+		m_textureRenderable.Draw();
+
+		m_verticalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, nullptr);
+		m_d3dAnnotation->EndEvent();
+
+		// Drawing horizontal blur second pass
+		m_d3dAnnotation->BeginEvent(L"horizontal-blur-2");
+		m_horizontalBlurPass.Bind();
+		m_horizontalBlurPass.GetState()->ClearDepthOnly();
+		m_horizontalBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
+		m_horizontalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, m_verticalBlurTexture.AsShaderView());
+
+		m_horizontalBlurPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(horizontalData);
+
+		m_textureRenderable.Draw();
+
+		m_horizontalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, nullptr);
+		m_d3dAnnotation->EndEvent();
+
+
+		// Drawing vertical blur second pass
+		m_d3dAnnotation->BeginEvent(L"vertical-blur-2");
+		m_verticalBlurPass.Bind();
+		m_verticalBlurPass.GetState()->ClearDepthOnly();
+		m_verticalBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
+		m_verticalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, m_horizontalBlurTexture.AsShaderView());
+
+		m_verticalBlurPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(verticalCData);
+
+		m_textureRenderable.Draw();
+
+		m_verticalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, nullptr);
+		m_d3dAnnotation->EndEvent();
+
+
+		// Drawing the upsample texture
+		m_d3dAnnotation->BeginEvent(L"up-sample");
+		m_upPass.Bind();
+		m_upPass.GetState()->ClearDepthOnly();
+		m_upPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
+		m_upPass.GetPixelShader()->BindTexture(TextureUsage::scaleSample, m_verticalBlurTexture.AsShaderView());
+
+		m_textureRenderable.Draw();
+
+		m_upPass.GetPixelShader()->BindTexture(TextureUsage::scaleSample, nullptr);
+		m_d3dAnnotation->EndEvent();
 	}
-	m_d3dAnnotation->EndEvent();
-
-
-	//Drawing the downsample texture
-	m_d3dAnnotation->BeginEvent(L"down-sample");
-	m_downPass.Bind();
-	m_downPass.GetState()->ClearDepthOnly();
-	m_downPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
-	m_downPass.GetPixelShader()->BindTexture(TextureUsage::scaleSample, m_glowmap.AsShaderView());
-
-	m_textureRenderable.Draw();
-
-	m_downPass.GetPixelShader()->BindTexture(TextureUsage::scaleSample, nullptr);
-	m_d3dAnnotation->EndEvent();
-
-
-	// Drawing horizontal blur
-	m_d3dAnnotation->BeginEvent(L"horizontal-blur");
-	m_horizontalBlurPass.Bind();
-	m_horizontalBlurPass.GetState()->ClearDepthOnly();
-	m_horizontalBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
-	m_horizontalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, m_downsampledGlowTexture.AsShaderView());
-
-	PerFrameBlurData horizontalData;
-	horizontalData.resolution = GetCurrentWidth();
-	m_horizontalBlurPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(horizontalData);
-
-	m_textureRenderable.Draw();
-
-	m_horizontalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, nullptr);
-	m_d3dAnnotation->EndEvent();
-
-
-	// Drawing vertical blur
-	m_d3dAnnotation->BeginEvent(L"vertical-blur");
-	m_verticalBlurPass.Bind();
-	m_verticalBlurPass.GetState()->ClearDepthOnly();
-	m_verticalBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
-	m_verticalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, m_horizontalBlurTexture.AsShaderView());
-
-	PerFrameBlurData verticalCData;
-	verticalCData.resolution = GetCurrentHeight();
-	m_verticalBlurPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(verticalCData);
-
-	m_textureRenderable.Draw();
-
-	m_verticalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, nullptr);
-	m_d3dAnnotation->EndEvent();
-
-	// Drawing horizontal blur second pass
-	m_d3dAnnotation->BeginEvent(L"horizontal-blur-2");
-	m_horizontalBlurPass.Bind();
-	m_horizontalBlurPass.GetState()->ClearDepthOnly();
-	m_horizontalBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
-	m_horizontalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, m_verticalBlurTexture.AsShaderView());
-
-	m_horizontalBlurPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(horizontalData);
-
-	m_textureRenderable.Draw();
-
-	m_horizontalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, nullptr);
-	m_d3dAnnotation->EndEvent();
-
-
-	// Drawing vertical blur second pass
-	m_d3dAnnotation->BeginEvent(L"vertical-blur-2");
-	m_verticalBlurPass.Bind();
-	m_verticalBlurPass.GetState()->ClearDepthOnly();
-	m_verticalBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
-	m_verticalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, m_horizontalBlurTexture.AsShaderView());
-
-	m_verticalBlurPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(verticalCData);
-
-	m_textureRenderable.Draw();
-
-	m_verticalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, nullptr);
-	m_d3dAnnotation->EndEvent();
-
-
-	// Drawing the upsample texture
-	m_d3dAnnotation->BeginEvent(L"up-sample");
-	m_upPass.Bind();
-	m_upPass.GetState()->ClearDepthOnly();
-	m_upPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
-	m_upPass.GetPixelShader()->BindTexture(TextureUsage::scaleSample, m_verticalBlurTexture.AsShaderView());
-
-	m_textureRenderable.Draw();
-
-	m_upPass.GetPixelShader()->BindTexture(TextureUsage::scaleSample, nullptr);
-	m_d3dAnnotation->EndEvent();
-	   
 
 	//Drawing all the textures together
 	m_d3dAnnotation->BeginEvent(L"render-from-texture");
