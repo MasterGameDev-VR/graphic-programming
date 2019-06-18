@@ -542,7 +542,7 @@ void AlphaDemoApp::RenderScene()
 		m_d3dAnnotation->BeginEvent(L"down-sample");
 		m_downPass.Bind();
 		m_downPass.GetState()->ClearDepthOnly();
-		m_downPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
+		m_downPass.GetState()->ClearRenderTarget(DirectX::Colors::Transparent);
 		m_downPass.GetPixelShader()->BindTexture(TextureUsage::scaleSample, m_glowmap.AsShaderView());
 
 		m_textureRenderable.Draw();
@@ -555,7 +555,7 @@ void AlphaDemoApp::RenderScene()
 		m_d3dAnnotation->BeginEvent(L"horizontal-blur");
 		m_horizontalBlurPass.Bind();
 		m_horizontalBlurPass.GetState()->ClearDepthOnly();
-		m_horizontalBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
+		m_horizontalBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::Transparent);
 		m_horizontalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, m_downsampledGlowTexture.AsShaderView());
 
 		PerFrameBlurData horizontalData;
@@ -572,7 +572,7 @@ void AlphaDemoApp::RenderScene()
 		m_d3dAnnotation->BeginEvent(L"vertical-blur");
 		m_verticalBlurPass.Bind();
 		m_verticalBlurPass.GetState()->ClearDepthOnly();
-		m_verticalBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
+		m_verticalBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::Transparent);
 		m_verticalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, m_horizontalBlurTexture.AsShaderView());
 
 		PerFrameBlurData verticalCData;
@@ -588,7 +588,7 @@ void AlphaDemoApp::RenderScene()
 		m_d3dAnnotation->BeginEvent(L"horizontal-blur-2");
 		m_horizontalBlurPass.Bind();
 		m_horizontalBlurPass.GetState()->ClearDepthOnly();
-		m_horizontalBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
+		m_horizontalBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::Transparent);
 		m_horizontalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, m_verticalBlurTexture.AsShaderView());
 
 		m_horizontalBlurPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(horizontalData);
@@ -603,7 +603,7 @@ void AlphaDemoApp::RenderScene()
 		m_d3dAnnotation->BeginEvent(L"vertical-blur-2");
 		m_verticalBlurPass.Bind();
 		m_verticalBlurPass.GetState()->ClearDepthOnly();
-		m_verticalBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::SkyBlue);
+		m_verticalBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::Transparent);
 		m_verticalBlurPass.GetPixelShader()->BindTexture(TextureUsage::blur, m_horizontalBlurTexture.AsShaderView());
 
 		m_verticalBlurPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(verticalCData);
@@ -618,7 +618,7 @@ void AlphaDemoApp::RenderScene()
 		m_d3dAnnotation->BeginEvent(L"up-sample");
 		m_upPass.Bind();
 		m_upPass.GetState()->ClearDepthOnly();
-		m_upPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
+		m_upPass.GetState()->ClearRenderTarget(DirectX::Colors::Transparent);
 		m_upPass.GetPixelShader()->BindTexture(TextureUsage::scaleSample, m_verticalBlurTexture.AsShaderView());
 
 		m_textureRenderable.Draw();
