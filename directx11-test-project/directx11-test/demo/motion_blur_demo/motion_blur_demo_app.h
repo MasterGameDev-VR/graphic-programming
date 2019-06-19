@@ -10,7 +10,7 @@
 #include <render/shading/shadow_map.h>
 #include <render/shading/motion_blur_map.h>
 #include <render/shading/color_map.h>
-#include "Quad.h"
+#include "demo/motion_blur_demo/Quad.h"
 
 
 /*
@@ -92,7 +92,7 @@ namespace xtest {
 			{
 				DirectionalLight dirLights[k_dirLightCount];
 				DirectX::XMFLOAT3 eyePosW;
-				float fps;
+				float blurMultiplier;
 			};
 
 			struct RarelyChangedData
@@ -153,6 +153,7 @@ namespace xtest {
 			render::shading::ColorMap m_colorRenderMap;
 			Quad m_quad;
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_quadVertexBuffer;
+			float targetFPS;
 
 			scene::BoundingSphere m_sceneBoundingSphere;
 		};

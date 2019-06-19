@@ -29,8 +29,9 @@ MotionBlurDemoApp::MotionBlurDemoApp(HINSTANCE instance,
 	, m_renderPass()
 	, m_shadowMap(2048)
 	, m_motionBlurMap()
-	,m_colorRenderMap()
+	, m_colorRenderMap()
 	, m_sceneBoundingSphere({ 0.f, 0.f, 0.f }, 21.f)
+	, targetFPS(fps)
 {}
 
 MotionBlurDemoApp::~MotionBlurDemoApp()
@@ -318,7 +319,7 @@ void MotionBlurDemoApp::UpdateScene(float deltaSeconds)
 		data.dirLights[0] = m_dirKeyLight;
 		data.dirLights[1] = m_dirFillLight;
 		data.eyePosW = m_camera.GetPosition();
-		data.fps = 1.0f / deltaSeconds;
+		data.blurMultiplier = (1.0f / deltaSeconds) / targetFPS;
 
 		m_renderPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(data);
 		m_combinePass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(data);
@@ -418,19 +419,8 @@ void MotionBlurDemoApp::RenderScene()
 	UINT offset = 0;
 	m_d3dContext->IASetVertexBuffers(0, 1, m_quadVertexBuffer.GetAddressOf(), &stride, &offset);
 	m_d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	// draw and present the frame
 	m_d3dContext->Draw(6, 0);
 
-	// draw COMBINE
-	/*
-	for (render::Renderable& renderable : m_objects) {
-		for (const std::string& meshName : renderable.GetMeshNames()) {
-			MotionBlurDemoApp::PerObjectCombineData data = ToPerObjectCombineData(renderable, meshName);
-			m_combinePass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
-			renderable.Draw(meshName);
-		}
-	}*/
 	m_d3dAnnotation->EndEvent();
 
 	XTEST_D3D_CHECK(m_swapChain->Present(0, 0));

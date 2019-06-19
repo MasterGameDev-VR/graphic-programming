@@ -107,7 +107,7 @@
     <ClInclude Include="application\windows_app.h" />
     <ClInclude Include="camera\camera.h" />
     <ClInclude Include="camera\spherical_camera.h" />
-    <ClInclude Include="Quad.h" />
+    <ClInclude Include="demo\motion_blur_demo\Quad.h" />
     <ClInclude Include="render\shading\color_map.h" />
     <ClInclude Include="common\assert.h" />
     <ClInclude Include="common\common_macros.h" />

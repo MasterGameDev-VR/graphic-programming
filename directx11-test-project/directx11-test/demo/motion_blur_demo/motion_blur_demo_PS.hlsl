@@ -41,7 +41,7 @@ cbuffer PerFrameCB : register(b1)
 {
 	DirectionalLight dirLights[DIRECTIONAL_LIGHT_COUNT];
 	float3 eyePosW;
-	float fps;
+	float blurMultiplier;
 };
 
 cbuffer RarelyChangedCB : register(b2)

@@ -3,7 +3,7 @@
 #include <service/locator.h>
 #include <render/shading/vertex_input.h>
 #include <mesh/mesh_format.h>
-#include "Quad.h"
+#include "demo/motion_blur_demo/Quad.h"
 
 
 namespace xtest {

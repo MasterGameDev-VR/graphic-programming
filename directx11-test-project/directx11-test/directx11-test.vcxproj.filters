@@ -258,7 +258,7 @@
       <Filter>render</Filter>
     </ClInclude>
     <ClInclude Include="render\shading\color_map.h" />
-    <ClInclude Include="Quad.h">
+    <ClInclude Include="demo\motion_blur_demo\Quad.h">
       <Filter>demo\motion_blur_demo</Filter>
     </ClInclude>
   </ItemGroup>
