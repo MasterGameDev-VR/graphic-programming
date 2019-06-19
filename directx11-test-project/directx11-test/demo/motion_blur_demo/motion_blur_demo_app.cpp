@@ -73,6 +73,13 @@ void MotionBlurDemoApp::InitRenderables()
 	previous_Transforms.push_back(soldier2.GetTransform());
 	m_objects.push_back(std::move(soldier2));
 
+	render::Renderable crate{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\crate\crate.gpf)"))) };
+	crate.SetTransform(XMMatrixTranslation(-3.0f, 0.5f, -5.0f));
+	crate.Init();
+	previous_Transforms.push_back(crate.GetTransform());
+	backupWCrate = XMLoadFloat4x4(&crate.GetTransform());
+	m_objects.push_back(std::move(crate));
+
 	/*render::Renderable Aircraft{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\E-45-Aircraft\E 45 Aircraft.gpf)"))) };
 	Aircraft.SetTransform(XMMatrixRotationY(math::ToRadians(45.f)) * XMMatrixTranslation(15.f, 10.f, -15.f));
 	Aircraft.Init();
@@ -288,6 +295,7 @@ void MotionBlurDemoApp::OnKeyStatusChange(input::Key key, const input::KeyStatus
 	}
 }
 
+float totalTime = 0.0f;
 
 void MotionBlurDemoApp::UpdateScene(float deltaSeconds)
 {
@@ -306,10 +314,9 @@ void MotionBlurDemoApp::UpdateScene(float deltaSeconds)
 	W *= R;
 	m_objects[2].SetTransform(W);
 
-	// Aircraft
-	/*W = XMLoadFloat4x4(&m_objects[3].GetTransform());
-	W *= R;
-	m_objects[3].SetTransform(W)*/;
+	totalTime += deltaSeconds;
+	XMMATRIX newW = backupWCrate * XMMatrixTranslation(0.0f, (sin(totalTime*35.0f) + 1.0f) * 1.5f, 0.0f);
+	m_objects[3].SetTransform(newW);
 
 	m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
 
