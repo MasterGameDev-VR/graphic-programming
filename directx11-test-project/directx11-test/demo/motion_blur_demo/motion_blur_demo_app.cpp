@@ -315,7 +315,7 @@ void MotionBlurDemoApp::UpdateScene(float deltaSeconds)
 	m_objects[2].SetTransform(W);
 
 	totalTime += deltaSeconds;
-	XMMATRIX newW = backupWCrate * XMMatrixTranslation(0.0f, (sin(totalTime*35.0f) + 1.0f) * 1.5f, 0.0f);
+	XMMATRIX newW = backupWCrate * XMMatrixTranslation(0.0f, (sin(totalTime*10.0f) + 1.0f) * 4.f, 0.0f);
 	m_objects[3].SetTransform(newW);
 
 	m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
