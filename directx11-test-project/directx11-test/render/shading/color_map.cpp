@@ -43,6 +43,13 @@ void ColorMap::Init(uint32 width, uint32 height) {
 	{
 		return;
 	}
+	//--- queste quattro righe risolvono il problema della schermata grigia all'inizio
+	m_width = width;
+	m_height = height;
+
+	m_viewport.Width = static_cast<float>(m_width);
+	m_viewport.Height = static_cast<float>(m_height);
+	//--- bisogna metterle per inizializzare la viewport (prima veniva fatto da SetWidthHeight chiamato alle righe 119 e 138 di motion_blur_demo_app.cpp)
 
 	ID3D11Device* d3dDevice = service::Locator::GetD3DDevice();
 	// create the color buffer texture
