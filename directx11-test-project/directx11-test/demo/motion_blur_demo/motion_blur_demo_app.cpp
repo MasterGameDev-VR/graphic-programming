@@ -115,8 +115,9 @@ void MotionBlurDemoApp::InitRenderTechnique()
 
 	// inizializzo la motion blur map
 		m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
-		m_motionBlurMap.SetWidthHeight(GetCurrentWidth(), GetCurrentHeight());
-		m_motionBlurMap.Init();
+		m_motionBlurMap.Init(GetCurrentWidth(), GetCurrentHeight());
+		//m_motionBlurMap.SetWidthHeight(GetCurrentWidth(), GetCurrentHeight());
+
 
 		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\motion_blur_demo_motionblurmap_VS.cso")));
 		vertexShader->SetVertexInput(std::make_shared<PosOnlyVertexInput>());
@@ -133,8 +134,9 @@ void MotionBlurDemoApp::InitRenderTechnique()
 
 	// render pass
 	{
-		m_colorRenderMap.SetWidthHeight(GetCurrentWidth(), GetCurrentHeight());
-		m_colorRenderMap.Init();
+		m_colorRenderMap.Init(GetCurrentWidth(), GetCurrentHeight());
+		//m_colorRenderMap.SetWidthHeight(GetCurrentWidth(), GetCurrentHeight());
+
 
 		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\motion_blur_demo_VS.cso")));
 		vertexShader->SetVertexInput(std::make_shared<MeshDataVertexInput>());
@@ -187,12 +189,42 @@ void MotionBlurDemoApp::InitLights()
 
 void MotionBlurDemoApp::OnResized()
 {
+	//questo metodo si trova in directx_app.cpp e chiama il metodo DirectxApp::ResizeBuffers()
 	application::DirectxApp::OnResized();
+	//nel metodo ResizeBuffers() si resetta m_backBufferView con il suo metodo Reset()
+	//si chiama un metodo ResizeBuffers() sulla m_swapChain
+	//si crea un nuovo ComPTR wrappato su ID3D11Texture2D
+	//si crea una nuova RenderTargetView ( il puntatore è m_backBufferView )
+	//si chiama CreateDepthStencilBuffer()
+	//si chiama il metodo SetViewport(__args_)
+
+	//.... nel caso semplice bisogna aggiornare solo il render pass.... qui ci sono altri pass
+	
+	//m_shadowPass: riga 107 non serve far niente, perchè ha una sua viewport un suo depthstencilbuffer, e nessun render target view
+
+	//m_motionBlurPass: riga 127 ha una viewport e una render target view proprie, e usa lo stesso depth buffer "comune"(quello del render pass)
+	//il metodo 'SetWidthHeight va a modificare width e height della motion blur map:
+	//queste vengono usate per aggiornare la viewport
+	//nella classe MotionBlurMap questo metodo va riscritto in modo tale da fare l'update anche di render target view e shader resource view
+	m_motionBlurMap.SetWidthHeight(GetCurrentWidth(), GetCurrentHeight());
+
+	m_motionBlurPass.GetState()->ChangeRenderTargetView(m_motionBlurMap.AsMotionBlurView());
+	m_motionBlurPass.GetState()->ChangeViewPort(m_motionBlurMap.Viewport());
+	m_motionBlurPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
+
 
 	//update the render pass state with the resized render target and depth buffer
-	m_renderPass.GetState()->ChangeRenderTargetView(m_backBufferView.Get());
+	//queste righe vanno modificate perchè il render pass non usa più m_backBufferView, m_depthBufferView, m_viewPort
+	m_colorRenderMap.SetWidthHeight(GetCurrentWidth(), GetCurrentHeight());
+	m_renderPass.GetState()->ChangeRenderTargetView(m_colorRenderMap.AsColorRenderTargetView());
 	m_renderPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
-	m_renderPass.GetState()->ChangeViewPort(m_viewport);
+	m_renderPass.GetState()->ChangeViewPort(m_colorRenderMap.Viewport());
+
+	//m_combinePass
+	m_combinePass.GetState()->ChangeRenderTargetView(m_backBufferView.Get());
+	m_combinePass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
+	m_combinePass.GetState()->ChangeViewPort(m_viewport);
+
 
 	//update the projection matrix with the new aspect ratio
 	m_camera.SetPerspectiveProjection(math::ToRadians(45.f), AspectRatio(), 1.f, 1000.f);

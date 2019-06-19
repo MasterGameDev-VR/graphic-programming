@@ -26,10 +26,18 @@ void ColorMap::SetWidthHeight(uint32 width, uint32 height) {
 
 	m_viewport.Width = static_cast<float>(m_width);
 	m_viewport.Height = static_cast<float>(m_height);
+
+	ID3D11Device* d3dDevice = service::Locator::GetD3DDevice();
+	colorTextureDesc.Width = (UINT)m_width;
+	colorTextureDesc.Height = (UINT)m_height;
+	XTEST_D3D_CHECK(d3dDevice->CreateTexture2D(&colorTextureDesc, nullptr, &colorTexture));
+	XTEST_D3D_CHECK(d3dDevice->CreateRenderTargetView(colorTexture.Get(), &colorRenderViewDesc, &m_colorRenderView));
+	XTEST_D3D_CHECK(d3dDevice->CreateShaderResourceView(colorTexture.Get(), &shaderViewDesc, &m_colorShaderView));
+
 }
 
 
-void ColorMap::Init() {
+void ColorMap::Init(uint32 width, uint32 height) {
 	// already initialized
 	if (m_colorRenderView)
 	{
@@ -38,9 +46,9 @@ void ColorMap::Init() {
 
 	ID3D11Device* d3dDevice = service::Locator::GetD3DDevice();
 	// create the color buffer texture
-	D3D11_TEXTURE2D_DESC colorTextureDesc;
-	colorTextureDesc.Width = (UINT)m_width;
-	colorTextureDesc.Height = (UINT)m_height;
+	
+	colorTextureDesc.Width = (UINT)width;
+	colorTextureDesc.Height = (UINT)height;
 	colorTextureDesc.MipLevels = 1;
 	colorTextureDesc.ArraySize = 1;
 	colorTextureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -51,18 +59,15 @@ void ColorMap::Init() {
 	colorTextureDesc.CPUAccessFlags = 0;
 	colorTextureDesc.MiscFlags = 0;
 
-	Microsoft::WRL::ComPtr<ID3D11Texture2D> colorTexture;
 	XTEST_D3D_CHECK(d3dDevice->CreateTexture2D(&colorTextureDesc, nullptr, &colorTexture));
 
 	//create the view used by the shader
-	D3D11_RENDER_TARGET_VIEW_DESC colorRenderViewDesc;
 	colorRenderViewDesc.Format = colorTextureDesc.Format;
 	colorRenderViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 	colorRenderViewDesc.Texture2D.MipSlice = 0;
 
 	XTEST_D3D_CHECK(d3dDevice->CreateRenderTargetView(colorTexture.Get(), &colorRenderViewDesc, &m_colorRenderView));
 	//create the view used by the shader
-	D3D11_SHADER_RESOURCE_VIEW_DESC shaderViewDesc;
 	shaderViewDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT; // 24bit red channel (depth), 8 bit unused (stencil)
 	shaderViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 	shaderViewDesc.Texture2D.MipLevels = 1;

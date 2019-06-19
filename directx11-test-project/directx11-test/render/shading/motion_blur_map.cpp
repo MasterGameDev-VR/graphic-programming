@@ -28,10 +28,22 @@ void xtest::render::shading::MotionBlurMap::SetWidthHeight(uint32 width, uint32 
 
 	m_viewport.Width = static_cast<float>(m_width);
 	m_viewport.Height = static_cast<float>(m_height);
+	//faccio diventare i descrittori e il COM pointer della texture 2D dei membri di classe 
+	// aggiorno anche questi quando necessario
+	//aggiornamento width e height
+	textureDesc.Width = (UINT)m_width;
+	textureDesc.Height = (UINT)m_height;
+	ID3D11Device* d3dDevice = service::Locator::GetD3DDevice();
+	//creazione nuove Textur2D, RenderTargetView,ShaderResourceView serve aggiornare anche la shader resource view
+	XTEST_D3D_CHECK(d3dDevice->CreateTexture2D(&textureDesc, nullptr, &motionVector));
+	XTEST_D3D_CHECK(d3dDevice->CreateRenderTargetView(motionVector.Get(), &motionBlurViewDesc, &m_motionBlurView));
+	XTEST_D3D_CHECK(d3dDevice->CreateShaderResourceView(motionVector.Get(), &shaderViewMotionDesc, &m_motionBlurShaderView));
+
+
 }
 
 
-void MotionBlurMap::Init()
+void MotionBlurMap::Init(uint32 width, uint32 height)
 {
 	// already initialized
 	if (m_motionBlurView)
@@ -42,10 +54,10 @@ void MotionBlurMap::Init()
 	ID3D11Device* d3dDevice = service::Locator::GetD3DDevice();
 
 
-	// create the velocity buffer texture
-	D3D11_TEXTURE2D_DESC textureDesc;
-	textureDesc.Width = (UINT)m_width;
-	textureDesc.Height = (UINT)m_height;
+	// create the velocity buffer texture ----D3D11_TEXTURE2D_DESC textureDesc
+	
+	textureDesc.Width = (UINT)width;
+	textureDesc.Height = (UINT)height;
 	textureDesc.MipLevels = 1;
 	textureDesc.ArraySize = 1;
 	textureDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
@@ -56,24 +68,17 @@ void MotionBlurMap::Init()
 	textureDesc.CPUAccessFlags = 0;
 	textureDesc.MiscFlags = 0;
 
-	Microsoft::WRL::ComPtr<ID3D11Texture2D> motionVector;
+	//il COM pointer della texture 2D ComPtr<ID3D11Texture2D> motionVector
 	XTEST_D3D_CHECK(d3dDevice->CreateTexture2D(&textureDesc, nullptr, &motionVector));
 
 	//create the view used by the shader
-	D3D11_RENDER_TARGET_VIEW_DESC motionBlurViewDesc;
 	motionBlurViewDesc.Format = textureDesc.Format;
 	motionBlurViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 	motionBlurViewDesc.Texture2D.MipSlice = 0;
 
 	XTEST_D3D_CHECK(d3dDevice->CreateRenderTargetView(motionVector.Get(), &motionBlurViewDesc, &m_motionBlurView));
 
-
-	
-
-	
-
 	//create the view used by the shader
-	D3D11_SHADER_RESOURCE_VIEW_DESC shaderViewMotionDesc;
 	shaderViewMotionDesc.Format = DXGI_FORMAT_R32G32_FLOAT; // 24bit red channel (depth), 8 bit unused (stencil)
 	shaderViewMotionDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 	shaderViewMotionDesc.Texture2D.MipLevels = 1;
