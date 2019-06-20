@@ -9,6 +9,9 @@
 #include <render/shading/render_pass.h>
 #include <render/shading/shadow_map.h>
 #include <render/shading/motion_blur_map.h>
+#include <render/shading/color_map.h>
+#include "demo/motion_blur_demo/Quad.h"
+
 
 /*
 Il motion blur è una tecnica di post - processing che si realizza su oggetti in movimento e permette a questi ultimi
@@ -78,13 +81,18 @@ namespace xtest {
 				DirectX::XMFLOAT4X4 WVP_lightSpace;
 			};
 
+			struct PerObjectCombineData {
+				DirectX::XMFLOAT4X4 WVP;
+			};
+
 			static const int k_pointLightCount = 4;
 			static const int k_dirLightCount = 2;
+			
 			struct PerFrameData
 			{
 				DirectionalLight dirLights[k_dirLightCount];
 				DirectX::XMFLOAT3 eyePosW;
-				float _explicit_pad_;
+				float blurMultiplier;
 			};
 
 			struct RarelyChangedData
@@ -120,9 +128,12 @@ namespace xtest {
 			void InitRenderTechnique();
 			void InitRenderables();
 			void InitLights();
+
+			void CreateNewGPFMeshes();
+
 			PerObjectData ToPerObjectData(const render::Renderable& renderable, const std::string& meshName);
 			PerObjectShadowMapData ToPerObjectShadowMapData(const render::Renderable& renderable, const std::string& meshName);
-
+			PerObjectCombineData ToPerObjectCombineData(const render::Renderable& renderable, const std::string& meshName);
 
 			DirectionalLight m_dirKeyLight;
 			DirectionalLight m_dirFillLight;
@@ -131,11 +142,20 @@ namespace xtest {
 
 			camera::SphericalCamera m_camera;
 			std::vector<render::Renderable> m_objects;
+			std::vector<DirectX::XMFLOAT4X4> previous_Transforms;
 			render::shading::RenderPass m_shadowPass;
 			render::shading::RenderPass m_renderPass;
 			render::shading::RenderPass m_motionBlurPass;
+			render::shading::RenderPass m_combinePass;
 			render::shading::ShadowMap m_shadowMap;
 			render::shading::MotionBlurMap m_motionBlurMap;
+
+			render::shading::ColorMap m_colorRenderMap;
+			Quad m_quad;
+			Microsoft::WRL::ComPtr<ID3D11Buffer> m_quadVertexBuffer;
+			uint32 targetFPS;
+			XMMATRIX backupWCrate;
+
 			scene::BoundingSphere m_sceneBoundingSphere;
 		};
 

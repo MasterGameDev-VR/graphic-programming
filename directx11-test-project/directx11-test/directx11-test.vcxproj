@@ -107,6 +107,8 @@
     <ClInclude Include="application\windows_app.h" />
     <ClInclude Include="camera\camera.h" />
     <ClInclude Include="camera\spherical_camera.h" />
+    <ClInclude Include="demo\motion_blur_demo\Quad.h" />
+    <ClInclude Include="render\shading\color_map.h" />
     <ClInclude Include="common\assert.h" />
     <ClInclude Include="common\common_macros.h" />
     <ClInclude Include="common\int_types.h" />
@@ -136,6 +138,7 @@
     <ClInclude Include="mesh\mesh_generator.h" />
     <ClInclude Include="render\directx_backend.h" />
     <ClInclude Include="render\renderable.h" />
+    <ClInclude Include="render\renderable_in_motion.h" />
     <ClInclude Include="render\render_macros.h" />
     <ClInclude Include="render\render_resource.h" />
     <ClInclude Include="render\shading\cbuffer.h" />
@@ -168,6 +171,7 @@
     <ClCompile Include="application\windows_app.cpp" />
     <ClCompile Include="camera\camera.cpp" />
     <ClCompile Include="camera\spherical_camera.cpp" />
+    <ClCompile Include="render\shading\color_map.cpp" />
     <ClCompile Include="common\assert.cpp" />
     <ClCompile Include="common\utils.cpp" />
     <ClCompile Include="demo\box_demo\box_demo_app.cpp" />
@@ -194,6 +198,7 @@
     <ClCompile Include="mesh\mesh_generator.cpp" />
     <ClCompile Include="render\directx_backend.cpp" />
     <ClCompile Include="render\renderable.cpp" />
+    <ClCompile Include="render\renderable_in_motion.cpp" />
     <ClCompile Include="render\shading\motion_blur_map.cpp" />
     <ClCompile Include="render\shading\pixel_shader.cpp" />
     <ClCompile Include="render\shading\render_pass.cpp" />
@@ -220,6 +225,18 @@
     <Image Include="application\resources\small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="demo\motion_blur_demo\combine_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="demo\motion_blur_demo\combine_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+    </FxCompile>
     <FxCompile Include="demo\box_demo\box_demo_PS.hlsl">
       <FileType>Document</FileType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
@@ -237,12 +254,19 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>
-    <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_motionblurmap_VS.hlsl" />
+    <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_motionblurmap_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_motionblurmap_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
     <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_PS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>
     <FxCompile Include="demo\motion_blur_demo\shadow_VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>

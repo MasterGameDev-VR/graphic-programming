@@ -27,7 +27,7 @@ namespace file {
 
 		const BinaryFile* LoadBinaryFile(const std::wstring& filePath);
 		const mesh::GPFMesh* LoadGPFMesh(const std::wstring& filePath);
-		LoadedTexture LoadTexture(const std::wstring& filePath);
+		LoadedTexture LoadTexture(const std::wstring& filePath, bool SRGB = false);
 
 
 	private:

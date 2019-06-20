@@ -32,6 +32,7 @@ namespace shading {
 		color = 0,
 		normal = 1,
 		glossiness = 2,
+		motionblur=3,
 		shadow_map = 10,
 		uknown
 	};
