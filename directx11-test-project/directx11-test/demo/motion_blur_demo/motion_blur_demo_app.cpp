@@ -99,7 +99,6 @@ void MotionBlurDemoApp::InitRenderTechnique()
 
 	file::ResourceLoader* loader = service::Locator::GetResourceLoader();
 
-
 	// shadow pass
 	{
 		m_shadowMap.SetTargetBoundingSphere(m_sceneBoundingSphere);
@@ -117,34 +116,9 @@ void MotionBlurDemoApp::InitRenderTechnique()
 		m_shadowPass.Init();
 	}
 
-	// motion blur map pass
-	{
-		m_rarelyChangedData.useMotionBlurMap = true;
-
-	// inizializzo la motion blur map
-		m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
-		m_motionBlurMap.Init(GetCurrentWidth(), GetCurrentHeight());
-		//m_motionBlurMap.SetWidthHeight(GetCurrentWidth(), GetCurrentHeight());
-
-
-		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\motion_blur_demo_motionblurmap_VS.cso")));
-		vertexShader->SetVertexInput(std::make_shared<PosOnlyVertexInput>());
-		vertexShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<MotionBlurMap::PerObjectMotionBlurMapData>>());
-
-		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\motion_blur_demo_motionblurmap_PS.cso")));
-
-		m_motionBlurPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_motionBlurMap.Viewport(), std::make_shared<SolidCullBackRS>(), m_motionBlurMap.AsMotionBlurView(), m_depthBufferView.Get()));
-		m_motionBlurPass.SetVertexShader(vertexShader);
-		m_motionBlurPass.SetPixelShader(pixelShader);
-		m_motionBlurPass.Init();
-	}
-
-
 	// render pass
 	{
 		m_colorRenderMap.Init(GetCurrentWidth(), GetCurrentHeight());
-		//m_colorRenderMap.SetWidthHeight(GetCurrentWidth(), GetCurrentHeight());
-
 
 		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\motion_blur_demo_VS.cso")));
 		vertexShader->SetVertexInput(std::make_shared<MeshDataVertexInput>());
@@ -161,6 +135,28 @@ void MotionBlurDemoApp::InitRenderTechnique()
 		m_renderPass.SetVertexShader(vertexShader);
 		m_renderPass.SetPixelShader(pixelShader);
 		m_renderPass.Init();
+	}
+
+	// motion blur map pass
+	{
+		m_rarelyChangedData.useMotionBlurMap = true;
+
+		// inizializzo la motion blur map
+		m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
+		m_motionBlurMap.Init(GetCurrentWidth(), GetCurrentHeight());
+		//m_motionBlurMap.SetWidthHeight(GetCurrentWidth(), GetCurrentHeight());
+
+
+		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\motion_blur_demo_motionblurmap_VS.cso")));
+		vertexShader->SetVertexInput(std::make_shared<PosOnlyVertexInput>());
+		vertexShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<MotionBlurMap::PerObjectMotionBlurMapData>>());
+
+		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\motion_blur_demo_motionblurmap_PS.cso")));
+
+		m_motionBlurPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_motionBlurMap.Viewport(), std::make_shared<SolidCullBackRS>(), m_motionBlurMap.AsMotionBlurView(), m_depthBufferView.Get()));
+		m_motionBlurPass.SetVertexShader(vertexShader);
+		m_motionBlurPass.SetPixelShader(pixelShader);
+		m_motionBlurPass.Init();
 	}
 
 	// combine motion blur pass
@@ -205,21 +201,11 @@ void MotionBlurDemoApp::OnResized()
 	//si crea una nuova RenderTargetView ( il puntatore è m_backBufferView )
 	//si chiama CreateDepthStencilBuffer()
 	//si chiama il metodo SetViewport(__args_)
-
-	//.... nel caso semplice bisogna aggiornare solo il render pass.... qui ci sono altri pass
-	
-	//m_shadowPass: riga 107 non serve far niente, perchè ha una sua viewport un suo depthstencilbuffer, e nessun render target view
-
-	//m_motionBlurPass: riga 127 ha una viewport e una render target view proprie, e usa lo stesso depth buffer "comune"(quello del render pass)
-	//il metodo 'SetWidthHeight va a modificare width e height della motion blur map:
-	//queste vengono usate per aggiornare la viewport
-	//nella classe MotionBlurMap questo metodo va riscritto in modo tale da fare l'update anche di render target view e shader resource view
 	m_motionBlurMap.SetWidthHeight(GetCurrentWidth(), GetCurrentHeight());
 
 	m_motionBlurPass.GetState()->ChangeRenderTargetView(m_motionBlurMap.AsMotionBlurView());
 	m_motionBlurPass.GetState()->ChangeViewPort(m_motionBlurMap.Viewport());
 	m_motionBlurPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
-
 
 	//update the render pass state with the resized render target and depth buffer
 	//queste righe vanno modificate perchè il render pass non usa più m_backBufferView, m_depthBufferView, m_viewPort
@@ -233,11 +219,9 @@ void MotionBlurDemoApp::OnResized()
 	m_combinePass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
 	m_combinePass.GetState()->ChangeViewPort(m_viewport);
 
-
 	//update the projection matrix with the new aspect ratio
 	m_camera.SetPerspectiveProjection(math::ToRadians(45.f), AspectRatio(), 1.f, 1000.f);
 	m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
-
 }
 
 
@@ -326,12 +310,11 @@ void MotionBlurDemoApp::UpdateScene(float deltaSeconds)
 		data.dirLights[0] = m_dirKeyLight;
 		data.dirLights[1] = m_dirFillLight;
 		data.eyePosW = m_camera.GetPosition();
-		data.blurMultiplier = (1.0f / deltaSeconds) / targetFPS;
+		data.blurMultiplier = (1.0f / deltaSeconds) / (float) targetFPS;
 
 		m_renderPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(data);
 		m_combinePass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(data);
 	}
-
 
 	// RarelyChangedCB
 	if (m_isRarelyChangedDataDirty)
@@ -340,7 +323,6 @@ void MotionBlurDemoApp::UpdateScene(float deltaSeconds)
 		m_combinePass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::rarely_changed)->UpdateBuffer(m_rarelyChangedData);
 		m_isRarelyChangedDataDirty = false;
 	}
-	
 }
 
 
@@ -359,7 +341,6 @@ void MotionBlurDemoApp::RenderScene()
 		}
 	}
 	m_d3dAnnotation->EndEvent();
-
 
 	m_d3dAnnotation->BeginEvent(L"render-scene");
 	m_renderPass.Bind();
@@ -383,8 +364,6 @@ void MotionBlurDemoApp::RenderScene()
 	}
 	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, nullptr); // explicit unbind the shadow map to suppress warning
 	m_d3dAnnotation->EndEvent();
-
-
 
 	m_d3dAnnotation->BeginEvent(L"motion-blur-map");
 	m_motionBlurPass.Bind();

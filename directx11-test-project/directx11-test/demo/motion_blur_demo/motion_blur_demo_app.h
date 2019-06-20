@@ -153,7 +153,7 @@ namespace xtest {
 			render::shading::ColorMap m_colorRenderMap;
 			Quad m_quad;
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_quadVertexBuffer;
-			float targetFPS;
+			uint32 targetFPS;
 			XMMATRIX backupWCrate;
 
 			scene::BoundingSphere m_sceneBoundingSphere;
