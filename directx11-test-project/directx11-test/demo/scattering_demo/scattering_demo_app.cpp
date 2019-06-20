@@ -25,7 +25,7 @@ LightScatteringDemoApp::LightScatteringDemoApp(HINSTANCE instance,
 	, m_dirFillLight()
 	, m_rarelyChangedData()
 	, m_isRarelyChangedDataDirty(true)
-	, m_camera(math::ToRadians(80.f), math::ToRadians(170.f), 15.f, { 5.f, 4.f, -5.f }, { 0.f, 1.f, 0.f }, { math::ToRadians(4.f), math::ToRadians(175.f) }, { 3.f, 50.f })
+	, m_camera(math::ToRadians(90.f), math::ToRadians(160.f), 15.f, { 5.4f, 4.5f, -4.8f }, { 0.f, 1.f, 0.f }, { math::ToRadians(4.f), math::ToRadians(175.f) }, { 3.f, 50.f })
 	, m_objects()
 	, m_shadowPass()
 	, m_scatteringPass()
@@ -33,6 +33,8 @@ LightScatteringDemoApp::LightScatteringDemoApp(HINSTANCE instance,
 	, m_shadowMap(2048)
 	, m_lightOcclusionMap(2048)
 	, m_sceneBoundingSphere({ 0.f, 0.f, 0.f }, 21.f)
+	, m_worldTime(0.f)
+	, m_stopCube(false)
 {}
 
 
@@ -51,7 +53,7 @@ void LightScatteringDemoApp::Init()
 	InitRenderables();
 
 	service::Locator::GetMouse()->AddListener(this);
-	service::Locator::GetKeyboard()->AddListener(this, { input::Key::F, input::Key::F1 });
+	service::Locator::GetKeyboard()->AddListener(this, { input::Key::F, input::Key::F1, input::Key::space_bar });
 }
 
 
@@ -60,7 +62,7 @@ void LightScatteringDemoApp::InitLights()
 	m_dirKeyLight.ambient = { 0.16f, 0.18f, 0.18f, 1.f };
 	m_dirKeyLight.diffuse = { 0.8f ,  0.8f,  0.7f, 1.f };
 	m_dirKeyLight.specular = { 0.8f ,  0.8f,  0.7f, 1.f };
-	XMStoreFloat3(&m_dirKeyLight.dirW, XMVector3Normalize(-XMVectorSet(0.917053342f, 0.390566736f, 0.0802310705f, 0.f)));
+	XMStoreFloat3(&m_dirKeyLight.dirW, XMVector3Normalize(-XMVectorSet(0.f, 0.4f, 0.9f, 0.f)));
 
 
 	m_dirFillLight.ambient = { 0.01f * 0.16f , 0.01f * 0.18f, 0.005f * 0.18f, 1.f };
@@ -156,6 +158,20 @@ void LightScatteringDemoApp::InitRenderables()
 	soldier2.SetTransform(XMMatrixRotationY(math::ToRadians(135.f)) * XMMatrixTranslation(10.f, 0.35f, -10.f));
 	soldier2.Init();
 	m_objects.push_back(std::move(soldier2));
+
+	//Cube
+	mesh::MeshMaterial mat;
+	mat.ambient = { 0.15f, 0.15f, 0.15f, 1.f };
+	mat.diffuse = { 0.52f, 0.52f, 0.52f, 1.f };
+	mat.specular = { 0.5f, 0.5f, 0.5f, 1.f };
+	mat.diffuseMap = GetRootDir().append(std::wstring(LR"(\3d-objects\ground\ground_)").append(L"color.png"));
+	mat.normalMap = GetRootDir().append(std::wstring(LR"(\3d-objects\ground\ground_)").append(L"norm.png"));
+	mat.glossMap = GetRootDir().append(std::wstring(LR"(\3d-objects\ground\ground_)").append(L"gloss.png"));
+	render::Renderable cube(mesh::GenerateBox(2.f, 2.f, 2.f), mat);
+	cube.SetTransform(XMMatrixTranslation(5.f, 7.f, 5.f));
+	cube.SetTexcoordTransform(XMMatrixScaling(0.5f, 0.5f, 0.5f));
+	cube.Init();
+	m_objects.push_back(cube);
 }
 
 
@@ -226,12 +242,18 @@ void LightScatteringDemoApp::OnKeyStatusChange(input::Key key, const input::KeyS
 {
 	if (key == input::Key::F && status.isDown)
 	{
-		m_camera.SetPivot({ 5.f, 4.f, -5.f });
+		m_camera.SetRotation(math::ToRadians(90.f), math::ToRadians(160.f));
+		m_camera.SetRadius(15.f);
+		m_camera.SetPivot({ 5.4f, 4.5f, -4.8f });
 	}
 	else if (key == input::Key::F1 && status.isDown)
 	{
 		m_rarelyChangedData.useLightScattering = !m_rarelyChangedData.useLightScattering;
 		m_isRarelyChangedDataDirty = true;
+	}
+	else if (key == input::Key::space_bar && status.isDown)
+	{
+		m_stopCube = !m_stopCube;
 	}
 }
 
@@ -239,6 +261,14 @@ void LightScatteringDemoApp::OnKeyStatusChange(input::Key key, const input::KeyS
 void LightScatteringDemoApp::UpdateScene(float deltaSeconds)
 {
 	XTEST_UNUSED_VAR(deltaSeconds);
+
+	//Cube movement
+	if(!m_stopCube)
+	{
+		m_worldTime += deltaSeconds;
+		XMMATRIX newCubeTransform = XMMatrixTranslation(5.f, (sin(m_worldTime*5.f)*2.f + 7.f), 5.f);
+		m_objects[3].SetTransform(newCubeTransform);
+	}
 
 	// PerFrameCB
 	{
@@ -327,7 +357,7 @@ void LightScatteringDemoApp::RenderScene()
 	m_d3dAnnotation->BeginEvent(L"render-scene");
 	m_renderPass.Bind();
 	m_renderPass.GetState()->ClearDepthOnly();
-	m_renderPass.GetState()->ClearRenderTarget(DirectX::Colors::DarkGray);
+	m_renderPass.GetState()->ClearRenderTarget(DirectX::Colors::LightCyan);
 	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, m_shadowMap.AsShaderView());
 	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::light_occlusion_map, m_lightOcclusionMap.AsShaderView());
 

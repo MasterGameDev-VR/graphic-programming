@@ -19,6 +19,7 @@ namespace xtest {
 
 		/*
 			Use F1 switch on/off the volumetric light scattering
+			Use SpaceBar to stop the cube
 			Use ALT+Enter to switch full screen on/off
 			Use F key to reframe the camera to the origin
 			Use the middle mouse button/wheel button and drag to rotate the light direction
@@ -129,6 +130,9 @@ namespace xtest {
 			render::shading::ShadowMap m_shadowMap;
 			render::shading::LightOcclusionMap m_lightOcclusionMap;
 			scene::BoundingSphere m_sceneBoundingSphere;
+
+			float m_worldTime;
+			bool m_stopCube;
 		};
 
 	} // demo
