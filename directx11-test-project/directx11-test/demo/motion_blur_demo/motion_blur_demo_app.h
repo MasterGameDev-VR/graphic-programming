@@ -155,6 +155,7 @@ namespace xtest {
 			Microsoft::WRL::ComPtr<ID3D11Buffer> m_quadVertexBuffer;
 			uint32 targetFPS;
 			XMMATRIX backupWCrate;
+			float totalTime;
 
 			scene::BoundingSphere m_sceneBoundingSphere;
 		};

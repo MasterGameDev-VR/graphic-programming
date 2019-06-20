@@ -32,6 +32,7 @@ MotionBlurDemoApp::MotionBlurDemoApp(HINSTANCE instance,
 	, m_colorRenderMap()
 	, m_sceneBoundingSphere({ 0.f, 0.f, 0.f }, 21.f)
 	, targetFPS(fps)
+	, totalTime(0.0f)
 {}
 
 MotionBlurDemoApp::~MotionBlurDemoApp()
@@ -46,7 +47,6 @@ void MotionBlurDemoApp::Init()
 	
 	InitLights();
 	InitRenderTechnique();
-	//CreateNewGPFMeshes();
 	InitRenderables();
 	
 	service::Locator::GetMouse()->AddListener(this);
@@ -79,17 +79,6 @@ void MotionBlurDemoApp::InitRenderables()
 	previous_Transforms.push_back(crate.GetTransform());
 	backupWCrate = XMLoadFloat4x4(&crate.GetTransform());
 	m_objects.push_back(std::move(crate));
-
-	/*render::Renderable Aircraft{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\E-45-Aircraft\E 45 Aircraft.gpf)"))) };
-	Aircraft.SetTransform(XMMatrixRotationY(math::ToRadians(45.f)) * XMMatrixTranslation(15.f, 10.f, -15.f));
-	Aircraft.Init();
-	previous_Transforms.push_back(Aircraft.GetTransform());
-	m_objects.push_back(std::move(Aircraft));*/
-}
-
-
-void MotionBlurDemoApp::CreateNewGPFMeshes() {
-	file::WriteGPFOnDiskFromObj(GetRootDir().append(LR"(\3d-objects\E-45-Aircraft\E 45 Aircraft_obj.obj)"), GetRootDir().append(LR"(\3d-objects\E-45-Aircraft\E 45 Aircraft.gpf)"), true);
 
 }
 
@@ -144,8 +133,6 @@ void MotionBlurDemoApp::InitRenderTechnique()
 		// inizializzo la motion blur map
 		m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
 		m_motionBlurMap.Init(GetCurrentWidth(), GetCurrentHeight());
-		//m_motionBlurMap.SetWidthHeight(GetCurrentWidth(), GetCurrentHeight());
-
 
 		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\motion_blur_demo_motionblurmap_VS.cso")));
 		vertexShader->SetVertexInput(std::make_shared<PosOnlyVertexInput>());
@@ -174,8 +161,8 @@ void MotionBlurDemoApp::InitRenderTechnique()
 		m_combinePass.SetPixelShader(pixelShader);
 		m_combinePass.Init();
 	}
-	
 }
+
 void MotionBlurDemoApp::InitLights()
 {
 	m_dirKeyLight.ambient = { 0.16f, 0.18f, 0.18f, 1.f };
@@ -235,6 +222,7 @@ void MotionBlurDemoApp::OnWheelScroll(input::ScrollStatus scroll)
 
 	}
 }
+
 void MotionBlurDemoApp::OnMouseMove(const DirectX::XMINT2& movement, const DirectX::XMINT2& currentPos)
 {
 	XTEST_UNUSED_VAR(currentPos);
@@ -264,6 +252,7 @@ void MotionBlurDemoApp::OnMouseMove(const DirectX::XMINT2& movement, const Direc
 		m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
 	}
 }
+
 void MotionBlurDemoApp::OnKeyStatusChange(input::Key key, const input::KeyStatus& status)
 {
 	if (key == input::Key::F && status.isDown)
@@ -279,7 +268,6 @@ void MotionBlurDemoApp::OnKeyStatusChange(input::Key key, const input::KeyStatus
 	}
 }
 
-float totalTime = 0.0f;
 
 void MotionBlurDemoApp::UpdateScene(float deltaSeconds)
 {
