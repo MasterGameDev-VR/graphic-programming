@@ -680,7 +680,7 @@ void SSAODemoApp::RenderScene()
 	m_renderPass.GetState()->ClearDepthOnly();
 	m_renderPass.GetState()->ClearRenderTarget(DirectX::Colors::DarkGray);
 	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, m_shadowMap.AsShaderView());
-	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::ssao_map, m_BlurHMap.AsShaderView());
+	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::ssao_map, m_BlurMap.AsShaderView());
 
 	// draw objects
 	for (render::Renderable& renderable : m_objects)
