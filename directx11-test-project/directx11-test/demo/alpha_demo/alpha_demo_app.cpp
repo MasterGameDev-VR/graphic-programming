@@ -9,7 +9,6 @@
 #include <external_libs/directxtk/WICTextureLoader.h>
 #include <alpha/alpha_vertex_input_types.h>
 #include <alpha/alpha_sampler_types.h>
-#include <external_libs/directxtk/WICTextureLoader.h>
 
 
 using namespace DirectX;
@@ -94,6 +93,20 @@ void AlphaDemoApp::InitRenderables()
 	m_objects.push_back(std::move(crate));
 
 
+	/*render::Renderable ground{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\rocks_dorama\rocks_composition.gpf)"))) };
+	ground.SetTransform(XMMatrixScaling(1.5f, 1.5f, 1.5f) * XMMatrixTranslation(3.f, 0.f, 2.5f));
+	ground.Init();
+	m_objects.push_back(ground);
+
+	render::Renderable soldier1{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\gdc_female\gdc_female_posed_2.gpf)"))) };
+	soldier1.SetTransform(XMMatrixRotationY(math::ToRadians(-12.f)) * XMMatrixTranslation(0.f, 0.4f, 0.f));
+	soldier1.Init();
+	m_objects.push_back(std::move(soldier1));
+
+	render::Renderable soldier2{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\gdc_female\gdc_female_posed.gpf)"))) };
+	soldier2.SetTransform(XMMatrixRotationY(math::ToRadians(135.f)) * XMMatrixTranslation(10.f, 0.35f, -10.f));
+	soldier2.Init();
+	m_objects.push_back(std::move(soldier2));*/
 
 
 	//SPHERE
@@ -110,6 +123,7 @@ void AlphaDemoApp::InitRenderables()
 		sphere.SetTransform(XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixTranslation(3.75f, 7.5f, -3.f));
 		sphere.SetTexcoordTransform(XMMatrixIdentity());
 		sphere.Init();
+		previous_Transforms.push_back(sphere.GetTransform());
 		m_objects.push_back(sphere);
 	}
 
@@ -178,6 +192,10 @@ void AlphaDemoApp::InitRenderTechnique()
 		m_renderPass.SetVertexShader(vertexShader);
 		m_renderPass.SetPixelShader(pixelShader);
 		m_renderPass.Init();
+	}
+
+	{
+		m_colorRenderMap.Init(GetCurrentWidth(), GetCurrentHeight());
 	}
 
 	// glow pass
@@ -364,7 +382,7 @@ void AlphaDemoApp::InitGlowMap()
 	{
 		std::pair<render::Renderable*, std::string> glowObjectKey;
 		alpha::GlowObject glowObject;
-		glowObjectKey.first = &m_objects[3];
+		glowObjectKey.first = &m_objects[4];
 		glowObjectKey.second = "";
 		glowObject.glowTexture = sphereGlowTexture;
 		glowObject.glowTextureView = sphereGlowTextureView;
@@ -749,7 +767,7 @@ void AlphaDemoApp::RenderScene()
 	}
 	m_d3dAnnotation->EndEvent();
 
-	m_d3dAnnotation->BeginEvent(L"combine");
+	/*m_d3dAnnotation->BeginEvent(L"combine");
 	m_combinePass.Bind();
 	m_combinePass.GetState()->ClearRenderTarget(DirectX::Colors::White);
 	m_combinePass.GetState()->ClearDepthOnly();
@@ -774,7 +792,7 @@ void AlphaDemoApp::RenderScene()
 	m_d3dContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	m_d3dContext->Draw(6, 0);
 
-	m_d3dAnnotation->EndEvent();
+	m_d3dAnnotation->EndEvent();*/
 
 	XTEST_D3D_CHECK(m_swapChain->Present(0, 0));
 }

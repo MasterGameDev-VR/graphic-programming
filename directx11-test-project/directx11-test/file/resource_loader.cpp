@@ -23,7 +23,7 @@ const BinaryFile* ResourceLoader::LoadBinaryFile(const std::wstring& filePath)
 	{
 		// open the file at the end
 		std::ifstream fileStream(filePath, std::ios::binary | std::ios::in | std::ios::ate);
-		XTEST_ASSERT(fileStream.is_open(), L"unable to open the file:'%s'", filePath.c_str());
+		XTEST_ASSERT(fileStream.is_open(), L"file:'%s'", filePath.c_str());
 
 		std::streampos byteSize = fileStream.tellg(); // extract the byte size
 		std::unique_ptr<char[]> byteArray(new char[byteSize]);
