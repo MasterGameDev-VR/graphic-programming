@@ -1,4 +1,5 @@
 #pragma once
+#pragma once
 
 
 #include <application/directx_app.h>
@@ -14,9 +15,6 @@
 #include <alpha/texture_render_buffer.h>
 #include <alpha/texture_renderable.h>
 #include <alpha/alpha_types.h>
-#include <render/shading/motion_blur_map.h>
-#include <render/shading/color_map.h>
-#include "demo/motion_blur_demo/Quad.h"
 
 namespace xtest {
 	namespace demo {
@@ -80,18 +78,13 @@ namespace xtest {
 				DirectX::XMFLOAT4X4 WVP_lightSpace;
 			};
 
-			struct PerObjectCombineData {
-				DirectX::XMFLOAT4X4 WVP;
-			};
-
-
 			static const int k_pointLightCount = 4;
 			static const int k_dirLightCount = 2;
 			struct PerFrameData
 			{
 				DirectionalLight dirLights[k_dirLightCount];
 				DirectX::XMFLOAT3 eyePosW;
-				float blurMultiplier;
+				float _explicit_pad_;
 			};
 
 			struct RarelyChangedData
@@ -128,14 +121,12 @@ namespace xtest {
 			void InitRenderables();
 			void InitLights();
 			void InitRenderToTexture();
-			void CreateNewGPFMeshes();
 			void InitGlowMap();
 			void CreateDownDepthStencilBuffer();
 			PerObjectData ToPerObjectData(const render::Renderable& renderable, const std::string& meshName);
 			PerObjectGlowData ToPerObjectGlowData(const render::Renderable& renderable, const std::string& meshName);
-			
 			PerObjectShadowMapData ToPerObjectShadowMapData(const render::Renderable& renderable, const std::string& meshName);
-			PerObjectCombineData ToPerObjectCombineData(const render::Renderable& renderable, const std::string& meshName);
+
 
 			DirectionalLight m_dirKeyLight;
 			DirectionalLight m_dirFillLight;
@@ -146,10 +137,7 @@ namespace xtest {
 
 			camera::SphericalCamera m_camera;
 			std::vector<render::Renderable> m_objects;
-			std::vector<DirectX::XMFLOAT4X4> previous_Transforms;
-
 			std::map<GlowObjectKey, alpha::GlowObject> m_glowObjectsMap;
-			
 			alpha::TextureRenderable m_textureRenderable;
 			Microsoft::WRL::ComPtr<ID3D11Texture2D> m_depthBufferDownsample;
 			Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_depthStencilViewDownsample;
@@ -161,8 +149,6 @@ namespace xtest {
 			render::shading::RenderPass m_horizontalBlurPass;
 			render::shading::RenderPass m_verticalBlurPass;
 			render::shading::RenderPass m_PostPass;
-			render::shading::RenderPass m_motionBlurPass;
-			render::shading::RenderPass m_combinePass;
 			render::shading::ShadowMap m_shadowMap;
 			alpha::TextureRenderBuffer m_sceneTexture;
 			alpha::TextureRenderBuffer m_downsampledGlowTexture; 
@@ -170,14 +156,6 @@ namespace xtest {
 			alpha::TextureRenderBuffer m_glowmap;
 			alpha::TextureRenderBuffer m_horizontalBlurTexture;
 			alpha::TextureRenderBuffer m_verticalBlurTexture;
-			render::shading::MotionBlurMap m_motionBlurMap;
-
-			render::shading::ColorMap m_colorRenderMap;
-			Quad m_quad;
-			Microsoft::WRL::ComPtr<ID3D11Buffer> m_quadVertexBuffer;
-			uint32 targetFPS;
-			XMMATRIX backupWCrate;
-			float totalTime;
 			scene::BoundingSphere m_sceneBoundingSphere;
 		};
 
