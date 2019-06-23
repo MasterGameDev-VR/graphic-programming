@@ -79,6 +79,9 @@
     <Filter Include="alpha">
       <UniqueIdentifier>{7a3f100a-ea0a-4e80-a1d6-87ec6bbd2027}</UniqueIdentifier>
     </Filter>
+    <Filter Include="demo\motion_blur_demo">
+      <UniqueIdentifier>{8a851bd4-3bed-4bb3-9e99-66e555d9116d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\resources\Resource.h">
@@ -269,6 +272,19 @@
     <ClInclude Include="alpha\alpha_sampler_types.h">
       <Filter>alpha</Filter>
     </ClInclude>
+    <ClInclude Include="demo\motion_blur_demo\motion_blur_demo_app.h">
+      <Filter>demo\motion_blur_demo</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\motion_blur_map.h">
+      <Filter>render\shading</Filter>
+    </ClInclude>
+    <ClInclude Include="render\renderable_in_motion.h">
+      <Filter>render</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\color_map.h" />
+    <ClInclude Include="demo\motion_blur_demo\Quad.h">
+      <Filter>demo\motion_blur_demo</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -387,6 +403,16 @@
     <ClCompile Include="alpha\texture_render_buffer.cpp">
       <Filter>alpha</Filter>
     </ClCompile>
+    <ClCompile Include="demo\motion_blur_demo\motion_blur_demo_app.cpp">
+      <Filter>demo\motion_blur_demo</Filter>
+    </ClCompile>
+    <ClCompile Include="render\shading\motion_blur_map.cpp">
+      <Filter>render\shading</Filter>
+    </ClCompile>
+    <ClCompile Include="render\renderable_in_motion.cpp">
+      <Filter>render</Filter>
+    </ClCompile>
+    <ClCompile Include="render\shading\color_map.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="application\resources\small.ico">
@@ -458,6 +484,27 @@
     </FxCompile>
     <FxCompile Include="demo\alpha_demo\alpha_demo_vertical_blur_PS.hlsl">
       <Filter>demo\alpha_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_motionblurmap_VS.hlsl">
+      <Filter>demo\motion_blur_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_PS.hlsl">
+      <Filter>demo\motion_blur_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_VS.hlsl">
+      <Filter>demo\motion_blur_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\motion_blur_demo\shadow_VS.hlsl">
+      <Filter>demo\motion_blur_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_motionblurmap_PS.hlsl">
+      <Filter>demo\motion_blur_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\motion_blur_demo\combine_PS.hlsl">
+      <Filter>demo\motion_blur_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\motion_blur_demo\combine_VS.hlsl">
+      <Filter>demo\motion_blur_demo</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
