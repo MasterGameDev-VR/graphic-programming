@@ -7,6 +7,8 @@ struct VertexOut
 	float2 uv : TEXCOORD;
 };
 
+SamplerState motionSampler : register(s0);
+
 SamplerState TextureSampler
 {
 	Filter = MIN_MAG_MIP_LINEAR;
@@ -65,7 +67,7 @@ float4 main(VertexOut pin) : SV_TARGET
 		float2 texelSize = float2(1.0f, 1.0f) / float2(w, h);
 		float2 screenTexCoords = pin.posH.xy * texelSize;
 
-		float2 vel = motionBlurTexture.Sample(TextureSampler, pin.uv).rg;
+		float2 vel = motionBlurTexture.Sample(motionSampler, pin.uv).rg;
 		vel *= blurMultiplier;
 
 		float speed = length(vel / texelSize);
