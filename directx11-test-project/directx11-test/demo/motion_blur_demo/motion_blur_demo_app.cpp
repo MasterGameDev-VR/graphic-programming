@@ -68,7 +68,7 @@ void MotionBlurDemoApp::InitRenderables()
 	m_objects.push_back(std::move(soldier1));
 
 	render::Renderable soldier2{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\gdc_female\gdc_female_posed.gpf)"))) };
-	soldier2.SetTransform(XMMatrixRotationY(math::ToRadians(135.f)) * XMMatrixTranslation(10.f, 0.35f, -10.f));
+	soldier2.SetTransform(XMMatrixRotationY(math::ToRadians(135.f)) * XMMatrixTranslation(10.f, 0.35f, -16.f));
 	soldier2.Init();
 	previous_Transforms.push_back(soldier2.GetTransform());
 	m_objects.push_back(std::move(soldier2));
@@ -285,20 +285,23 @@ void MotionBlurDemoApp::UpdateScene(float deltaSeconds)
 {
 	XTEST_UNUSED_VAR(deltaSeconds);
 
+	totalTime += deltaSeconds;
 	//Update previous transform
 	for (int k = 0; k < m_objects.size(); k++) {
 		previous_Transforms[k] = m_objects[k].GetTransform();
 	}
 
-	XMMATRIX R = XMMatrixRotationY(math::ToRadians(120.f) * deltaSeconds);
-	XMMATRIX W = XMLoadFloat4x4(&m_objects[1].GetTransform());
-	W *= R;
-	m_objects[1].SetTransform(W);
-	W = XMLoadFloat4x4(&m_objects[2].GetTransform());
-	W *= R;
+	//XMMATRIX R = XMMatrixRotationY(math::ToRadians(120.f) * deltaSeconds);
+	//W *= R;
+	//m_objects[1].SetTransform(W);
+	XMMATRIX W = XMLoadFloat4x4(&m_objects[2].GetTransform());
+	XMMATRIX T = XMMatrixTranslation(0.f, totalTime*0.01f, totalTime*0.01f);
+	W *= T;
 	m_objects[2].SetTransform(W);
 
-	totalTime += deltaSeconds;
+	//W = XMLoadFloat4x4(&m_objects[1].GetTransform());
+	//W *= R;
+
 	XMMATRIX newW = backupWCrate * XMMatrixTranslation(0.0f, (sin(totalTime*10.0f) + 1.0f) * 4.f, 0.0f);
 	m_objects[3].SetTransform(newW);
 
