@@ -39,6 +39,7 @@ namespace shading {
 		bloom = 40,
 		blur = 50,
 		scaleSample = 60,
+		light_occlusion_map = 11,
 		uknown
 	};
 
@@ -50,6 +51,7 @@ namespace shading {
 		common_textures = 0,
 		shadow_map = 10,
 		blur = 11,
+		light_occlusion_map = 11,
 		unknown
 	};
 
