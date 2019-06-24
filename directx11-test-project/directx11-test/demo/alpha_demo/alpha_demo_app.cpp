@@ -307,27 +307,31 @@ void AlphaDemoApp::InitRenderTechnique()
 		m_motionBlurPass.SetPixelShader(pixelShader);
 		m_motionBlurPass.Init();
 	}
-	// combine motion blur pass
-	{
-		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\combine_VS.cso")));
-		vertexShader->SetVertexInput(std::make_shared<PosTexVertexInput>());
+	//// combine motion blur pass
+	//{
+	//	std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\combine_VS.cso")));
+	//	vertexShader->SetVertexInput(std::make_shared<PosTexVertexInput>());
 
-		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\combine_PS.cso")));
-		pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<MotionBlurSampler>());
-		pixelShader->AddConstantBuffer(CBufferFrequency::per_frame, std::make_unique<CBuffer<PerFrameData>>());
-		pixelShader->AddConstantBuffer(CBufferFrequency::rarely_changed, std::make_unique<CBuffer<RarelyChangedData>>());
+	//	std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\combine_PS.cso")));
+	//	pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<MotionBlurSampler>());
+	//	pixelShader->AddConstantBuffer(CBufferFrequency::per_frame, std::make_unique<CBuffer<PerFrameData>>());
+	//	pixelShader->AddConstantBuffer(CBufferFrequency::rarely_changed, std::make_unique<CBuffer<RarelyChangedData>>());
 
-		m_combinePass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_backBufferView.Get(), m_depthBufferView.Get()));
-		m_combinePass.SetVertexShader(vertexShader);
-		m_combinePass.SetPixelShader(pixelShader);
-		m_combinePass.Init();
-			}
+	//	m_combinePass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_backBufferView.Get(), m_depthBufferView.Get()));
+	//	m_combinePass.SetVertexShader(vertexShader);
+	//	m_combinePass.SetPixelShader(pixelShader);
+	//	m_combinePass.Init();
+	//		
+	//}
+
 	// postprocessing pass
 	{
 		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_postprocessing_VS.cso")));
 		vertexShader->SetVertexInput(std::make_shared<alpha::TextureDataVertexInput>());
 
 		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_postprocessing_PS.cso")));
+		pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<MotionBlurSampler>());
+		pixelShader->AddConstantBuffer(CBufferFrequency::per_frame, std::make_unique<CBuffer<PerFrameData>>());
 		pixelShader->AddConstantBuffer(CBufferFrequency::rarely_changed, std::make_unique<CBuffer<RarelyChangedData>>());
 
 		m_PostPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_backBufferView.Get(), m_depthBufferView.Get()));
@@ -557,7 +561,7 @@ void AlphaDemoApp::UpdateScene(float deltaSeconds)
 		data.blurMultiplier = (1.0f / deltaSeconds) / (float) targetFPS;
 
 		m_renderPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(data);
-		m_combinePass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(data);
+		m_PostPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(data);
 	}
 
 
@@ -565,7 +569,6 @@ void AlphaDemoApp::UpdateScene(float deltaSeconds)
 	if (m_isRarelyChangedDataDirty)
 	{
 		m_renderPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::rarely_changed)->UpdateBuffer(m_rarelyChangedData);
-		m_combinePass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::rarely_changed)->UpdateBuffer(m_rarelyChangedData);
 		m_PostPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::rarely_changed)->UpdateBuffer(m_rarelyChangedData);
 		m_isRarelyChangedDataDirty = false;
 	}
@@ -737,19 +740,7 @@ void AlphaDemoApp::RenderScene()
 		m_d3dAnnotation->EndEvent();
 	}
 
-	//Drawing all the textures together
-	m_d3dAnnotation->BeginEvent(L"render-from-texture");
-	m_PostPass.Bind();
-	m_PostPass.GetState()->ClearDepthOnly();
-	m_PostPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
-	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::texture_map, m_sceneTexture.AsShaderView());
-	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::bloom, m_upsampledGlowTexture.AsShaderView());
-	   
-	m_textureRenderable.Draw();
-
-	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::bloom, nullptr); // explicit unbind bloom to suppress warning
-	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::texture_map, nullptr);
-	m_d3dAnnotation->EndEvent();
+	// motion blur pass
 	m_d3dAnnotation->BeginEvent(L"motion-blur-map");
 	m_motionBlurPass.Bind();
 	m_motionBlurPass.GetState()->ClearDepthOnly();
@@ -766,6 +757,24 @@ void AlphaDemoApp::RenderScene()
 		i++;
 	}
 	m_d3dAnnotation->EndEvent();
+
+
+	//Drawing all the textures together
+	m_d3dAnnotation->BeginEvent(L"render-from-texture");
+	m_PostPass.Bind();
+	m_PostPass.GetState()->ClearDepthOnly();
+	m_PostPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
+	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::texture_map, m_sceneTexture.AsShaderView());
+	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::bloom, m_upsampledGlowTexture.AsShaderView());
+	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::motionblur, m_motionBlurMap.AsShaderView());
+
+	   
+	m_textureRenderable.Draw();
+
+	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::bloom, nullptr); // explicit unbind bloom to suppress warning
+	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::texture_map, nullptr);
+	m_d3dAnnotation->EndEvent();
+	
 
 	/*m_d3dAnnotation->BeginEvent(L"combine");
 	m_combinePass.Bind();
