@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <application/directx_app.h>
 #include <input/mouse.h>
 #include <input/keyboard.h>
@@ -16,6 +15,7 @@
 #include <alpha/alpha_types.h>
 #include <render/shading/motion_blur_map.h>
 #include <render/shading/color_map.h>
+#include <render/shading/light_occlusion_map.h>
 #include "demo/motion_blur_demo/Quad.h"
 
 namespace xtest {
@@ -23,6 +23,10 @@ namespace xtest {
 
 		/*
 			Use F1 switch on/off the shadow casting
+			Use F2 switch on/off the bloom effect
+			Use F3 switch on/off the motion blur effect
+			Use F4 switch on/off the light scattering effect
+			Use space_bar to pause/resume
 			Use ALT+Enter to switch full screen on/off
 			Use F key to reframe the camera to the origin
 			Use the middle mouse button/wheel button and drag to rotate the light direction
@@ -58,6 +62,7 @@ namespace xtest {
 				DirectX::XMFLOAT4X4 WVP;
 				DirectX::XMFLOAT4X4 TexcoordMatrix;
 				DirectX::XMFLOAT4X4 WVPT_shadowMap;
+				DirectX::XMFLOAT4X4 WVPT_occlusionMap;
 				Material material;
 			};
 
@@ -67,6 +72,12 @@ namespace xtest {
 				DirectX::XMFLOAT4X4 TexcoordMatrix;
 				int32 useGlow;
 				float _explicit_pad_[3];
+			};
+
+			struct PerObjectLightScatteringData
+			{
+				DirectX::XMFLOAT4X4 WVP;
+				Material material;
 			};
 
 			struct PerFrameBlurData
@@ -92,6 +103,7 @@ namespace xtest {
 				DirectionalLight dirLights[k_dirLightCount];
 				DirectX::XMFLOAT3 eyePosW;
 				float blurMultiplier;
+				DirectX::XMFLOAT4 dirLightPosH;
 			};
 
 			struct RarelyChangedData
@@ -99,7 +111,10 @@ namespace xtest {
 				int32 useShadowMap;
 				int32 useGlowMap;
 				int32 useMotionBlurMap;
+				int32 useLightScattering;
 				float shadowMapResolution;
+				float lightOcclusionMapResolution;
+				float _explicit_pad_[2];
 			};
 
 
@@ -133,9 +148,9 @@ namespace xtest {
 			void CreateDownDepthStencilBuffer();
 			PerObjectData ToPerObjectData(const render::Renderable& renderable, const std::string& meshName);
 			PerObjectGlowData ToPerObjectGlowData(const render::Renderable& renderable, const std::string& meshName);
-			
 			PerObjectShadowMapData ToPerObjectShadowMapData(const render::Renderable& renderable, const std::string& meshName);
 			PerObjectCombineData ToPerObjectCombineData(const render::Renderable& renderable, const std::string& meshName);
+			PerObjectLightScatteringData ToPerObjectLightScatteringData(const render::Renderable& renderable, const std::string& meshName, boolean isLight);
 
 			DirectionalLight m_dirKeyLight;
 			DirectionalLight m_dirFillLight;
@@ -162,6 +177,7 @@ namespace xtest {
 			render::shading::RenderPass m_verticalBlurPass;
 			render::shading::RenderPass m_PostPass;
 			render::shading::RenderPass m_motionBlurPass;
+			render::shading::RenderPass m_scatteringPass;
 			render::shading::RenderPass m_combinePass;
 			render::shading::ShadowMap m_shadowMap;
 			alpha::TextureRenderBuffer m_sceneTexture;
@@ -171,6 +187,7 @@ namespace xtest {
 			alpha::TextureRenderBuffer m_horizontalBlurTexture;
 			alpha::TextureRenderBuffer m_verticalBlurTexture;
 			render::shading::MotionBlurMap m_motionBlurMap;
+			render::shading::LightOcclusionMap m_lightOcclusionMap;
 
 			render::shading::ColorMap m_colorRenderMap;
 			Quad m_quad;
@@ -179,9 +196,9 @@ namespace xtest {
 			XMMATRIX backupWCrate;
 			float totalTime;
 			scene::BoundingSphere m_sceneBoundingSphere;
+
+			bool m_stop;
 		};
 
 	} // demo
 } // xtest
-
-

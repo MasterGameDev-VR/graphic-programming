@@ -1,6 +1,11 @@
 
 #define DIRECTIONAL_LIGHT_COUNT 2
 
+#define SCATTERING_N_SAMPLES 100
+#define SCATTERING_DENSITY 0.95
+#define SCATTERING_EXPOSURE 0.2
+#define SCATTERING_DECAY 0.95
+#define SCATTERING_WEIGHT 0.3
 
 struct Material
 {
@@ -25,6 +30,7 @@ struct VertexOut
 	float4 tangentW : TANGENT;
 	float2 uv : TEXCOORD;
 	float4 shadowPosH : SHADOWPOS;
+	float4 occlusionPosH : OCCLUSIONPOS;
 };
 
 
@@ -36,6 +42,7 @@ cbuffer PerObjectCB : register(b0)
 	float4x4 WVP;
 	float4x4 TexcoordMatrix;
 	float4x4 WVPT_shadowMap;
+	float4x4 WVPT_occlusionMap;
 	Material material;
 };
 
@@ -44,23 +51,28 @@ cbuffer PerFrameCB : register(b1)
 	DirectionalLight dirLights[DIRECTIONAL_LIGHT_COUNT];
 	float3 eyePosW;
 	float blurMultiplier;
+	float4 dirLightPosH;
 };
 
 cbuffer RarelyChangedCB : register(b2)
 {
 	bool useShadowMap;
 	bool useGlowMap;
+	bool useMotionBlur;
+	bool useLightScattering;
 	float shadowMapResolution;
+	float lightOcclusionMapResolution;
 }
 
 Texture2D diffuseTexture : register(t0);
 Texture2D normalTexture : register(t1);
 Texture2D glossTexture : register(t2);
 Texture2D shadowMap : register(t10);
+Texture2D occlusionMap : register(t12);
 
 SamplerState textureSampler : register(s0);
 SamplerComparisonState shadowSampler : register(s10);
-
+SamplerState occlusionSampler : register(s12);
 
 
 
@@ -162,6 +174,26 @@ void DirectionalLightContribution(Material mat, DirectionalLight light, float3 n
 }
 
 
+float4 LightScatteringContribution(float3 posNDC, float3 lightPosNDC)
+{
+	float2 delta = (posNDC.xy - lightPosNDC.xy) / (SCATTERING_N_SAMPLES * SCATTERING_DENSITY);
+	float3 color = (occlusionMap.Sample(occlusionSampler, posNDC.xy)).rgb;
+
+	float decay = 1.f;
+	for (int i = 0; i < SCATTERING_N_SAMPLES; i++)
+	{
+		posNDC.xy -= delta;
+
+		float3 raySample = (occlusionMap.Sample(occlusionSampler, posNDC.xy)).rgb;
+		raySample *= decay * SCATTERING_WEIGHT;
+		color += raySample;
+
+		decay *= SCATTERING_DECAY;
+	}
+
+	return float4(SCATTERING_EXPOSURE * color, 1.f);
+}
+
 
 float4 main(VertexOut pin) : SV_TARGET
 {
@@ -240,6 +272,12 @@ float4 main(VertexOut pin) : SV_TARGET
 	float4 finalColor = diffuseColor * (totalAmbient + totalDiffuse) + totalSpecular;
 	finalColor.a = diffuseColor.a * totalDiffuse.a;
 
-	return finalColor;
+	if (useLightScattering)
+	{
+		float3 occlusionNDC = pin.occlusionPosH.xyz / pin.occlusionPosH.w;
+		float3 dirLightPosNDC = dirLightPosH.xyz / dirLightPosH.w;
+		finalColor += LightScatteringContribution(occlusionNDC, dirLightPosNDC);
+	}
 
+	return finalColor;
 }

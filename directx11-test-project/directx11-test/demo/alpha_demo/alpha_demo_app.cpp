@@ -32,8 +32,10 @@ AlphaDemoApp::AlphaDemoApp(HINSTANCE instance,
 	, m_camera(math::ToRadians(80.f), math::ToRadians(170.f), 15.f, { 5.f, 4.f, -5.f }, { 0.f, 1.f, 0.f }, { math::ToRadians(4.f), math::ToRadians(175.f) }, { 3.f, 50.f })
 	, m_objects()
 	, m_shadowPass()
+	, m_scatteringPass()
 	, m_renderPass()
 	, m_shadowMap(2048)
+	, m_lightOcclusionMap(2048)
 	, m_motionBlurMap()
 	, m_colorRenderMap()
 	, m_sceneBoundingSphere({ 0.f, 0.f, 0.f }, 21.f)
@@ -41,6 +43,7 @@ AlphaDemoApp::AlphaDemoApp(HINSTANCE instance,
 	, totalTime(0.0f)
 	, m_textureRenderable()
 	, m_glowObjectsMap()
+	, m_stop(false)
 {}
 
 
@@ -61,8 +64,9 @@ void AlphaDemoApp::Init()
 	InitGlowMap();
 
 	service::Locator::GetMouse()->AddListener(this);
-	service::Locator::GetKeyboard()->AddListener(this, { input::Key::F, input::Key::F1 });
-	service::Locator::GetKeyboard()->AddListener(this, { input::Key::F, input::Key::F2 });
+	service::Locator::GetKeyboard()->AddListener(this, { 
+		input::Key::F, input::Key::F1, input::Key::F2, input::Key::F3, input::Key::F4, input::Key::space_bar 
+	});
 }
 
 void AlphaDemoApp::InitRenderables()
@@ -127,13 +131,13 @@ void AlphaDemoApp::InitLights()
 	XMStoreFloat3(&m_dirFillLight.dirW, XMVector3Transform(XMLoadFloat3(&m_dirKeyLight.dirW), XMMatrixRotationY(math::ToRadians(45.f))));
 
 	m_rarelyChangedData.useShadowMap = true;
+	m_rarelyChangedData.useLightScattering = true;
 }
 
 
 void AlphaDemoApp::InitRenderTechnique()
 {
 	file::ResourceLoader* loader = service::Locator::GetResourceLoader();
-
 
 	// shadow pass
 	{
@@ -144,7 +148,6 @@ void AlphaDemoApp::InitRenderTechnique()
 		m_rarelyChangedData.shadowMapResolution = float(m_shadowMap.Resolution());
 
 		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_shadowmap_VS.cso")));
-		
 		vertexShader->SetVertexInput(std::make_shared<PosOnlyVertexInput>());
 		vertexShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectShadowMapData>>());
 
@@ -153,6 +156,26 @@ void AlphaDemoApp::InitRenderTechnique()
 		m_shadowPass.Init();
 	}
 
+	// light scattering - occlusion pre-pass
+	{
+		m_lightOcclusionMap.SetTargetBoundingSphere(m_sceneBoundingSphere);
+		m_lightOcclusionMap.SetLight(m_dirKeyLight.dirW);
+		m_lightOcclusionMap.Init();
+
+		m_rarelyChangedData.lightOcclusionMapResolution = float(m_lightOcclusionMap.Resolution());
+
+		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\scattering_demo_lightocclusionmap_VS.cso")));
+		vertexShader->SetVertexInput(std::make_shared<MeshDataVertexInput>());
+		vertexShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectLightScatteringData>>());
+
+		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\scattering_demo_lightocclusionmap_PS.cso")));
+		pixelShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectLightScatteringData>>());
+
+		m_scatteringPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_lightOcclusionMap.Viewport(), std::make_shared<SolidCullBackRS>(), m_lightOcclusionMap.AsRenderTargetView(), m_lightOcclusionMap.DepthBufferView()));
+		m_scatteringPass.SetVertexShader(vertexShader);
+		m_scatteringPass.SetPixelShader(pixelShader);
+		m_scatteringPass.Init();
+	}
 
 	// render pass
 	{
@@ -168,6 +191,7 @@ void AlphaDemoApp::InitRenderTechnique()
 		pixelShader->AddConstantBuffer(CBufferFrequency::rarely_changed, std::make_unique<CBuffer<RarelyChangedData>>());
 		pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<AnisotropicSampler>());
 		pixelShader->AddSampler(SamplerUsage::shadow_map, std::make_shared<PCFSampler>());
+		pixelShader->AddSampler(SamplerUsage::light_occlusion_map, std::make_shared<NoFilterSampler>());
 
 		m_renderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_sceneTexture.AsRenderTargetView(), m_depthBufferView.Get()));
 		m_renderPass.SetVertexShader(vertexShader);
@@ -468,7 +492,6 @@ void AlphaDemoApp::OnMouseMove(const DirectX::XMINT2& movement, const DirectX::X
 
 		m_shadowMap.SetLight(m_dirKeyLight.dirW);
 	}
-
 }
 
 
@@ -478,11 +501,9 @@ void AlphaDemoApp::OnKeyStatusChange(input::Key key, const input::KeyStatus& sta
 	{
 		m_camera.SetPivot({ 5.f, 4.f, -5.f });
 		m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
-
 	}
 	else if (key == input::Key::F1 && status.isDown)
 	{
-		m_rarelyChangedData.useMotionBlurMap = !m_rarelyChangedData.useMotionBlurMap;
 		m_rarelyChangedData.useShadowMap = !m_rarelyChangedData.useShadowMap;
 		m_isRarelyChangedDataDirty = true;
 	}
@@ -491,6 +512,20 @@ void AlphaDemoApp::OnKeyStatusChange(input::Key key, const input::KeyStatus& sta
 		m_rarelyChangedData.useGlowMap = !m_rarelyChangedData.useGlowMap;
 		m_isRarelyChangedDataDirty = true;
 	}
+	else if (key == input::Key::F3 && status.isDown)
+	{
+		m_rarelyChangedData.useMotionBlurMap = !m_rarelyChangedData.useMotionBlurMap;
+		m_isRarelyChangedDataDirty = true;
+	}
+	else if (key == input::Key::F4 && status.isDown)
+	{
+		m_rarelyChangedData.useLightScattering = !m_rarelyChangedData.useLightScattering;
+		m_isRarelyChangedDataDirty = true;
+	}
+	else if (key == input::Key::space_bar && status.isDown)
+	{
+		m_stop = !m_stop;
+	}
 }
 
 
@@ -498,24 +533,27 @@ void AlphaDemoApp::UpdateScene(float deltaSeconds)
 {
 	XTEST_UNUSED_VAR(deltaSeconds);
 
-	//Update previous transform
-	for (int k = 0; k < m_objects.size(); k++) {
-		previous_Transforms[k] = m_objects[k].GetTransform();
+	if (!m_stop)
+	{
+		//Update previous transform
+		for (int k = 0; k < m_objects.size(); k++) {
+			previous_Transforms[k] = m_objects[k].GetTransform();
+		}
+
+		XMMATRIX R = XMMatrixRotationY(math::ToRadians(120.f) * deltaSeconds);
+		XMMATRIX W = XMLoadFloat4x4(&m_objects[1].GetTransform());
+		W *= R;
+		m_objects[1].SetTransform(W);
+		W = XMLoadFloat4x4(&m_objects[2].GetTransform());
+		W *= R;
+		m_objects[2].SetTransform(W);
+
+		totalTime += deltaSeconds;
+		XMMATRIX newW = backupWCrate * XMMatrixTranslation(0.0f, (sin(totalTime*10.0f) + 1.0f) * 4.f, 0.0f);
+		m_objects[3].SetTransform(newW);
+
+		m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
 	}
-
-	XMMATRIX R = XMMatrixRotationY(math::ToRadians(120.f) * deltaSeconds);
-	XMMATRIX W = XMLoadFloat4x4(&m_objects[1].GetTransform());
-	W *= R;
-	m_objects[1].SetTransform(W);
-	W = XMLoadFloat4x4(&m_objects[2].GetTransform());
-	W *= R;
-	m_objects[2].SetTransform(W);
-
-	totalTime += deltaSeconds;
-	XMMATRIX newW = backupWCrate * XMMatrixTranslation(0.0f, (sin(totalTime*10.0f) + 1.0f) * 4.f, 0.0f);
-	m_objects[3].SetTransform(newW);
-
-	m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
 
 	// PerFrameCB
 	{
@@ -525,10 +563,22 @@ void AlphaDemoApp::UpdateScene(float deltaSeconds)
 		data.eyePosW = m_camera.GetPosition();
 		data.blurMultiplier = (1.0f / deltaSeconds) / (float) targetFPS;
 
+		// calculate where the light placeholder is in screen space
+		{
+			XMMATRIX W = XMLoadFloat4x4(&m_lightOcclusionMap.LightPlaceHolder().GetTransform());
+			XMMATRIX V = m_camera.GetViewMatrix();
+			XMMATRIX P = m_camera.GetProjectionMatrix();
+			XMMATRIX T = m_lightOcclusionMap.TMatrix();
+			XMMATRIX WVPT = W * V * P * T;
+
+			XMVECTOR dirLightPosL = XMVectorSet(0.f, 0.f, 0.f, 1.f);
+			XMVECTOR dirLightPosH = XMVector4Transform(dirLightPosL, WVPT);
+			XMStoreFloat4(&data.dirLightPosH, dirLightPosH);
+		}
+
 		m_renderPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(data);
 		m_PostPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(data);
 	}
-
 
 	// RarelyChangedCB
 	if (m_isRarelyChangedDataDirty)
@@ -537,7 +587,6 @@ void AlphaDemoApp::UpdateScene(float deltaSeconds)
 		m_PostPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::rarely_changed)->UpdateBuffer(m_rarelyChangedData);
 		m_isRarelyChangedDataDirty = false;
 	}
-
 }
 
 
@@ -548,7 +597,7 @@ void AlphaDemoApp::RenderScene()
 	m_shadowPass.Bind();
 	m_shadowPass.GetState()->ClearDepthOnly();
 
-	
+	// draw objects
 	for (render::Renderable& renderable : m_objects)
 	{
 		for (const std::string& meshName : renderable.GetMeshNames())
@@ -560,6 +609,34 @@ void AlphaDemoApp::RenderScene()
 	}
 	m_d3dAnnotation->EndEvent();
 
+	m_d3dAnnotation->BeginEvent(L"scattering-occlusion");
+	m_scatteringPass.Bind();
+	m_scatteringPass.GetState()->ClearDepthOnly();
+	m_scatteringPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
+
+	// draw a white placeholder to simulate the light source
+	{
+		const std::string meshName = "";
+		render::Renderable placeholder = m_lightOcclusionMap.LightPlaceHolder();
+
+		PerObjectLightScatteringData data = ToPerObjectLightScatteringData(placeholder, meshName, true);
+		m_scatteringPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+		m_scatteringPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+		placeholder.Draw(meshName);
+	}
+
+	// draw all objects with a black material
+	for (render::Renderable& renderable : m_objects)
+	{
+		for (const std::string& meshName : renderable.GetMeshNames())
+		{
+			PerObjectLightScatteringData data = ToPerObjectLightScatteringData(renderable, meshName, false);
+			m_scatteringPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+			m_scatteringPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+			renderable.Draw(meshName);
+		}
+	}
+	m_d3dAnnotation->EndEvent();
 
 	// draw objects to texture
 	m_d3dAnnotation->BeginEvent(L"render-scene");
@@ -567,6 +644,7 @@ void AlphaDemoApp::RenderScene()
 	m_renderPass.GetState()->ClearDepthOnly();
 	m_renderPass.GetState()->ClearRenderTarget(DirectX::Colors::DarkSlateGray);
 	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, m_shadowMap.AsShaderView());
+	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::light_occlusion_map, m_lightOcclusionMap.AsShaderView());
 
 	
 	for (render::Renderable& renderable : m_objects)
@@ -583,6 +661,7 @@ void AlphaDemoApp::RenderScene()
 		}
 	}
 	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, nullptr); // explicit unbind the shadow map to suppress warning
+	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::light_occlusion_map, nullptr); // explicit unbind the shadow map to suppress warning
 	m_d3dAnnotation->EndEvent();
 
 	if (m_rarelyChangedData.useGlowMap)
@@ -755,12 +834,14 @@ AlphaDemoApp::PerObjectData AlphaDemoApp::ToPerObjectData(const render::Renderab
 	XMMATRIX P = m_camera.GetProjectionMatrix();
 	XMMATRIX WVP = W * V*P;
 	XMMATRIX WVPT_shadowMap = W * m_shadowMap.VPTMatrix();
+	XMMATRIX WVPT_occlusionMap = WVP * m_lightOcclusionMap.TMatrix();
 
 	XMStoreFloat4x4(&data.W, XMMatrixTranspose(W));
 	XMStoreFloat4x4(&data.WVP, XMMatrixTranspose(WVP));
 	XMStoreFloat4x4(&data.W_inverseTraspose, XMMatrixInverse(nullptr, W));
 	XMStoreFloat4x4(&data.TexcoordMatrix, XMMatrixTranspose(T));
 	XMStoreFloat4x4(&data.WVPT_shadowMap, XMMatrixTranspose(WVPT_shadowMap));
+	XMStoreFloat4x4(&data.WVPT_occlusionMap, XMMatrixTranspose(WVPT_occlusionMap));
 	data.material.ambient = renderable.GetMaterial(meshName).ambient;
 	data.material.diffuse = renderable.GetMaterial(meshName).diffuse;
 	data.material.specular = renderable.GetMaterial(meshName).specular;
@@ -799,9 +880,35 @@ AlphaDemoApp::PerObjectGlowData AlphaDemoApp::ToPerObjectGlowData(const render::
 
 	data.useGlow = m_glowObjectsMap.count(glowObjectKey) > 0;
 
+	return data;
+}
+
+AlphaDemoApp::PerObjectLightScatteringData AlphaDemoApp::ToPerObjectLightScatteringData(const render::Renderable& renderable, const std::string& meshName, boolean isLight)
+{
+	PerObjectLightScatteringData data;
+
+	XMMATRIX W = XMLoadFloat4x4(&renderable.GetTransform());
+	XMMATRIX V = m_camera.GetViewMatrix();
+	XMMATRIX P = m_camera.GetProjectionMatrix();
+	XMMATRIX WVP = W * V * P;
+
+	XMStoreFloat4x4(&data.WVP, XMMatrixTranspose(WVP));
+	if (isLight)
+	{
+		data.material.ambient = { 1.f, 1.f, 1.f, 1.f };
+		data.material.diffuse = { 1.f, 1.f, 1.f, 1.f };
+		data.material.specular = { 1.f, 1.f, 1.f, 1.f };
+	}
+	else
+	{
+		data.material.ambient = { 0.f, 0.f, 0.f, 1.f };
+		data.material.diffuse = { 0.f, 0.f, 0.f, 1.f };
+		data.material.specular = { 0.f, 0.f, 0.f, 1.f };
+	}
 
 	return data;
 }
+
 AlphaDemoApp::PerObjectCombineData AlphaDemoApp::ToPerObjectCombineData(const render::Renderable& renderable, const std::string& meshName) {
 	XTEST_UNUSED_VAR(meshName);
 	PerObjectCombineData data;
@@ -837,4 +944,3 @@ void xtest::demo::AlphaDemoApp::CreateDownDepthStencilBuffer()
 	XTEST_D3D_CHECK(m_d3dDevice->CreateTexture2D(&depthDesc, nullptr, &m_depthBufferDownsample));
 	XTEST_D3D_CHECK(m_d3dDevice->CreateDepthStencilView(m_depthBufferDownsample.Get(), nullptr, &m_depthStencilViewDownsample));
 }
-
