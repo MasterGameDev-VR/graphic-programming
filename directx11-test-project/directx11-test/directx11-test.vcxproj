@@ -14,7 +14,7 @@
     <ProjectGuid>{DC72186E-CDFF-463C-BAAC-976EBDAFDBF6}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>directx11test</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -102,17 +102,28 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="alpha\alpha_sampler_types.h" />
+    <ClInclude Include="alpha\alpha_types.h" />
+    <ClInclude Include="alpha\alpha_vertex_input_types.h" />
+    <ClInclude Include="alpha\texture_renderable.h" />
+    <ClInclude Include="alpha\texture_render_buffer.h" />
     <ClInclude Include="application\directx_app.h" />
     <ClInclude Include="application\directx_settings.h" />
     <ClInclude Include="application\windows_app.h" />
+    <ClInclude Include="render\shading\blur_map.h" />
     <ClInclude Include="camera\camera.h" />
     <ClInclude Include="camera\spherical_camera.h" />
+    <ClInclude Include="demo\motion_blur_demo\Quad.h" />
+    <ClInclude Include="render\shading\color_map.h" />
     <ClInclude Include="common\assert.h" />
     <ClInclude Include="common\common_macros.h" />
     <ClInclude Include="common\int_types.h" />
     <ClInclude Include="common\utils.h" />
+    <ClInclude Include="demo\alpha_demo\alpha_demo_app.h" />
     <ClInclude Include="demo\box_demo\box_demo_app.h" />
     <ClInclude Include="demo\lights_demo\lights_demo_app.h" />
+    <ClInclude Include="demo\motion_blur_demo\motion_blur_demo_app.h" />
+    <ClInclude Include="demo\scattering_demo\scattering_demo_app.h" />
     <ClInclude Include="external_libs\mikktspace\mikktspace.h" />
     <ClInclude Include="external_libs\nlohmann_json\json.hpp" />
     <ClInclude Include="file\resource_loader.h" />
@@ -128,17 +139,23 @@
     <ClInclude Include="external_libs\tiny_obj_loader\tiny_obj_loader.h" />
     <ClInclude Include="file\binary_file.h" />
     <ClInclude Include="file\file_utils.h" />
+    <ClInclude Include="demo\SSAO_demo\SSAO_demo_app.h" />
     <ClInclude Include="input\keyboard.h" />
     <ClInclude Include="input\mouse.h" />
     <ClInclude Include="math\math_utils.h" />
     <ClInclude Include="mesh\mesh_format.h" />
     <ClInclude Include="mesh\mesh_generator.h" />
+    <ClInclude Include="render\shading\random_vec_map.h" />
+    <ClInclude Include="render\shading\normal_depth_map.h" />
     <ClInclude Include="render\directx_backend.h" />
     <ClInclude Include="render\renderable.h" />
+    <ClInclude Include="render\renderable_in_motion.h" />
     <ClInclude Include="render\render_macros.h" />
     <ClInclude Include="render\render_resource.h" />
     <ClInclude Include="render\shading\cbuffer.h" />
     <ClInclude Include="render\shading\common_types.h" />
+    <ClInclude Include="render\shading\motion_blur_map.h" />
+    <ClInclude Include="render\shading\light_occlusion_map.h" />
     <ClInclude Include="render\shading\pixel_shader.h" />
     <ClInclude Include="render\shading\rasterizer_state.h" />
     <ClInclude Include="render\shading\render_pass.h" />
@@ -148,6 +165,7 @@
     <ClInclude Include="render\shading\sampler_types.h" />
     <ClInclude Include="render\shading\shader.h" />
     <ClInclude Include="render\shading\shadow_map.h" />
+    <ClInclude Include="render\shading\ssao_map.h" />
     <ClInclude Include="render\shading\vertex_input.h" />
     <ClInclude Include="render\shading\vertex_input_types.h" />
     <ClInclude Include="render\shading\vertex_shader.h" />
@@ -162,14 +180,21 @@
     <ClInclude Include="time\time_span.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="alpha\texture_renderable.cpp" />
+    <ClCompile Include="alpha\texture_render_buffer.cpp" />
     <ClCompile Include="application\directx_app.cpp" />
     <ClCompile Include="application\windows_app.cpp" />
+    <ClCompile Include="render\shading\blur_map.cpp" />
     <ClCompile Include="camera\camera.cpp" />
     <ClCompile Include="camera\spherical_camera.cpp" />
+    <ClCompile Include="render\shading\color_map.cpp" />
     <ClCompile Include="common\assert.cpp" />
     <ClCompile Include="common\utils.cpp" />
+    <ClCompile Include="demo\alpha_demo\alpha_demo_app.cpp" />
     <ClCompile Include="demo\box_demo\box_demo_app.cpp" />
     <ClCompile Include="demo\lights_demo\lights_demo_app.cpp" />
+    <ClCompile Include="demo\motion_blur_demo\motion_blur_demo_app.cpp" />
+    <ClCompile Include="demo\scattering_demo\scattering_demo_app.cpp" />
     <ClCompile Include="external_libs\mikktspace\mikktspace.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
@@ -189,16 +214,23 @@
     <ClCompile Include="math\math_utils.cpp" />
     <ClCompile Include="mesh\mesh_format.cpp" />
     <ClCompile Include="mesh\mesh_generator.cpp" />
+    <ClCompile Include="render\shading\random_vec_map.cpp" />
+    <ClCompile Include="render\shading\normal_depth_map.cpp" />
     <ClCompile Include="render\directx_backend.cpp" />
     <ClCompile Include="render\renderable.cpp" />
+    <ClCompile Include="render\renderable_in_motion.cpp" />
+    <ClCompile Include="render\shading\motion_blur_map.cpp" />
+    <ClCompile Include="render\shading\light_occlusion_map.cpp" />
     <ClCompile Include="render\shading\pixel_shader.cpp" />
     <ClCompile Include="render\shading\render_pass.cpp" />
     <ClCompile Include="render\shading\render_pass_state.cpp" />
     <ClCompile Include="render\shading\shader.cpp" />
     <ClCompile Include="render\shading\shadow_map.cpp" />
+    <ClCompile Include="render\shading\ssao_map.cpp" />
     <ClCompile Include="render\shading\vertex_shader.cpp" />
     <ClCompile Include="scene\bounding_sphere.cpp" />
     <ClCompile Include="service\locator.cpp" />
+    <ClCompile Include="demo\SSAO_demo\SSAO_demo_app.cpp" />
     <ClCompile Include="time\timer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -216,6 +248,59 @@
     <Image Include="application\resources\small.ico" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="demo\alpha_demo\alpha_demo_sample_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\alpha_demo_glow_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\alpha_demo_glow_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\alpha_demo_horizontal_blur_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\alpha_demo_postprocessing_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\alpha_demo_postprocessing_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\alpha_demo_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\alpha_demo_shadowmap_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\alpha_demo_vertical_blur_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\alpha_demo_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\motion_blur_demo_motionblurmap_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\motion_blur_demo_motionblurmap_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\SSAO_blur_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\SSAO_map_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\SSAO_map_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\ssao_normal_depth_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\ssao_normal_depth_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
     <FxCompile Include="demo\box_demo\box_demo_PS.hlsl">
       <FileType>Document</FileType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
@@ -233,6 +318,43 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>
+    <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_motionblurmap_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_motionblurmap_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\motion_blur_demo\shadow_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\scattering_demo\scattering_demo_lightocclusionmap_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\scattering_demo\scattering_demo_lightocclusionmap_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\scattering_demo\scattering_demo_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\scattering_demo\scattering_demo_shadowmap_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\scattering_demo\scattering_demo_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
     <FxCompile Include="demo\shadow_demo\shadow_demo_PS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
@@ -245,6 +367,12 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>
+    <FxCompile Include="demo\SSAO_demo\ssao_normal_depth_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\SSAO_demo\ssao_normal_depth_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
     <FxCompile Include="demo\textures_demo\textures_demo_PS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
@@ -252,6 +380,27 @@
     <FxCompile Include="demo\textures_demo\textures_demo_VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\SSAO_demo\SSAO_blur_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\SSAO_demo\SSAO_map_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\SSAO_demo\SSAO_map_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\SSAO_demo\SSAO_demo_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Geometry</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="demo\SSAO_demo\SSAO_demo_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Geometry</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

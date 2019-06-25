@@ -23,7 +23,7 @@ RenderPassState::RenderPassState(
 
 void RenderPassState::Bind()
 {
-	XTEST_ASSERT(m_depthStencilView);
+	//XTEST_ASSERT(m_depthStencilView);
 
 	ID3D11DeviceContext* d3dContext = service::Locator::GetD3DContext();
 	d3dContext->IASetPrimitiveTopology(m_primitiveTopology);
@@ -83,6 +83,13 @@ void RenderPassState::ClearRenderTarget(const DirectX::XMFLOAT4& color)
 {
 	XTEST_ASSERT(m_renderTargetView);
 	float color_asArray[] = { color.x, color.y, color.z, color.w };
+	service::Locator::GetD3DContext()->ClearRenderTargetView(m_renderTargetView, color_asArray);
+}
+
+void xtest::render::shading::RenderPassState::ClearRenderTarget(const float* color)
+{
+	XTEST_ASSERT(m_renderTargetView);
+	float color_asArray[] = { color[0], color[1], color[2], color[3] };
 	service::Locator::GetD3DContext()->ClearRenderTargetView(m_renderTargetView, color_asArray);
 }
 

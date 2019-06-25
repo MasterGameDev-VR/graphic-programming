@@ -50,7 +50,9 @@ Renderable::Renderable(
 	for (mesh::GPFMesh::DescriptorMap::const_reference meshNamePairWithDescriptor : m_mesh.meshDescriptorMapByName)
 	{
 		m_meshNames.push_back(meshNamePairWithDescriptor.first);
-		m_texcoordMatrixMapByMeshName[meshNamePairWithDescriptor.first] = {};
+		DirectX::XMFLOAT4X4 mat;
+		XMStoreFloat4x4(&mat, DirectX::XMMatrixIdentity());
+		m_texcoordMatrixMapByMeshName[meshNamePairWithDescriptor.first] = {mat};
 	}
 
 }
@@ -98,9 +100,12 @@ void Renderable::Init()
 	{
 		const std::string& meshName = namePairWithDescriptor.first;
 		const mesh::MeshMaterial& material = namePairWithDescriptor.second.material;
-		m_textureMapByUsageMapByMeshName[meshName][shading::TextureUsage::color] = service::Locator::GetResourceLoader()->LoadTexture(material.diffuseMap).d3dShaderView;
-		m_textureMapByUsageMapByMeshName[meshName][shading::TextureUsage::normal] = service::Locator::GetResourceLoader()->LoadTexture(material.normalMap).d3dShaderView;
-		m_textureMapByUsageMapByMeshName[meshName][shading::TextureUsage::glossiness] = service::Locator::GetResourceLoader()->LoadTexture(material.glossMap).d3dShaderView;
+		if (!material.diffuseMap.empty())
+			m_textureMapByUsageMapByMeshName[meshName][shading::TextureUsage::color] = service::Locator::GetResourceLoader()->LoadTexture(material.diffuseMap, true).d3dShaderView;
+		if (!material.normalMap.empty())
+			m_textureMapByUsageMapByMeshName[meshName][shading::TextureUsage::normal] = service::Locator::GetResourceLoader()->LoadTexture(material.normalMap).d3dShaderView;
+		if (!material.glossMap.empty())
+			m_textureMapByUsageMapByMeshName[meshName][shading::TextureUsage::glossiness] = service::Locator::GetResourceLoader()->LoadTexture(material.glossMap).d3dShaderView;
 	}
 }
 
