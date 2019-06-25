@@ -12,7 +12,7 @@ cbuffer RarelyChangedCB : register(b2)
 	bool useShadowMap;
 	float shadowMapResolution;
 	bool useSSAOMap;
-	float SSOAMultiplier = 4;
+	float SSOAMultiplier = 28.0f;
 }
 
 struct VertexOutAmbientOcclusion
@@ -83,5 +83,5 @@ float main(VertexOutAmbientOcclusion pin) : SV_TARGET
 
 	occlusionSum /= SAMPLE_COUNT;
 	float access = 1.0f - occlusionSum;
-	return saturate(pow(access, SSOAMultiplier));
+	return saturate(pow(access, 28.0f));
 }
