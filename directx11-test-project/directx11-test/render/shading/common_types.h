@@ -34,6 +34,7 @@ namespace shading {
 		glossiness = 2,
 		motionblur=3,
 		shadow_map = 10,
+		light_occlusion_map = 12,
 		texture_map = 20,
 		glow_map = 30,
 		bloom = 40,
@@ -50,6 +51,7 @@ namespace shading {
 		common_textures = 0,
 		shadow_map = 10,
 		blur = 11,
+		light_occlusion_map = 12,
 		unknown
 	};
 

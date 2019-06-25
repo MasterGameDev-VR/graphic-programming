@@ -122,6 +122,7 @@
     <ClInclude Include="demo\box_demo\box_demo_app.h" />
     <ClInclude Include="demo\lights_demo\lights_demo_app.h" />
     <ClInclude Include="demo\motion_blur_demo\motion_blur_demo_app.h" />
+    <ClInclude Include="demo\scattering_demo\scattering_demo_app.h" />
     <ClInclude Include="external_libs\mikktspace\mikktspace.h" />
     <ClInclude Include="external_libs\nlohmann_json\json.hpp" />
     <ClInclude Include="file\resource_loader.h" />
@@ -150,6 +151,7 @@
     <ClInclude Include="render\shading\cbuffer.h" />
     <ClInclude Include="render\shading\common_types.h" />
     <ClInclude Include="render\shading\motion_blur_map.h" />
+    <ClInclude Include="render\shading\light_occlusion_map.h" />
     <ClInclude Include="render\shading\pixel_shader.h" />
     <ClInclude Include="render\shading\rasterizer_state.h" />
     <ClInclude Include="render\shading\render_pass.h" />
@@ -186,6 +188,7 @@
     <ClCompile Include="demo\box_demo\box_demo_app.cpp" />
     <ClCompile Include="demo\lights_demo\lights_demo_app.cpp" />
     <ClCompile Include="demo\motion_blur_demo\motion_blur_demo_app.cpp" />
+    <ClCompile Include="demo\scattering_demo\scattering_demo_app.cpp" />
     <ClCompile Include="external_libs\mikktspace\mikktspace.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
@@ -209,6 +212,7 @@
     <ClCompile Include="render\renderable.cpp" />
     <ClCompile Include="render\renderable_in_motion.cpp" />
     <ClCompile Include="render\shading\motion_blur_map.cpp" />
+    <ClCompile Include="render\shading\light_occlusion_map.cpp" />
     <ClCompile Include="render\shading\pixel_shader.cpp" />
     <ClCompile Include="render\shading\render_pass.cpp" />
     <ClCompile Include="render\shading\render_pass_state.cpp" />
@@ -311,6 +315,26 @@
     </FxCompile>
     <FxCompile Include="demo\motion_blur_demo\shadow_VS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\scattering_demo\scattering_demo_lightocclusionmap_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\scattering_demo\scattering_demo_lightocclusionmap_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\scattering_demo\scattering_demo_PS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\scattering_demo\scattering_demo_shadowmap_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="demo\scattering_demo\scattering_demo_VS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
     </FxCompile>
     <FxCompile Include="demo\shadow_demo\shadow_demo_PS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>

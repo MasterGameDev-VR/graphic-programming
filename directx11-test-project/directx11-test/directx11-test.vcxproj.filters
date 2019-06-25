@@ -82,6 +82,9 @@
     <Filter Include="demo\motion_blur_demo">
       <UniqueIdentifier>{8a851bd4-3bed-4bb3-9e99-66e555d9116d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="demo\scattering_demo">
+      <UniqueIdentifier>{0779ee11-d298-47a7-b978-a16c9591a400}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\resources\Resource.h">
@@ -285,6 +288,12 @@
     <ClInclude Include="demo\motion_blur_demo\Quad.h">
       <Filter>demo\motion_blur_demo</Filter>
     </ClInclude>
+    <ClInclude Include="demo\scattering_demo\scattering_demo_app.h">
+      <Filter>demo\scattering_demo</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\light_occlusion_map.h">
+      <Filter>render\shading</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -413,6 +422,12 @@
       <Filter>render</Filter>
     </ClCompile>
     <ClCompile Include="render\shading\color_map.cpp" />
+    <ClCompile Include="demo\scattering_demo\scattering_demo_app.cpp">
+      <Filter>demo\scattering_demo</Filter>
+    </ClCompile>
+    <ClCompile Include="render\shading\light_occlusion_map.cpp">
+      <Filter>render\shading</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="application\resources\small.ico">
@@ -511,6 +526,21 @@
     </FxCompile>
     <FxCompile Include="demo\alpha_demo\motion_blur_demo_motionblurmap_VS.hlsl">
       <Filter>demo\alpha_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\scattering_demo\scattering_demo_lightocclusionmap_PS.hlsl">
+      <Filter>demo\scattering_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\scattering_demo\scattering_demo_lightocclusionmap_VS.hlsl">
+      <Filter>demo\scattering_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\scattering_demo\scattering_demo_PS.hlsl">
+      <Filter>demo\scattering_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\scattering_demo\scattering_demo_shadowmap_VS.hlsl">
+      <Filter>demo\scattering_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\scattering_demo\scattering_demo_VS.hlsl">
+      <Filter>demo\scattering_demo</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
