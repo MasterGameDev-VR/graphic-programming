@@ -76,16 +76,6 @@ namespace shading {
 			{
 				return;
 			}
-	class NormalDepthSampler : public Sampler
-	{
-	public:
-		virtual void Init() override
-		{
-			// already initialized
-			if (m_d3dTextureSampler)
-			{
-				return;
-			}
 
 			D3D11_SAMPLER_DESC samplerDesc;
 			ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
@@ -164,6 +154,16 @@ namespace shading {
 		}
 	};
 
+	class NormalDepthSampler : public Sampler
+	{
+	public:
+		virtual void Init() override
+		{
+			// already initialized
+			if (m_d3dTextureSampler)
+			{
+				return;
+			}
 			D3D11_SAMPLER_DESC samplerDesc;
 			ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
 			samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR; 

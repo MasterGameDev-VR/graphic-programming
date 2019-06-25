@@ -9,13 +9,17 @@
 #include <external_libs/directxtk/WICTextureLoader.h>
 #include <alpha/alpha_vertex_input_types.h>
 #include <alpha/alpha_sampler_types.h>
-#include <external_libs/directxtk/WICTextureLoader.h>
+#include <stdlib.h>
+#include <ctime>
+#include <codecvt>
 
 
 using namespace DirectX;
 using namespace xtest;
 using namespace xtest::render::shading;
 using namespace xtest::demo;
+using namespace xtest::render::shading;
+using namespace xtest::file;
 using Microsoft::WRL::ComPtr;
 
 
@@ -30,12 +34,28 @@ AlphaDemoApp::AlphaDemoApp(HINSTANCE instance,
 	, m_isRarelyChangedDataDirty(true)
 	, m_camera(math::ToRadians(80.f), math::ToRadians(170.f), 15.f, { 5.f, 4.f, -5.f }, { 0.f, 1.f, 0.f }, { math::ToRadians(4.f), math::ToRadians(175.f) }, { 3.f, 50.f })
 	, m_objects()
+	, m_normalDepthPass()
 	, m_shadowPass()
+	, m_SSAOPass()
+	, m_SSAOBlurPass()
+	, m_SSAOBlurHPass()
+	, m_scatteringPass()
 	, m_renderPass()
 	, m_shadowMap(2048)
+	, m_SSAOMap(windowSettings.width / 2, windowSettings.height / 2)//, 1, 128, 4, 2.0f, 3.0f)
+	, m_BlurMap(windowSettings.width / 2, windowSettings.height / 2)//, 1, 128, 4, 2.0f, 3.0f)
+	, m_BlurHMap(windowSettings.width / 2, windowSettings.height / 2)//, 1, 128, 4, 2.0f, 3.0f)
+	, m_normalDepthMap(windowSettings.width, windowSettings.height)
+	, m_randomVecMap(256, 256)
+	, m_lightOcclusionMap(2048)
+	, m_motionBlurMap()
+	, m_colorRenderMap()
 	, m_sceneBoundingSphere({ 0.f, 0.f, 0.f }, 21.f)
+	, targetFPS(fps)
+	, totalTime(0.0f)
 	, m_textureRenderable()
 	, m_glowObjectsMap()
+	, m_stop(false)
 {}
 
 
@@ -56,8 +76,57 @@ void AlphaDemoApp::Init()
 	InitGlowMap();
 
 	service::Locator::GetMouse()->AddListener(this);
-	service::Locator::GetKeyboard()->AddListener(this, { input::Key::F, input::Key::F1 });
-	service::Locator::GetKeyboard()->AddListener(this, { input::Key::F, input::Key::F2 });
+	service::Locator::GetKeyboard()->AddListener(this, { 
+		input::Key::F, input::Key::F1, input::Key::F2, input::Key::F3, input::Key::F4, input::Key::space_bar 
+	});
+}
+
+void AlphaDemoApp::InitRenderables()
+{
+	render::Renderable ground{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\rocks_dorama\rocks_composition.gpf)"))) };
+	ground.SetTransform(XMMatrixScaling(1.5f, 1.5f, 1.5f) * XMMatrixTranslation(3.f, 0.f, 2.5f));
+	ground.Init();
+	previous_Transforms.push_back(ground.GetTransform());
+	m_objects.push_back(std::move(ground));
+
+	render::Renderable soldier1{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\gdc_female\gdc_female_posed_2.gpf)"))) };
+	soldier1.SetTransform(XMMatrixRotationY(math::ToRadians(-12.f)) * XMMatrixTranslation(0.f, 0.4f, 0.f));
+	soldier1.Init();
+	previous_Transforms.push_back(soldier1.GetTransform());
+	m_objects.push_back(std::move(soldier1));
+
+	render::Renderable soldier2{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\gdc_female\gdc_female_posed.gpf)"))) };
+	soldier2.SetTransform(XMMatrixRotationY(math::ToRadians(135.f)) * XMMatrixTranslation(10.f, 0.35f, -10.f));
+	soldier2.Init();
+	previous_Transforms.push_back(soldier2.GetTransform());
+	m_objects.push_back(std::move(soldier2));
+
+	render::Renderable crate{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\crate\crate.gpf)"))) };
+	crate.SetTransform(XMMatrixTranslation(-3.0f, 0.5f, -5.0f));
+	crate.Init();
+	previous_Transforms.push_back(crate.GetTransform());
+	backupWCrate = XMLoadFloat4x4(&crate.GetTransform());
+	m_objects.push_back(std::move(crate));
+
+
+	//SPHERE
+	{
+		mesh::MeshMaterial mat;
+		mat.ambient = { 0.8f, 0.8f, 0.8f, 1.f };
+		mat.diffuse = { 0.52f, 0.52f, 0.48f, 1.f };
+		mat.specular = { 0.5f, 0.5f, 0.5f, 1.f };
+		mat.diffuseMap = GetRootDir().append(LR"(\3d-objects\plastic-cover\plastic_cover_color.png)");
+		mat.normalMap = GetRootDir().append(LR"(\3d-objects\plastic-cover\plastic_cover_norm.png)");
+		mat.glossMap = GetRootDir().append(LR"(\3d-objects\plastic-cover\plastic_cover_gloss.png)");
+
+		render::Renderable sphere(mesh::GenerateSphere(3.f, 30, 30), mat);
+		sphere.SetTransform(XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixTranslation(3.75f, 7.5f, -3.f));
+		sphere.SetTexcoordTransform(XMMatrixIdentity());
+		sphere.Init();
+		previous_Transforms.push_back(sphere.GetTransform());
+		m_objects.push_back(sphere);
+	}
+
 }
 
 
@@ -74,13 +143,14 @@ void AlphaDemoApp::InitLights()
 	XMStoreFloat3(&m_dirFillLight.dirW, XMVector3Transform(XMLoadFloat3(&m_dirKeyLight.dirW), XMMatrixRotationY(math::ToRadians(45.f))));
 
 	m_rarelyChangedData.useShadowMap = true;
+	m_rarelyChangedData.useLightScattering = true;
+	m_rarelyChangedData.useSSAOMap = true;
 }
 
 
 void AlphaDemoApp::InitRenderTechnique()
 {
 	file::ResourceLoader* loader = service::Locator::GetResourceLoader();
-
 
 	// shadow pass
 	{
@@ -99,6 +169,102 @@ void AlphaDemoApp::InitRenderTechnique()
 		m_shadowPass.Init();
 	}
 
+	// light scattering - occlusion pre-pass
+	{
+		m_lightOcclusionMap.SetTargetBoundingSphere(m_sceneBoundingSphere);
+		m_lightOcclusionMap.SetLight(m_dirKeyLight.dirW);
+		m_lightOcclusionMap.Init();
+
+		m_rarelyChangedData.lightOcclusionMapResolution = float(m_lightOcclusionMap.Resolution());
+
+		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\scattering_demo_lightocclusionmap_VS.cso")));
+		vertexShader->SetVertexInput(std::make_shared<MeshDataVertexInput>());
+		vertexShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectLightScatteringData>>());
+
+		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\scattering_demo_lightocclusionmap_PS.cso")));
+		pixelShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectLightScatteringData>>());
+
+		m_scatteringPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_lightOcclusionMap.Viewport(), std::make_shared<SolidCullBackRS>(), m_lightOcclusionMap.AsRenderTargetView(), m_lightOcclusionMap.DepthBufferView()));
+		m_scatteringPass.SetVertexShader(vertexShader);
+		m_scatteringPass.SetPixelShader(pixelShader);
+		m_scatteringPass.Init();
+	}
+	// normal_depth_pass
+	{
+		m_normalDepthMap.Init();
+
+		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\ssao_normal_depth_VS.cso")));
+		vertexShader->SetVertexInput(std::make_shared<MeshDataVertexInput>());
+		vertexShader->AddConstantBuffer(CBufferFrequency::per_frame_normal_depth, std::make_unique<CBuffer<PerFrameDataNormalDepth>>());
+
+		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\ssao_normal_depth_PS.cso")));
+
+		m_normalDepthPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_normalDepthMap.AsRenderTargetView(), m_depthBufferView.Get()));
+		m_normalDepthPass.SetVertexShader(vertexShader);
+		m_normalDepthPass.SetPixelShader(pixelShader);
+		m_normalDepthPass.Init();
+	}
+
+	//// SSAO pass
+	{
+		m_SSAOMap.Init();
+
+		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\ssao_map_VS.cso")));
+		vertexShader->SetVertexInput(std::make_shared<VertexInputAmbientOcclusion>());
+		vertexShader->AddConstantBuffer(CBufferFrequency::per_object_ambient_occlusion, std::make_unique<CBuffer<PerObjectCBAmbientOcclusion>>());
+
+		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\ssao_map_PS.cso")));
+		pixelShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectData>>());
+		pixelShader->AddConstantBuffer(CBufferFrequency::rarely_changed, std::make_unique<CBuffer<RarelyChangedData>>());
+		pixelShader->AddConstantBuffer(CBufferFrequency::per_object_ambient_occlusion, std::make_unique<CBuffer<PerObjectCBAmbientOcclusion>>());
+		pixelShader->AddSampler(SamplerUsage::normal_depth_map, std::make_shared<NormalDepthSampler>());
+		m_SSAOPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_SSAOMap.Viewport(), std::make_shared<SolidCullBackRS>(), m_SSAOMap.AsRenderTargetView(), nullptr)); // nullptr
+		m_SSAOPass.SetVertexShader(vertexShader);
+		m_SSAOPass.SetPixelShader(pixelShader);
+		m_SSAOPass.Init();
+	}
+
+	//blur pass
+	{
+		m_BlurHMap.Init();
+
+		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\ssao_map_VS.cso")));
+		vertexShader->SetVertexInput(std::make_shared<VertexInputAmbientOcclusion>());
+		vertexShader->AddConstantBuffer(CBufferFrequency::per_object_ambient_occlusion, std::make_unique<CBuffer<PerObjectCBAmbientOcclusion>>());
+
+		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\ssao_blur_PS.cso")));
+		pixelShader->AddConstantBuffer(CBufferFrequency::per_frame_blur, std::make_unique<CBuffer<BlurCBuffer>>());
+
+		pixelShader->AddSampler(SamplerUsage::normal_depth_map, std::make_shared<NormalDepthSampler>());
+		pixelShader->AddSampler(SamplerUsage::ssao_blur, std::make_shared<SSAOBlurSampler>());
+
+		m_SSAOBlurHPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_BlurHMap.Viewport(), std::make_shared<SolidCullBackRS>(), m_BlurHMap.AsRenderTargetView(), nullptr)); // nullptr
+		m_SSAOBlurHPass.SetVertexShader(vertexShader);
+		m_SSAOBlurHPass.SetPixelShader(pixelShader);
+		m_SSAOBlurHPass.Init();
+	}
+
+
+	//blur pass2
+	{
+		m_BlurMap.Init();
+
+		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\ssao_map_VS.cso")));
+		vertexShader->SetVertexInput(std::make_shared<VertexInputAmbientOcclusion>());
+		vertexShader->AddConstantBuffer(CBufferFrequency::per_object_ambient_occlusion, std::make_unique<CBuffer<PerObjectCBAmbientOcclusion>>());
+
+		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\ssao_blur_PS.cso")));
+		pixelShader->AddConstantBuffer(CBufferFrequency::per_frame_blur, std::make_unique<CBuffer<BlurCBuffer>>());
+		
+		pixelShader->AddSampler(SamplerUsage::normal_depth_map, std::make_shared<NormalDepthSampler>());
+		pixelShader->AddSampler(SamplerUsage::ssao_blur, std::make_shared<SSAOBlurSampler>());
+
+		m_SSAOBlurPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_BlurMap.Viewport(), std::make_shared<SolidCullBackRS>(), m_BlurMap.AsRenderTargetView(), nullptr)); // nullptr
+		m_SSAOBlurPass.SetVertexShader(vertexShader);
+		m_SSAOBlurPass.SetPixelShader(pixelShader);
+		m_SSAOBlurPass.Init();
+	}
+
 
 	// render pass
 	{
@@ -114,11 +280,17 @@ void AlphaDemoApp::InitRenderTechnique()
 		pixelShader->AddConstantBuffer(CBufferFrequency::rarely_changed, std::make_unique<CBuffer<RarelyChangedData>>());
 		pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<AnisotropicSampler>());
 		pixelShader->AddSampler(SamplerUsage::shadow_map, std::make_shared<PCFSampler>());
+		pixelShader->AddSampler(SamplerUsage::light_occlusion_map, std::make_shared<NoFilterSampler>());
+		pixelShader->AddSampler(SamplerUsage::ssao_map, std::make_shared<SSAOMapSampler>());
 
 		m_renderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_sceneTexture.AsRenderTargetView(), m_depthBufferView.Get()));
 		m_renderPass.SetVertexShader(vertexShader);
 		m_renderPass.SetPixelShader(pixelShader);
 		m_renderPass.Init();
+	}
+
+	{
+		m_colorRenderMap.Init(GetCurrentWidth(), GetCurrentHeight());
 	}
 
 	// glow pass
@@ -213,6 +385,23 @@ void AlphaDemoApp::InitRenderTechnique()
 		m_verticalBlurPass.SetPixelShader(pixelShader);
 		m_verticalBlurPass.Init();
 	}
+{
+		m_rarelyChangedData.useMotionBlurMap = true;
+
+		// inizializzo la motion blur map
+		m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
+		m_motionBlurMap.Init(GetCurrentWidth(), GetCurrentHeight());
+
+		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\motion_blur_demo_motionblurmap_VS.cso")));
+		vertexShader->SetVertexInput(std::make_shared<PosOnlyVertexInput>());
+		vertexShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<MotionBlurMap::PerObjectMotionBlurMapData>>());
+		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\motion_blur_demo_motionblurmap_PS.cso")));
+
+		m_motionBlurPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_motionBlurMap.Viewport(), std::make_shared<SolidCullBackRS>(), m_motionBlurMap.AsMotionBlurView(), m_depthBufferView.Get()));
+		m_motionBlurPass.SetVertexShader(vertexShader);
+		m_motionBlurPass.SetPixelShader(pixelShader);
+		m_motionBlurPass.Init();
+	}
 
 	// postprocessing pass
 	{
@@ -220,49 +409,15 @@ void AlphaDemoApp::InitRenderTechnique()
 		vertexShader->SetVertexInput(std::make_shared<alpha::TextureDataVertexInput>());
 
 		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_postprocessing_PS.cso")));
+		pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<MotionBlurSampler>());
+		pixelShader->AddSampler(SamplerUsage::texture_map, std::make_shared<TextureSampler>());
+		pixelShader->AddConstantBuffer(CBufferFrequency::per_frame, std::make_unique<CBuffer<PerFrameData>>());
 		pixelShader->AddConstantBuffer(CBufferFrequency::rarely_changed, std::make_unique<CBuffer<RarelyChangedData>>());
 
 		m_PostPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_backBufferView.Get(), m_depthBufferView.Get()));
 		m_PostPass.SetVertexShader(vertexShader);
 		m_PostPass.SetPixelShader(pixelShader);
 		m_PostPass.Init();
-	}
-}
-
-
-void AlphaDemoApp::InitRenderables()
-{
-	render::Renderable ground{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\rocks_dorama\rocks_composition.gpf)"))) };
-	ground.SetTransform(XMMatrixScaling(1.5f, 1.5f, 1.5f) * XMMatrixTranslation(3.f, 0.f, 2.5f));
-	ground.Init();
-	m_objects.push_back(ground);
-
-	render::Renderable soldier1{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\gdc_female\gdc_female_posed_2.gpf)"))) };
-	soldier1.SetTransform(XMMatrixRotationY(math::ToRadians(-12.f)) * XMMatrixTranslation(0.f, 0.4f, 0.f));
-	soldier1.Init();
-	m_objects.push_back(std::move(soldier1));
-
-	render::Renderable soldier2{ *(service::Locator::GetResourceLoader()->LoadGPFMesh(GetRootDir().append(LR"(\3d-objects\gdc_female\gdc_female_posed.gpf)"))) };
-	soldier2.SetTransform(XMMatrixRotationY(math::ToRadians(135.f)) * XMMatrixTranslation(10.f, 0.35f, -10.f));
-	soldier2.Init();
-	m_objects.push_back(std::move(soldier2));
-
-
-	//SPHERE
-	{
-		mesh::MeshMaterial mat;
-		mat.ambient = { 0.8f, 0.8f, 0.8f, 1.f };
-		mat.diffuse = { 0.52f, 0.52f, 0.48f, 1.f };
-		mat.specular = { 0.5f, 0.5f, 0.5f, 1.f };
-		mat.diffuseMap = GetRootDir().append(LR"(\3d-objects\plastic-cover\plastic_cover_color.png)");
-		mat.normalMap = GetRootDir().append(LR"(\3d-objects\plastic-cover\plastic_cover_norm.png)");
-		mat.glossMap = GetRootDir().append(LR"(\3d-objects\plastic-cover\plastic_cover_gloss.png)");
-
-		render::Renderable sphere(mesh::GenerateSphere(3.f, 30, 30), mat);
-		sphere.SetTransform(XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixTranslation(3.75f, 7.5f, -3.f)  );
-		sphere.SetTexcoordTransform(XMMatrixIdentity());
-		sphere.Init();
-		m_objects.push_back(sphere);
 	}
 }
 
@@ -311,7 +466,7 @@ void AlphaDemoApp::InitGlowMap()
 	{
 		std::pair<render::Renderable*, std::string> glowObjectKey;
 		alpha::GlowObject glowObject;
-		glowObjectKey.first = &m_objects[3];
+		glowObjectKey.first = &m_objects[4];
 		glowObjectKey.second = "";
 		glowObject.glowTexture = sphereGlowTexture;
 		glowObject.glowTextureView = sphereGlowTextureView;
@@ -323,12 +478,44 @@ void AlphaDemoApp::InitGlowMap()
 void AlphaDemoApp::OnResized()
 {
 	application::DirectxApp::OnResized();
+	m_normalDepthMap.ResetTargetView(uint32(m_viewport.Width), uint32(m_viewport.Height));
+	m_normalDepthPass.GetState()->ChangeRenderTargetView(m_normalDepthMap.AsRenderTargetView());
+	m_normalDepthPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
+	m_normalDepthPass.GetState()->ChangeViewPort(m_viewport);
+
+
+	D3D11_VIEWPORT v;
+	v.TopLeftX = 0.0f;
+	v.TopLeftY = 0.0f;
+	v.Width = m_viewport.Width / 2;
+	v.Height = m_viewport.Height / 2;
+	v.MinDepth = 0.0f;
+	v.MaxDepth = 1.0f;
+	m_SSAOMap.SetViewport(v);
+	m_SSAOMap.ResetTargetView(uint32(m_viewport.Width / 2), uint32(m_viewport.Height / 2));
+	m_SSAOPass.GetState()->ChangeRenderTargetView(m_SSAOMap.AsRenderTargetView());
+	m_SSAOPass.GetState()->ChangeViewPort(m_SSAOMap.Viewport());
+
+	m_BlurHMap.SetViewport(v);
+	m_BlurHMap.ResetTargetView(uint32(m_viewport.Width / 2), uint32(m_viewport.Height / 2));
+	m_SSAOBlurHPass.GetState()->ChangeRenderTargetView(m_BlurHMap.AsRenderTargetView());
+	m_SSAOBlurHPass.GetState()->ChangeViewPort(m_BlurHMap.Viewport());
+
+	m_BlurMap.SetViewport(v);
+	m_BlurMap.ResetTargetView(uint32(m_viewport.Width / 2), uint32(m_viewport.Height / 2));
+	m_SSAOBlurPass.GetState()->ChangeRenderTargetView(m_BlurMap.AsRenderTargetView());
+	m_SSAOBlurPass.GetState()->ChangeViewPort(m_BlurMap.Viewport());
 
 	m_sceneTexture.Resize(GetCurrentWidth(), GetCurrentHeight());
 	//update the render pass state with the resized render target and depth buffer
 	m_renderPass.GetState()->ChangeRenderTargetView(m_sceneTexture.AsRenderTargetView());
 	m_renderPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
 	m_renderPass.GetState()->ChangeViewPort(m_viewport);
+
+	m_motionBlurMap.SetWidthHeight(GetCurrentWidth(), GetCurrentHeight());
+	m_motionBlurPass.GetState()->ChangeRenderTargetView(m_motionBlurMap.AsMotionBlurView());
+	m_motionBlurPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
+	m_motionBlurPass.GetState()->ChangeViewPort(m_motionBlurMap.Viewport());
 
 	m_glowmap.Resize(GetCurrentWidth(), GetCurrentHeight());
 	//update the glow pass state with the resized render target and depth buffer
@@ -367,6 +554,7 @@ void AlphaDemoApp::OnResized()
 
 	//update the projection matrix with the new aspect ratio
 	m_camera.SetPerspectiveProjection(math::ToRadians(45.f), AspectRatio(), 1.f, 1000.f);
+	m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
 
 	CreateDownDepthStencilBuffer();
 }
@@ -378,6 +566,7 @@ void AlphaDemoApp::OnWheelScroll(input::ScrollStatus scroll)
 	if (service::Locator::GetMouse()->IsInClientArea())
 	{
 		m_camera.IncreaseRadiusBy(scroll.isScrollingUp ? -0.5f : 0.5f);
+		m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
 	}
 }
 
@@ -392,6 +581,7 @@ void AlphaDemoApp::OnMouseMove(const DirectX::XMINT2& movement, const DirectX::X
 	if (mouse->GetButtonStatus(input::MouseButton::left_button).isDown && mouse->IsInClientArea())
 	{
 		m_camera.RotateBy(math::ToRadians(movement.y * -0.25f), math::ToRadians(movement.x * 0.25f));
+		m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
 	}
 
 	// pan the camera 
@@ -407,6 +597,7 @@ void AlphaDemoApp::OnMouseMove(const DirectX::XMINT2& movement, const DirectX::X
 		XMFLOAT3 panTranslation;
 		XMStoreFloat3(&panTranslation, XMVectorAdd(xPanTranslation, yPanTranslation));
 		m_camera.TranslatePivotBy(panTranslation);
+		m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
 	}
 
 	// rotate the directional light
@@ -417,7 +608,6 @@ void AlphaDemoApp::OnMouseMove(const DirectX::XMINT2& movement, const DirectX::X
 
 		m_shadowMap.SetLight(m_dirKeyLight.dirW);
 	}
-
 }
 
 
@@ -426,16 +616,31 @@ void AlphaDemoApp::OnKeyStatusChange(input::Key key, const input::KeyStatus& sta
 	if (key == input::Key::F && status.isDown)
 	{
 		m_camera.SetPivot({ 5.f, 4.f, -5.f });
+		m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
 	}
 	else if (key == input::Key::F1 && status.isDown)
 	{
-		m_rarelyChangedData.useShadowMap = !m_rarelyChangedData.useShadowMap;
+		m_rarelyChangedData.useMotionBlurMap = !m_rarelyChangedData.useMotionBlurMap;
 		m_isRarelyChangedDataDirty = true;
 	}
 	else if (key == input::Key::F2 && status.isDown)
 	{
 		m_rarelyChangedData.useGlowMap = !m_rarelyChangedData.useGlowMap;
 		m_isRarelyChangedDataDirty = true;
+	}
+	else if (key == input::Key::F3 && status.isDown)
+	{
+		m_rarelyChangedData.useLightScattering = !m_rarelyChangedData.useLightScattering;
+		m_isRarelyChangedDataDirty = true;
+	}
+	else if (key == input::Key::F4 && status.isDown)
+	{
+		m_rarelyChangedData.useShadowMap = !m_rarelyChangedData.useShadowMap;
+		m_isRarelyChangedDataDirty = true;
+	}
+	else if (key == input::Key::space_bar && status.isDown)
+	{
+		m_stop = !m_stop;
 	}
 }
 
@@ -444,16 +649,52 @@ void AlphaDemoApp::UpdateScene(float deltaSeconds)
 {
 	XTEST_UNUSED_VAR(deltaSeconds);
 
+	if (!m_stop)
+	{
+		//Update previous transform
+		for (int k = 0; k < m_objects.size(); k++) {
+			previous_Transforms[k] = m_objects[k].GetTransform();
+		}
+
+		XMMATRIX R = XMMatrixRotationY(math::ToRadians(120.f) * deltaSeconds);
+		XMMATRIX W = XMLoadFloat4x4(&m_objects[1].GetTransform());
+		W *= R;
+		m_objects[1].SetTransform(W);
+		W = XMLoadFloat4x4(&m_objects[2].GetTransform());
+		W *= R;
+		m_objects[2].SetTransform(W);
+
+		totalTime += deltaSeconds;
+		XMMATRIX newW = backupWCrate * XMMatrixTranslation(0.0f, (sin(totalTime*10.0f) + 1.0f) * 4.f, 0.0f);
+		m_objects[3].SetTransform(newW);
+
+		m_motionBlurMap.SetViewAndProjectionMatrices(m_camera);
+	}
+
 	// PerFrameCB
 	{
 		PerFrameData data;
 		data.dirLights[0] = m_dirKeyLight;
 		data.dirLights[1] = m_dirFillLight;
 		data.eyePosW = m_camera.GetPosition();
+		data.blurMultiplier = (1.0f / deltaSeconds) / (float) targetFPS;
+
+		// calculate where the light placeholder is in screen space
+		{
+			XMMATRIX W = XMLoadFloat4x4(&m_lightOcclusionMap.LightPlaceHolder().GetTransform());
+			XMMATRIX V = m_camera.GetViewMatrix();
+			XMMATRIX P = m_camera.GetProjectionMatrix();
+			XMMATRIX T = m_lightOcclusionMap.TMatrix();
+			XMMATRIX WVPT = W * V * P * T;
+
+			XMVECTOR dirLightPosL = XMVectorSet(0.f, 0.f, 0.f, 1.f);
+			XMVECTOR dirLightPosH = XMVector4Transform(dirLightPosL, WVPT);
+			XMStoreFloat4(&data.dirLightPosH, dirLightPosH);
+		}
 
 		m_renderPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(data);
+		m_PostPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame)->UpdateBuffer(data);
 	}
-
 
 	// RarelyChangedCB
 	if (m_isRarelyChangedDataDirty)
@@ -462,7 +703,6 @@ void AlphaDemoApp::UpdateScene(float deltaSeconds)
 		m_PostPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::rarely_changed)->UpdateBuffer(m_rarelyChangedData);
 		m_isRarelyChangedDataDirty = false;
 	}
-
 }
 
 
@@ -473,7 +713,7 @@ void AlphaDemoApp::RenderScene()
 	m_shadowPass.Bind();
 	m_shadowPass.GetState()->ClearDepthOnly();
 
-	
+	// draw objects
 	for (render::Renderable& renderable : m_objects)
 	{
 		for (const std::string& meshName : renderable.GetMeshNames())
@@ -485,6 +725,123 @@ void AlphaDemoApp::RenderScene()
 	}
 	m_d3dAnnotation->EndEvent();
 
+	m_d3dAnnotation->BeginEvent(L"scattering-occlusion");
+	m_scatteringPass.Bind();
+	m_scatteringPass.GetState()->ClearDepthOnly();
+	m_scatteringPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
+
+	// draw a white placeholder to simulate the light source
+	{
+		const std::string meshName = "";
+		render::Renderable placeholder = m_lightOcclusionMap.LightPlaceHolder();
+
+		PerObjectLightScatteringData data = ToPerObjectLightScatteringData(placeholder, meshName, true);
+		m_scatteringPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+		m_scatteringPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+		placeholder.Draw(meshName);
+	}
+
+	// draw all objects with a black material
+	for (render::Renderable& renderable : m_objects)
+	{
+		for (const std::string& meshName : renderable.GetMeshNames())
+		{
+			PerObjectLightScatteringData data = ToPerObjectLightScatteringData(renderable, meshName, false);
+			m_scatteringPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+			m_scatteringPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+			renderable.Draw(meshName);
+		}
+	}
+	m_d3dAnnotation->EndEvent();
+	
+	//BRAVO
+	
+	m_d3dAnnotation->BeginEvent(L"normal_depth-map");
+	m_normalDepthPass.Bind();
+	m_normalDepthPass.GetState()->ClearDepthOnly();
+	m_normalDepthPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
+
+	// draw objects
+	for (render::Renderable& renderable : m_objects)
+	{
+		for (const std::string& meshName : renderable.GetMeshNames())
+		{
+			PerFrameDataNormalDepth data = ToPerFrameData(renderable);
+			m_normalDepthPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_frame_normal_depth)->UpdateBuffer(data);
+			renderable.Draw(meshName);
+		}
+	}
+	m_d3dAnnotation->EndEvent();
+
+	{
+		
+	//BRAVO
+		m_d3dAnnotation->BeginEvent(L"ambient-occlusion-pass");
+		m_SSAOPass.Bind();
+		m_SSAOPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
+		m_SSAOPass.GetPixelShader()->BindTexture(TextureUsage::normal_depth_map, m_normalDepthMap.AsShaderView());
+		//attach CB
+		PerObjectCBAmbientOcclusion data1 = ToPerObjectAmbientOcclusion();
+		m_SSAOPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object_ambient_occlusion)->UpdateBuffer(data1);
+		m_SSAOPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_object_ambient_occlusion)->UpdateBuffer(data1);
+		// compute MAP
+		m_SSAOMap.Draw();
+	}
+
+	m_SSAOPass.GetPixelShader()->BindTexture(TextureUsage::normal_depth_map, nullptr);
+	m_d3dAnnotation->EndEvent();
+
+
+
+	//****************************************
+	
+	//BRAVO
+	// Blur Pass Horizontal
+	{
+		m_d3dAnnotation->BeginEvent(L"blur-pass");
+		m_SSAOBlurHPass.Bind();
+
+		m_SSAOBlurHPass.GetPixelShader()->BindTexture(TextureUsage::normal_depth_map, m_normalDepthMap.AsShaderView());
+		m_SSAOBlurHPass.GetPixelShader()->BindTexture(TextureUsage::ssao_map, m_SSAOMap.AsShaderView());
+
+		//attach CB
+		BlurCBuffer data1 = ToPerFrameBlur(false);
+		PerObjectCBAmbientOcclusion data2 = ToPerObjectAmbientOcclusion();
+		m_SSAOBlurHPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object_ambient_occlusion)->UpdateBuffer(data2);
+		m_SSAOBlurHPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame_blur)->UpdateBuffer(data1);
+		// compute MAP
+		m_SSAOMap.Draw();
+	}
+
+	m_SSAOBlurHPass.GetPixelShader()->BindTexture(TextureUsage::normal_depth_map, nullptr);
+	m_SSAOBlurHPass.GetPixelShader()->BindTexture(TextureUsage::ssao_map, nullptr); 
+	m_d3dAnnotation->EndEvent();
+
+	//****************************************
+	
+	//BRAVO
+	// Blur Pass
+	{
+		m_d3dAnnotation->BeginEvent(L"blur-pass");
+		m_SSAOBlurPass.Bind();
+
+		m_SSAOBlurPass.GetPixelShader()->BindTexture(TextureUsage::normal_depth_map, m_normalDepthMap.AsShaderView());
+		m_SSAOBlurPass.GetPixelShader()->BindTexture(TextureUsage::ssao_map, m_BlurHMap.AsShaderView());
+
+		//attach CB
+		BlurCBuffer data1 = ToPerFrameBlur(true);
+		PerObjectCBAmbientOcclusion data2 = ToPerObjectAmbientOcclusion();
+		m_SSAOBlurPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object_ambient_occlusion)->UpdateBuffer(data2);
+		m_SSAOBlurPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame_blur)->UpdateBuffer(data1);
+		// compute MAP
+		m_BlurHMap.Draw();
+	}
+
+	m_SSAOBlurPass.GetPixelShader()->BindTexture(TextureUsage::normal_depth_map, nullptr);
+	m_SSAOBlurPass.GetPixelShader()->BindTexture(TextureUsage::ssao_map, nullptr);
+	m_d3dAnnotation->EndEvent();
+
+	//****************************************
 
 	// draw objects to texture
 	m_d3dAnnotation->BeginEvent(L"render-scene");
@@ -492,6 +849,8 @@ void AlphaDemoApp::RenderScene()
 	m_renderPass.GetState()->ClearDepthOnly();
 	m_renderPass.GetState()->ClearRenderTarget(DirectX::Colors::DarkSlateGray);
 	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, m_shadowMap.AsShaderView());
+	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::light_occlusion_map, m_lightOcclusionMap.AsShaderView());
+	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::ssao_map, m_BlurMap.AsShaderView());
 
 	
 	for (render::Renderable& renderable : m_objects)
@@ -508,6 +867,8 @@ void AlphaDemoApp::RenderScene()
 		}
 	}
 	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, nullptr); // explicit unbind the shadow map to suppress warning
+	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::light_occlusion_map, nullptr); // explicit unbind the shadow map to suppress warning
+	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::ssao_map, nullptr);
 	m_d3dAnnotation->EndEvent();
 
 	if (m_rarelyChangedData.useGlowMap)
@@ -630,6 +991,25 @@ void AlphaDemoApp::RenderScene()
 		m_d3dAnnotation->EndEvent();
 	}
 
+	// motion blur pass
+	m_d3dAnnotation->BeginEvent(L"motion-blur-map");
+	m_motionBlurPass.Bind();
+	m_motionBlurPass.GetState()->ClearDepthOnly();
+	m_motionBlurPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
+
+	int i = 0;
+	// draw MOTIONBLURMAP
+	for (render::Renderable& renderable : m_objects) {
+		for (const std::string& meshName : renderable.GetMeshNames()) {
+			MotionBlurMap::PerObjectMotionBlurMapData data = m_motionBlurMap.ToPerObjectMotionBlurMapData(renderable, meshName, m_camera, previous_Transforms[i]);
+			m_motionBlurPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object)->UpdateBuffer(data);
+			renderable.Draw(meshName);
+		}
+		i++;
+	}
+	m_d3dAnnotation->EndEvent();
+
+
 	//Drawing all the textures together
 	m_d3dAnnotation->BeginEvent(L"render-from-texture");
 	m_PostPass.Bind();
@@ -637,14 +1017,43 @@ void AlphaDemoApp::RenderScene()
 	m_PostPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
 	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::texture_map, m_sceneTexture.AsShaderView());
 	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::bloom, m_upsampledGlowTexture.AsShaderView());
+	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::motionblur, m_motionBlurMap.AsShaderView());
+
 	   
 	m_textureRenderable.Draw();
 
 	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::bloom, nullptr); // explicit unbind bloom to suppress warning
 	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::texture_map, nullptr);
+	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::motionblur, nullptr);
 	m_d3dAnnotation->EndEvent();
+	
 
 	XTEST_D3D_CHECK(m_swapChain->Present(0, 0));
+}
+
+AlphaDemoApp::PerFrameDataNormalDepth xtest::demo::SSAODemoApp::ToPerFrameData(const render::Renderable & renderable)
+{
+	PerFrameDataNormalDepth data;
+	XMMATRIX W = XMLoadFloat4x4(&renderable.GetTransform());
+	XMMATRIX W_InverseTranspose = XMMatrixTranspose(XMMatrixInverse(nullptr, W));
+
+	XMMATRIX V = m_camera.GetViewMatrix();
+	XMMATRIX P = m_camera.GetProjectionMatrix();
+
+	XMMATRIX WV = W * V;
+	XMMATRIX W_InverseTransposeV = W_InverseTranspose; 
+
+	XMMATRIX WVP = W * V * P;
+
+	//[-1,1]->[0,1]
+	static const XMMATRIX T = XMMatrixScaling(1.0f, 1.0f, 1.0f); 
+
+	XMStoreFloat4x4(&data.worldView, XMMatrixTranspose(WV));
+	XMStoreFloat4x4(&data.worldInvTransposeView, XMMatrixTranspose(W_InverseTransposeV));
+	XMStoreFloat4x4(&data.texTransform, XMMatrixTranspose(T));
+	XMStoreFloat4x4(&data.worldViewProj, XMMatrixTranspose(WVP));
+
+	return data;
 }
 
 
@@ -658,12 +1067,14 @@ AlphaDemoApp::PerObjectData AlphaDemoApp::ToPerObjectData(const render::Renderab
 	XMMATRIX P = m_camera.GetProjectionMatrix();
 	XMMATRIX WVP = W * V*P;
 	XMMATRIX WVPT_shadowMap = W * m_shadowMap.VPTMatrix();
+	XMMATRIX WVPT_occlusionMap = WVP * m_lightOcclusionMap.TMatrix();
 
 	XMStoreFloat4x4(&data.W, XMMatrixTranspose(W));
 	XMStoreFloat4x4(&data.WVP, XMMatrixTranspose(WVP));
 	XMStoreFloat4x4(&data.W_inverseTraspose, XMMatrixInverse(nullptr, W));
 	XMStoreFloat4x4(&data.TexcoordMatrix, XMMatrixTranspose(T));
 	XMStoreFloat4x4(&data.WVPT_shadowMap, XMMatrixTranspose(WVPT_shadowMap));
+	XMStoreFloat4x4(&data.WVPT_occlusionMap, XMMatrixTranspose(WVPT_occlusionMap));
 	data.material.ambient = renderable.GetMaterial(meshName).ambient;
 	data.material.diffuse = renderable.GetMaterial(meshName).diffuse;
 	data.material.specular = renderable.GetMaterial(meshName).specular;
@@ -702,7 +1113,45 @@ AlphaDemoApp::PerObjectGlowData AlphaDemoApp::ToPerObjectGlowData(const render::
 
 	data.useGlow = m_glowObjectsMap.count(glowObjectKey) > 0;
 
+	return data;
+}
 
+AlphaDemoApp::PerObjectLightScatteringData AlphaDemoApp::ToPerObjectLightScatteringData(const render::Renderable& renderable, const std::string& , boolean isLight)
+{
+	PerObjectLightScatteringData data;
+
+	XMMATRIX W = XMLoadFloat4x4(&renderable.GetTransform());
+	XMMATRIX V = m_camera.GetViewMatrix();
+	XMMATRIX P = m_camera.GetProjectionMatrix();
+	XMMATRIX WVP = W * V * P;
+
+	XMStoreFloat4x4(&data.WVP, XMMatrixTranspose(WVP));
+	if (isLight)
+	{
+		data.material.ambient = { 1.f, 1.f, 1.f, 1.f };
+		data.material.diffuse = { 1.f, 1.f, 1.f, 1.f };
+		data.material.specular = { 1.f, 1.f, 1.f, 1.f };
+	}
+	else
+	{
+		data.material.ambient = { 0.f, 0.f, 0.f, 1.f };
+		data.material.diffuse = { 0.f, 0.f, 0.f, 1.f };
+		data.material.specular = { 0.f, 0.f, 0.f, 1.f };
+	}
+
+	return data;
+}
+
+AlphaDemoApp::PerObjectCombineData AlphaDemoApp::ToPerObjectCombineData(const render::Renderable& renderable, const std::string& meshName) {
+	XTEST_UNUSED_VAR(meshName);
+	PerObjectCombineData data;
+
+	XMMATRIX W = XMLoadFloat4x4(&renderable.GetTransform());
+	XMMATRIX V = m_camera.GetViewMatrix();
+	XMMATRIX P = m_camera.GetProjectionMatrix();
+	XMMATRIX WVP = W * V*P;
+
+	XMStoreFloat4x4(&data.WVP, XMMatrixTranspose(WVP));
 	return data;
 }
 
@@ -728,4 +1177,3 @@ void xtest::demo::AlphaDemoApp::CreateDownDepthStencilBuffer()
 	XTEST_D3D_CHECK(m_d3dDevice->CreateTexture2D(&depthDesc, nullptr, &m_depthBufferDownsample));
 	XTEST_D3D_CHECK(m_d3dDevice->CreateDepthStencilView(m_depthBufferDownsample.Get(), nullptr, &m_depthStencilViewDownsample));
 }
-

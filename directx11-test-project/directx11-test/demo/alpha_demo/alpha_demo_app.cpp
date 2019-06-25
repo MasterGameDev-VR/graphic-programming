@@ -9,6 +9,9 @@
 #include <external_libs/directxtk/WICTextureLoader.h>
 #include <alpha/alpha_vertex_input_types.h>
 #include <alpha/alpha_sampler_types.h>
+#include <stdlib.h>
+#include <ctime>
+#include <codecvt>
 
 
 using namespace DirectX;
@@ -31,10 +34,19 @@ AlphaDemoApp::AlphaDemoApp(HINSTANCE instance,
 	, m_isRarelyChangedDataDirty(true)
 	, m_camera(math::ToRadians(80.f), math::ToRadians(170.f), 15.f, { 5.f, 4.f, -5.f }, { 0.f, 1.f, 0.f }, { math::ToRadians(4.f), math::ToRadians(175.f) }, { 3.f, 50.f })
 	, m_objects()
+	, m_normalDepthPass()
 	, m_shadowPass()
+	, m_SSAOPass()
+	, m_SSAOBlurPass()
+	, m_SSAOBlurHPass()
 	, m_scatteringPass()
 	, m_renderPass()
 	, m_shadowMap(2048)
+	, m_SSAOMap(windowSettings.width / 2, windowSettings.height / 2)//, 1, 128, 4, 2.0f, 3.0f)
+	, m_BlurMap(windowSettings.width / 2, windowSettings.height / 2)//, 1, 128, 4, 2.0f, 3.0f)
+	, m_BlurHMap(windowSettings.width / 2, windowSettings.height / 2)//, 1, 128, 4, 2.0f, 3.0f)
+	, m_normalDepthMap(windowSettings.width, windowSettings.height)
+	, m_randomVecMap(256, 256)
 	, m_lightOcclusionMap(2048)
 	, m_motionBlurMap()
 	, m_colorRenderMap()
@@ -132,6 +144,7 @@ void AlphaDemoApp::InitLights()
 
 	m_rarelyChangedData.useShadowMap = true;
 	m_rarelyChangedData.useLightScattering = true;
+	m_rarelyChangedData.useSSAOMap = true;
 }
 
 
@@ -176,6 +189,82 @@ void AlphaDemoApp::InitRenderTechnique()
 		m_scatteringPass.SetPixelShader(pixelShader);
 		m_scatteringPass.Init();
 	}
+	// normal_depth_pass
+	{
+		m_normalDepthMap.Init();
+
+		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\ssao_normal_depth_VS.cso")));
+		vertexShader->SetVertexInput(std::make_shared<MeshDataVertexInput>());
+		vertexShader->AddConstantBuffer(CBufferFrequency::per_frame_normal_depth, std::make_unique<CBuffer<PerFrameDataNormalDepth>>());
+
+		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\ssao_normal_depth_PS.cso")));
+
+		m_normalDepthPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_normalDepthMap.AsRenderTargetView(), m_depthBufferView.Get()));
+		m_normalDepthPass.SetVertexShader(vertexShader);
+		m_normalDepthPass.SetPixelShader(pixelShader);
+		m_normalDepthPass.Init();
+	}
+
+	//// SSAO pass
+	{
+		m_SSAOMap.Init();
+
+		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\ssao_map_VS.cso")));
+		vertexShader->SetVertexInput(std::make_shared<VertexInputAmbientOcclusion>());
+		vertexShader->AddConstantBuffer(CBufferFrequency::per_object_ambient_occlusion, std::make_unique<CBuffer<PerObjectCBAmbientOcclusion>>());
+
+		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\ssao_map_PS.cso")));
+		pixelShader->AddConstantBuffer(CBufferFrequency::per_object, std::make_unique<CBuffer<PerObjectData>>());
+		pixelShader->AddConstantBuffer(CBufferFrequency::rarely_changed, std::make_unique<CBuffer<RarelyChangedData>>());
+		pixelShader->AddConstantBuffer(CBufferFrequency::per_object_ambient_occlusion, std::make_unique<CBuffer<PerObjectCBAmbientOcclusion>>());
+		pixelShader->AddSampler(SamplerUsage::normal_depth_map, std::make_shared<NormalDepthSampler>());
+		m_SSAOPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_SSAOMap.Viewport(), std::make_shared<SolidCullBackRS>(), m_SSAOMap.AsRenderTargetView(), nullptr)); // nullptr
+		m_SSAOPass.SetVertexShader(vertexShader);
+		m_SSAOPass.SetPixelShader(pixelShader);
+		m_SSAOPass.Init();
+	}
+
+	//blur pass
+	{
+		m_BlurHMap.Init();
+
+		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\ssao_map_VS.cso")));
+		vertexShader->SetVertexInput(std::make_shared<VertexInputAmbientOcclusion>());
+		vertexShader->AddConstantBuffer(CBufferFrequency::per_object_ambient_occlusion, std::make_unique<CBuffer<PerObjectCBAmbientOcclusion>>());
+
+		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\ssao_blur_PS.cso")));
+		pixelShader->AddConstantBuffer(CBufferFrequency::per_frame_blur, std::make_unique<CBuffer<BlurCBuffer>>());
+
+		pixelShader->AddSampler(SamplerUsage::normal_depth_map, std::make_shared<NormalDepthSampler>());
+		pixelShader->AddSampler(SamplerUsage::ssao_blur, std::make_shared<SSAOBlurSampler>());
+
+		m_SSAOBlurHPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_BlurHMap.Viewport(), std::make_shared<SolidCullBackRS>(), m_BlurHMap.AsRenderTargetView(), nullptr)); // nullptr
+		m_SSAOBlurHPass.SetVertexShader(vertexShader);
+		m_SSAOBlurHPass.SetPixelShader(pixelShader);
+		m_SSAOBlurHPass.Init();
+	}
+
+
+	//blur pass2
+	{
+		m_BlurMap.Init();
+
+		std::shared_ptr<VertexShader> vertexShader = std::make_shared<VertexShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\ssao_map_VS.cso")));
+		vertexShader->SetVertexInput(std::make_shared<VertexInputAmbientOcclusion>());
+		vertexShader->AddConstantBuffer(CBufferFrequency::per_object_ambient_occlusion, std::make_unique<CBuffer<PerObjectCBAmbientOcclusion>>());
+
+		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\ssao_blur_PS.cso")));
+		pixelShader->AddConstantBuffer(CBufferFrequency::per_frame_blur, std::make_unique<CBuffer<BlurCBuffer>>());
+		
+		pixelShader->AddSampler(SamplerUsage::normal_depth_map, std::make_shared<NormalDepthSampler>());
+		pixelShader->AddSampler(SamplerUsage::ssao_blur, std::make_shared<SSAOBlurSampler>());
+
+		m_SSAOBlurPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_BlurMap.Viewport(), std::make_shared<SolidCullBackRS>(), m_BlurMap.AsRenderTargetView(), nullptr)); // nullptr
+		m_SSAOBlurPass.SetVertexShader(vertexShader);
+		m_SSAOBlurPass.SetPixelShader(pixelShader);
+		m_SSAOBlurPass.Init();
+	}
+
 
 	// render pass
 	{
@@ -192,6 +281,7 @@ void AlphaDemoApp::InitRenderTechnique()
 		pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<AnisotropicSampler>());
 		pixelShader->AddSampler(SamplerUsage::shadow_map, std::make_shared<PCFSampler>());
 		pixelShader->AddSampler(SamplerUsage::light_occlusion_map, std::make_shared<NoFilterSampler>());
+		pixelShader->AddSampler(SamplerUsage::ssao_map, std::make_shared<SSAOMapSampler>());
 
 		m_renderPass.SetState(std::make_shared<RenderPassState>(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST, m_viewport, std::make_shared<SolidCullBackRS>(), m_sceneTexture.AsRenderTargetView(), m_depthBufferView.Get()));
 		m_renderPass.SetVertexShader(vertexShader);
@@ -388,6 +478,33 @@ void AlphaDemoApp::InitGlowMap()
 void AlphaDemoApp::OnResized()
 {
 	application::DirectxApp::OnResized();
+	m_normalDepthMap.ResetTargetView(uint32(m_viewport.Width), uint32(m_viewport.Height));
+	m_normalDepthPass.GetState()->ChangeRenderTargetView(m_normalDepthMap.AsRenderTargetView());
+	m_normalDepthPass.GetState()->ChangeDepthStencilView(m_depthBufferView.Get());
+	m_normalDepthPass.GetState()->ChangeViewPort(m_viewport);
+
+
+	D3D11_VIEWPORT v;
+	v.TopLeftX = 0.0f;
+	v.TopLeftY = 0.0f;
+	v.Width = m_viewport.Width / 2;
+	v.Height = m_viewport.Height / 2;
+	v.MinDepth = 0.0f;
+	v.MaxDepth = 1.0f;
+	m_SSAOMap.SetViewport(v);
+	m_SSAOMap.ResetTargetView(uint32(m_viewport.Width / 2), uint32(m_viewport.Height / 2));
+	m_SSAOPass.GetState()->ChangeRenderTargetView(m_SSAOMap.AsRenderTargetView());
+	m_SSAOPass.GetState()->ChangeViewPort(m_SSAOMap.Viewport());
+
+	m_BlurHMap.SetViewport(v);
+	m_BlurHMap.ResetTargetView(uint32(m_viewport.Width / 2), uint32(m_viewport.Height / 2));
+	m_SSAOBlurHPass.GetState()->ChangeRenderTargetView(m_BlurHMap.AsRenderTargetView());
+	m_SSAOBlurHPass.GetState()->ChangeViewPort(m_BlurHMap.Viewport());
+
+	m_BlurMap.SetViewport(v);
+	m_BlurMap.ResetTargetView(uint32(m_viewport.Width / 2), uint32(m_viewport.Height / 2));
+	m_SSAOBlurPass.GetState()->ChangeRenderTargetView(m_BlurMap.AsRenderTargetView());
+	m_SSAOBlurPass.GetState()->ChangeViewPort(m_BlurMap.Viewport());
 
 	m_sceneTexture.Resize(GetCurrentWidth(), GetCurrentHeight());
 	//update the render pass state with the resized render target and depth buffer
@@ -636,6 +753,95 @@ void AlphaDemoApp::RenderScene()
 		}
 	}
 	m_d3dAnnotation->EndEvent();
+	
+	//BRAVO
+	
+	m_d3dAnnotation->BeginEvent(L"normal_depth-map");
+	m_normalDepthPass.Bind();
+	m_normalDepthPass.GetState()->ClearDepthOnly();
+	m_normalDepthPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
+
+	// draw objects
+	for (render::Renderable& renderable : m_objects)
+	{
+		for (const std::string& meshName : renderable.GetMeshNames())
+		{
+			PerFrameDataNormalDepth data = ToPerFrameData(renderable);
+			m_normalDepthPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_frame_normal_depth)->UpdateBuffer(data);
+			renderable.Draw(meshName);
+		}
+	}
+	m_d3dAnnotation->EndEvent();
+
+	{
+		
+	//BRAVO
+		m_d3dAnnotation->BeginEvent(L"ambient-occlusion-pass");
+		m_SSAOPass.Bind();
+		m_SSAOPass.GetState()->ClearRenderTarget(DirectX::Colors::Black);
+		m_SSAOPass.GetPixelShader()->BindTexture(TextureUsage::normal_depth_map, m_normalDepthMap.AsShaderView());
+		//attach CB
+		PerObjectCBAmbientOcclusion data1 = ToPerObjectAmbientOcclusion();
+		m_SSAOPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object_ambient_occlusion)->UpdateBuffer(data1);
+		m_SSAOPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_object_ambient_occlusion)->UpdateBuffer(data1);
+		// compute MAP
+		m_SSAOMap.Draw();
+	}
+
+	m_SSAOPass.GetPixelShader()->BindTexture(TextureUsage::normal_depth_map, nullptr);
+	m_d3dAnnotation->EndEvent();
+
+
+
+	//****************************************
+	
+	//BRAVO
+	// Blur Pass Horizontal
+	{
+		m_d3dAnnotation->BeginEvent(L"blur-pass");
+		m_SSAOBlurHPass.Bind();
+
+		m_SSAOBlurHPass.GetPixelShader()->BindTexture(TextureUsage::normal_depth_map, m_normalDepthMap.AsShaderView());
+		m_SSAOBlurHPass.GetPixelShader()->BindTexture(TextureUsage::ssao_map, m_SSAOMap.AsShaderView());
+
+		//attach CB
+		BlurCBuffer data1 = ToPerFrameBlur(false);
+		PerObjectCBAmbientOcclusion data2 = ToPerObjectAmbientOcclusion();
+		m_SSAOBlurHPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object_ambient_occlusion)->UpdateBuffer(data2);
+		m_SSAOBlurHPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame_blur)->UpdateBuffer(data1);
+		// compute MAP
+		m_SSAOMap.Draw();
+	}
+
+	m_SSAOBlurHPass.GetPixelShader()->BindTexture(TextureUsage::normal_depth_map, nullptr);
+	m_SSAOBlurHPass.GetPixelShader()->BindTexture(TextureUsage::ssao_map, nullptr); 
+	m_d3dAnnotation->EndEvent();
+
+	//****************************************
+	
+	//BRAVO
+	// Blur Pass
+	{
+		m_d3dAnnotation->BeginEvent(L"blur-pass");
+		m_SSAOBlurPass.Bind();
+
+		m_SSAOBlurPass.GetPixelShader()->BindTexture(TextureUsage::normal_depth_map, m_normalDepthMap.AsShaderView());
+		m_SSAOBlurPass.GetPixelShader()->BindTexture(TextureUsage::ssao_map, m_BlurHMap.AsShaderView());
+
+		//attach CB
+		BlurCBuffer data1 = ToPerFrameBlur(true);
+		PerObjectCBAmbientOcclusion data2 = ToPerObjectAmbientOcclusion();
+		m_SSAOBlurPass.GetVertexShader()->GetConstantBuffer(CBufferFrequency::per_object_ambient_occlusion)->UpdateBuffer(data2);
+		m_SSAOBlurPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::per_frame_blur)->UpdateBuffer(data1);
+		// compute MAP
+		m_BlurHMap.Draw();
+	}
+
+	m_SSAOBlurPass.GetPixelShader()->BindTexture(TextureUsage::normal_depth_map, nullptr);
+	m_SSAOBlurPass.GetPixelShader()->BindTexture(TextureUsage::ssao_map, nullptr);
+	m_d3dAnnotation->EndEvent();
+
+	//****************************************
 
 	// draw objects to texture
 	m_d3dAnnotation->BeginEvent(L"render-scene");
@@ -644,6 +850,7 @@ void AlphaDemoApp::RenderScene()
 	m_renderPass.GetState()->ClearRenderTarget(DirectX::Colors::DarkSlateGray);
 	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, m_shadowMap.AsShaderView());
 	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::light_occlusion_map, m_lightOcclusionMap.AsShaderView());
+	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::ssao_map, m_BlurMap.AsShaderView());
 
 	
 	for (render::Renderable& renderable : m_objects)
@@ -661,6 +868,7 @@ void AlphaDemoApp::RenderScene()
 	}
 	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::shadow_map, nullptr); // explicit unbind the shadow map to suppress warning
 	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::light_occlusion_map, nullptr); // explicit unbind the shadow map to suppress warning
+	m_renderPass.GetPixelShader()->BindTexture(TextureUsage::ssao_map, nullptr);
 	m_d3dAnnotation->EndEvent();
 
 	if (m_rarelyChangedData.useGlowMap)
@@ -823,6 +1031,31 @@ void AlphaDemoApp::RenderScene()
 	XTEST_D3D_CHECK(m_swapChain->Present(0, 0));
 }
 
+AlphaDemoApp::PerFrameDataNormalDepth xtest::demo::AlphaDemoApp::ToPerFrameData(const render::Renderable & renderable)
+{
+	PerFrameDataNormalDepth data;
+	XMMATRIX W = XMLoadFloat4x4(&renderable.GetTransform());
+	XMMATRIX W_InverseTranspose = XMMatrixTranspose(XMMatrixInverse(nullptr, W));
+
+	XMMATRIX V = m_camera.GetViewMatrix();
+	XMMATRIX P = m_camera.GetProjectionMatrix();
+
+	XMMATRIX WV = W * V;
+	XMMATRIX W_InverseTransposeV = W_InverseTranspose; 
+
+	XMMATRIX WVP = W * V * P;
+
+	//[-1,1]->[0,1]
+	static const XMMATRIX T = XMMatrixScaling(1.0f, 1.0f, 1.0f); 
+
+	XMStoreFloat4x4(&data.worldView, XMMatrixTranspose(WV));
+	XMStoreFloat4x4(&data.worldInvTransposeView, XMMatrixTranspose(W_InverseTransposeV));
+	XMStoreFloat4x4(&data.texTransform, XMMatrixTranspose(T));
+	XMStoreFloat4x4(&data.worldViewProj, XMMatrixTranspose(WVP));
+
+	return data;
+}
+
 
 AlphaDemoApp::PerObjectData AlphaDemoApp::ToPerObjectData(const render::Renderable& renderable, const std::string& meshName)
 {
@@ -832,19 +1065,68 @@ AlphaDemoApp::PerObjectData AlphaDemoApp::ToPerObjectData(const render::Renderab
 	XMMATRIX T = XMLoadFloat4x4(&renderable.GetTexcoordTransform(meshName));
 	XMMATRIX V = m_camera.GetViewMatrix();
 	XMMATRIX P = m_camera.GetProjectionMatrix();
+	XMMATRIX W_inverseTraspose = XMMatrixTranspose(XMMatrixInverse(nullptr, W));
 	XMMATRIX WVP = W * V*P;
 	XMMATRIX WVPT_shadowMap = W * m_shadowMap.VPTMatrix();
 	XMMATRIX WVPT_occlusionMap = WVP * m_lightOcclusionMap.TMatrix();
 
+	//[-1,1]->[0,1]
+	static const XMMATRIX T1(
+		0.5f, 0.0f, 0.0f, 0.0f,
+		0.0f, -0.5f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.5f, 0.5f, 0.0f, 1.0f);
+
+	XMMATRIX WVPT1 = WVP * T1;
+
 	XMStoreFloat4x4(&data.W, XMMatrixTranspose(W));
 	XMStoreFloat4x4(&data.WVP, XMMatrixTranspose(WVP));
-	XMStoreFloat4x4(&data.W_inverseTraspose, XMMatrixInverse(nullptr, W));
+	XMStoreFloat4x4(&data.WVPT, XMMatrixTranspose(WVPT1));
+	XMStoreFloat4x4(&data.W_inverseTraspose, XMMatrixTranspose(W_inverseTraspose));
 	XMStoreFloat4x4(&data.TexcoordMatrix, XMMatrixTranspose(T));
 	XMStoreFloat4x4(&data.WVPT_shadowMap, XMMatrixTranspose(WVPT_shadowMap));
 	XMStoreFloat4x4(&data.WVPT_occlusionMap, XMMatrixTranspose(WVPT_occlusionMap));
 	data.material.ambient = renderable.GetMaterial(meshName).ambient;
 	data.material.diffuse = renderable.GetMaterial(meshName).diffuse;
 	data.material.specular = renderable.GetMaterial(meshName).specular;
+
+	return data;
+}
+
+AlphaDemoApp::PerObjectCBAmbientOcclusion AlphaDemoApp::ToPerObjectAmbientOcclusion()
+{
+	m_SSAOMap.BuildFrustumFarCorners(m_camera.GetAspectRatio(), m_camera.GetYFov(), m_camera.GetZFarPlane());
+
+	PerObjectCBAmbientOcclusion data;
+
+	XMMATRIX T(0.5f, 0.0f, 0.0f, 0.0f,
+		0.0f, -0.5f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		0.5f, 0.5f, 0.0f, 1.0f);
+
+	XMMATRIX P = m_camera.GetProjectionMatrix();
+	XMMATRIX PT = XMMatrixMultiply(P, T);
+
+	XMStoreFloat4x4(&data.viewToTexSpace, XMMatrixTranspose(PT));
+
+	DirectX::XMFLOAT4 *m_frustumFarCorner = m_SSAOMap.GetFrustumFarCorner();
+
+	data.frustumCorners[0] = m_frustumFarCorner[0];
+	data.frustumCorners[1] = m_frustumFarCorner[1];
+	data.frustumCorners[2] = m_frustumFarCorner[2];
+	data.frustumCorners[3] = m_frustumFarCorner[3];
+
+	DirectX::XMFLOAT4 *m_offsets = m_SSAOMap.GetKernelVectors();
+
+	for (int i = 0; i < SSAOData::SAMPLE_COUNT; i++)
+	{
+		data.offsetVectors[i] = m_offsets[i];
+	}
+
+	data.occlusionFadeEnd = m_SSAOMap.m_occlusionFadeEnd;
+	data.occlusionFadeStart = m_SSAOMap.m_occlusionFadeStart;
+	data.occlusionRadius = m_SSAOMap.m_occlusionRadius;
+	data.surfaceEpsilon = m_SSAOMap.m_surfaceEpsilon;
 
 	return data;
 }
@@ -859,6 +1141,15 @@ AlphaDemoApp::PerObjectShadowMapData AlphaDemoApp::ToPerObjectShadowMapData(cons
 	XMMATRIX WVP = W * m_shadowMap.LightViewMatrix() * m_shadowMap.LightProjMatrix();
 
 	XMStoreFloat4x4(&data.WVP_lightSpace, XMMatrixTranspose(WVP));
+	return data;
+}
+
+AlphaDemoApp::BlurCBuffer AlphaDemoApp::ToPerFrameBlur(bool horizontalBlur = false)
+{
+	BlurCBuffer data;
+	data.texelWitdth = 1.0f / m_SSAOMap.Viewport().Width;
+	data.texelHeight = 1.0f / m_SSAOMap.Viewport().Height;
+	data.horizontalBlur = horizontalBlur;
 	return data;
 }
 

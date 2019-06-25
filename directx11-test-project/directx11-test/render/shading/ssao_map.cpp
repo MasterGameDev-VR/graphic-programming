@@ -263,5 +263,5 @@ void xtest::render::shading::SSAOMap::Draw()
 
 void xtest::render::shading::SSAOMap::Release()
 {
-	m_renderTargetView->Release();
+	//m_renderTargetView->Release();
 }

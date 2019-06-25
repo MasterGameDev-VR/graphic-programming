@@ -569,12 +569,6 @@
     <FxCompile Include="demo\scattering_demo\scattering_demo_VS.hlsl">
       <Filter>demo\scattering_demo</Filter>
     </FxCompile>
-    <FxCompile Include="demo\SSAO_demo\ssao_normal_depth_PS.hlsl">
-      <Filter>demo\SSAO_demo</Filter>
-    </FxCompile>
-    <FxCompile Include="demo\SSAO_demo\ssao_normal_depth_VS.hlsl">
-      <Filter>demo\SSAO_demo</Filter>
-    </FxCompile>
     <FxCompile Include="demo\SSAO_demo\SSAO_blur_PS.hlsl">
       <Filter>demo\SSAO_demo</Filter>
     </FxCompile>
@@ -589,6 +583,27 @@
     </FxCompile>
     <FxCompile Include="demo\SSAO_demo\SSAO_demo_PS.hlsl">
       <Filter>demo\SSAO_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\SSAO_demo\ssao_normal_depth_VS.hlsl">
+      <Filter>demo\SSAO_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\SSAO_demo\ssao_normal_depth_PS.hlsl">
+      <Filter>demo\SSAO_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\ssao_normal_depth_PS.hlsl">
+      <Filter>demo\alpha_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\ssao_normal_depth_VS.hlsl">
+      <Filter>demo\alpha_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\SSAO_blur_PS.hlsl">
+      <Filter>demo\alpha_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\SSAO_map_PS.hlsl">
+      <Filter>demo\alpha_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\alpha_demo\SSAO_map_VS.hlsl">
+      <Filter>demo\alpha_demo</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

@@ -30,7 +30,6 @@ struct VertexOut
 	float4 tangentW : TANGENT;
 	float2 uv : TEXCOORD;
 	float4 shadowPosH : SHADOWPOS;
-	float4 ssaoPosH : TEXCOORD1;
 	float4 occlusionPosH : OCCLUSIONPOS;
 };
 
@@ -41,7 +40,6 @@ cbuffer PerObjectCB : register(b0)
 	float4x4 W;
 	float4x4 W_inverseTraspose;
 	float4x4 WVP;
-	float4x4 WVPT;
 	float4x4 TexcoordMatrix;
 	float4x4 WVPT_shadowMap;
 	float4x4 WVPT_occlusionMap;
@@ -62,10 +60,8 @@ cbuffer RarelyChangedCB : register(b2)
 	bool useGlowMap;
 	bool useMotionBlur;
 	bool useLightScattering;
-	bool useSSAOMap;
 	float shadowMapResolution;
 	float lightOcclusionMapResolution;
-	float SSOAMultiplier=1;
 }
 
 Texture2D diffuseTexture : register(t0);
@@ -73,15 +69,8 @@ Texture2D normalTexture : register(t1);
 Texture2D glossTexture : register(t2);
 Texture2D shadowMap : register(t10);
 Texture2D occlusionMap : register(t12);
-Texture2D ssaoMap : register(t13);
 
 SamplerState textureSampler : register(s0);
-SamplerState SSAOSampler : register(s3)
-{
-	Filter = MIN_MAG_MIP_LINEAR;
-	AddressU = WRAP;
-	AddressV = WRAP;
-};
 SamplerComparisonState shadowSampler : register(s10);
 SamplerState occlusionSampler : register(s12);
 
@@ -209,14 +198,6 @@ float4 LightScatteringContribution(float3 posNDC, float3 lightPosNDC)
 float4 main(VertexOut pin) : SV_TARGET
 {
 	pin.normalW = normalize(pin.normalW);
-	
-	float ambientAccess = 1.0f;
-
-	if (useSSAOMap)
-	{
-		pin.ssaoPosH /= pin.ssaoPosH.w;
-		ambientAccess = ssaoMap.Sample(SSAOSampler, pin.ssaoPosH.xy, 0.0f).r;
-	}
 
 	// make sure tangentW is still orthogonal to normalW and is unit leght even
 	// after the rasterizer stage (interpolation) 
@@ -286,7 +267,6 @@ float4 main(VertexOut pin) : SV_TARGET
 		totalSpecular += specular * litFactors[i];
 	}
 	
-	totalAmbient *= ambientAccess;
 
 	float4 diffuseColor = diffuseTexture.Sample(textureSampler, pin.uv);
 	float4 finalColor = diffuseColor * (totalAmbient + totalDiffuse) + totalSpecular;

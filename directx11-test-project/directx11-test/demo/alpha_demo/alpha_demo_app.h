@@ -16,6 +16,10 @@
 #include <render/shading/motion_blur_map.h>
 #include <render/shading/color_map.h>
 #include <render/shading/light_occlusion_map.h>
+#include <render/shading/ssao_map.h>
+#include <render/shading/blur_map.h>
+#include <render/shading/normal_depth_map.h>
+#include <render/shading/random_vec_map.h>
 #include "demo/motion_blur_demo/Quad.h"
 
 namespace xtest {
@@ -60,6 +64,7 @@ namespace xtest {
 				DirectX::XMFLOAT4X4 W;
 				DirectX::XMFLOAT4X4 W_inverseTraspose;
 				DirectX::XMFLOAT4X4 WVP;
+				DirectX::XMFLOAT4X4 WVPT;
 				DirectX::XMFLOAT4X4 TexcoordMatrix;
 				DirectX::XMFLOAT4X4 WVPT_shadowMap;
 				DirectX::XMFLOAT4X4 WVPT_occlusionMap;
@@ -86,6 +91,13 @@ namespace xtest {
 				float _explicit_pad_[3];
 			};
 
+			struct PerFrameDataNormalDepth
+			{
+				DirectX::XMFLOAT4X4 worldView;
+				DirectX::XMFLOAT4X4 worldInvTransposeView;
+				DirectX::XMFLOAT4X4 worldViewProj;
+				DirectX::XMFLOAT4X4 texTransform;
+			};
 			struct PerObjectShadowMapData
 			{
 				DirectX::XMFLOAT4X4 WVP_lightSpace;
@@ -112,9 +124,30 @@ namespace xtest {
 				int32 useGlowMap;
 				int32 useMotionBlurMap;
 				int32 useLightScattering;
+				int32 useSSAOMap;
 				float shadowMapResolution;
 				float lightOcclusionMapResolution;
-				float _explicit_pad_[2];
+				float SSOAMultiplier;
+			};
+
+			struct PerObjectCBAmbientOcclusion
+			{
+				DirectX::XMFLOAT4X4 viewToTexSpace; // Proj*Tex
+				DirectX::XMFLOAT4 offsetVectors[xtest::render::shading::SSAOData::SAMPLE_COUNT];
+				DirectX::XMFLOAT4 frustumCorners[4];
+
+				float occlusionRadius;
+				float occlusionFadeStart;
+				float occlusionFadeEnd;
+				float surfaceEpsilon;
+			};
+
+			struct BlurCBuffer // new struct
+			{
+				float texelWitdth;
+				float texelHeight;
+				uint32 horizontalBlur;
+				float pad;
 			};
 
 
@@ -141,6 +174,7 @@ namespace xtest {
 
 			void InitRenderTechnique();
 			void InitRenderables();
+			void InitTestRenderables();
 			void InitLights();
 			void InitRenderToTexture();
 			void CreateNewGPFMeshes();
@@ -148,10 +182,13 @@ namespace xtest {
 			void CreateDownDepthStencilBuffer();
 			PerObjectData ToPerObjectData(const render::Renderable& renderable, const std::string& meshName);
 			PerObjectGlowData ToPerObjectGlowData(const render::Renderable& renderable, const std::string& meshName);
+			PerObjectCBAmbientOcclusion ToPerObjectAmbientOcclusion();
+			PerFrameDataNormalDepth ToPerFrameData(const render::Renderable& renderable);
 			PerObjectShadowMapData ToPerObjectShadowMapData(const render::Renderable& renderable, const std::string& meshName);
 			PerObjectCombineData ToPerObjectCombineData(const render::Renderable& renderable, const std::string& meshName);
 			PerObjectLightScatteringData ToPerObjectLightScatteringData(const render::Renderable& renderable, const std::string& meshName, boolean isLight);
 
+			BlurCBuffer ToPerFrameBlur(bool);
 			DirectionalLight m_dirKeyLight;
 			DirectionalLight m_dirFillLight;
 			RarelyChangedData m_rarelyChangedData;
@@ -169,6 +206,10 @@ namespace xtest {
 			Microsoft::WRL::ComPtr<ID3D11Texture2D> m_depthBufferDownsample;
 			Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_depthStencilViewDownsample;
 			render::shading::RenderPass m_shadowPass;
+			render::shading::RenderPass m_normalDepthPass;
+			render::shading::RenderPass m_SSAOPass;
+			render::shading::RenderPass m_SSAOBlurPass;
+			render::shading::RenderPass m_SSAOBlurHPass;
 			render::shading::RenderPass m_renderPass;
 			render::shading::RenderPass m_glowPass;
 			render::shading::RenderPass m_downPass;
@@ -180,6 +221,11 @@ namespace xtest {
 			render::shading::RenderPass m_scatteringPass;
 			render::shading::RenderPass m_combinePass;
 			render::shading::ShadowMap m_shadowMap;
+			render::shading::SSAOMap m_SSAOMap;
+			render::shading::BlurMap m_BlurHMap;
+			render::shading::BlurMap m_BlurMap;
+			render::shading::NormalDepthMap m_normalDepthMap;
+			render::shading::RandomVectorMap m_randomVecMap;
 			alpha::TextureRenderBuffer m_sceneTexture;
 			alpha::TextureRenderBuffer m_downsampledGlowTexture; 
 			alpha::TextureRenderBuffer m_upsampledGlowTexture;

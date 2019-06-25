@@ -37,7 +37,10 @@ namespace xtest {
 		glossiness = 2,
 		motionblur=3,
 		shadow_map = 10,
+		normal_depth_map = 11,
 		light_occlusion_map = 12,
+		random_vec_map = 13,
+		ssao_map = 14,
 		texture_map = 20,
 		glow_map = 30,
 		bloom = 40,
@@ -46,37 +49,21 @@ namespace xtest {
 		uknown
 	};
 
-				shadow_map = 10,
-				normal_depth_map = 11,
-				random_vec_map = 12,
-				ssao_map = 13,
-				uknown
-			};
-
 	// used to bind a texture sampler to a shader
 	// warning: the value of the enum is used to select the shader slot
 	enum class SamplerUsage
 	{
 		common_textures = 0,
+		normal_depth_map = 1,
+		random_vec = 2,
+		ssao_map = 3,
+		ssao_blur = 4,
 		shadow_map = 10,
 		blur = 11,
 		light_occlusion_map = 12,
 		texture_map = 13,
 		unknown
 	};
-
-			// used to bind a texture sampler to a shader
-			// warning: the value of the enum is used to select the shader slot
-			enum class SamplerUsage
-			{
-				common_textures = 0,
-				normal_depth_map = 1,
-				random_vec = 2,
-				ssao_map = 3,
-				ssao_blur = 4,
-				shadow_map = 10,
-				unknown
-			};
 
 
 		} // shading
