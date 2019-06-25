@@ -48,10 +48,10 @@ float4 main(VertexOut pin) : SV_TARGET
 	{
 		bloomColor = bloomTexture.Sample(TextureSampler, pin.uv);
 	}
-	float4 finalColorBloom = saturate(textureColor + bloomColor);
+	float4 finalColorBloom = (textureColor + bloomColor);
 
 	// combine motion blur
-	float3 finalColorBlur = textureColor.rgb;
+	float3 finalColorBlur = finalColorBloom.rgb;
 	[flatten]
 	if (useMotionBlurMap)
 	{
@@ -78,7 +78,7 @@ float4 main(VertexOut pin) : SV_TARGET
 		finalColorBlur /= sum + 1.0f;
 	}
 
-	float4 finalColor = (finalColorBloom + float4(finalColorBlur, 1.0f));
+	float4 finalColor = saturate(float4(finalColorBlur, 1.0f));
 
 	return finalColor;
 }

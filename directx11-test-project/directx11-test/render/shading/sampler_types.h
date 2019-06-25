@@ -110,8 +110,8 @@ namespace shading {
 			D3D11_SAMPLER_DESC samplerDesc;
 			ZeroMemory(&samplerDesc, sizeof(D3D11_SAMPLER_DESC));
 			samplerDesc.Filter = D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
-			samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-			samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+			samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
+			samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
 			samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_BORDER;
 			samplerDesc.BorderColor[0] = 0.f;
 			samplerDesc.BorderColor[1] = 0.f;

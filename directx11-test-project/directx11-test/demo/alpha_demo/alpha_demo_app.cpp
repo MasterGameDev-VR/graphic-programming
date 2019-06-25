@@ -114,6 +114,30 @@ void AlphaDemoApp::InitRenderables()
 		m_objects.push_back(sphere);
 	}
 
+	const int sphereCount = 9;
+	for (unsigned i = 0; i < sphereCount; i++)
+	{
+		float xPos = sin(math::ToRadians(40.0f) * i) * 5.0f;
+		float zPos = cos(math::ToRadians(40.0f) * i) * 5.0f;
+
+		mesh::MeshMaterial mat;
+		mat.ambient = { 0.8f, 0.8f, 0.8f, 1.f };
+		mat.diffuse = { 0.52f, 0.52f, 0.48f, 1.f };
+		mat.specular = { 0.5f, 0.5f, 0.5f, 1.f };
+		mat.diffuseMap = GetRootDir().append(LR"(\3d-objects\plastic-cover\plastic_cover_color.png)");
+		mat.normalMap = GetRootDir().append(LR"(\3d-objects\plastic-cover\plastic_cover_norm.png)");
+		mat.glossMap = GetRootDir().append(LR"(\3d-objects\plastic-cover\plastic_cover_gloss.png)");
+
+
+		render::Renderable sphere(mesh::GenerateSphere((i + 1) / 10.0f, 40, 40), mat);
+		sphere.SetTransform(XMMatrixTranslation(xPos, 12.0f, zPos));
+		sphere.SetTexcoordTransform(XMMatrixScaling(2.f, 2.f, 2.f));
+		sphere.Init();
+
+		m_objects.push_back(sphere);
+		previous_Transforms.push_back(sphere.GetTransform());
+	}
+
 }
 
 
@@ -373,14 +397,17 @@ void AlphaDemoApp::InitGlowMap()
 	}
 
 	{
-		std::pair<render::Renderable*, std::string> glowObjectKey;
-		alpha::GlowObject glowObject;
-		glowObjectKey.first = &m_objects[4];
-		glowObjectKey.second = "";
-		glowObject.glowTexture = sphereGlowTexture;
-		glowObject.glowTextureView = sphereGlowTextureView;
+		for (int i = 4; i <= 13; i++)
+		{
+			std::pair<render::Renderable*, std::string> glowObjectKey;
+			alpha::GlowObject glowObject;
+			glowObjectKey.first = &m_objects[i];
+			glowObjectKey.second = "";
+			glowObject.glowTexture = sphereGlowTexture;
+			glowObject.glowTextureView = sphereGlowTextureView;
 
-		m_glowObjectsMap.emplace(glowObjectKey, glowObject);
+			m_glowObjectsMap.emplace(glowObjectKey, glowObject);
+		}
 	}
 }
 
@@ -538,13 +565,26 @@ void AlphaDemoApp::UpdateScene(float deltaSeconds)
 			previous_Transforms[k] = m_objects[k].GetTransform();
 		}
 
-		XMMATRIX R = XMMatrixRotationY(math::ToRadians(120.f) * deltaSeconds);
+		XMMATRIX R = XMMatrixRotationY(math::ToRadians(160.f) * deltaSeconds);
+		XMMATRIX W;
+		for (int i = 5; i <= 13; i++)
+		{
+			W = XMLoadFloat4x4(&m_objects[i].GetTransform());
+			W *= R;
+			m_objects[i].SetTransform(W);
+		}
+
+		/*XMMATRIX R = XMMatrixRotationY(math::ToRadians(120.f) * deltaSeconds);
 		XMMATRIX W = XMLoadFloat4x4(&m_objects[1].GetTransform());
 		W *= R;
 		m_objects[1].SetTransform(W);
 		W = XMLoadFloat4x4(&m_objects[2].GetTransform());
 		W *= R;
 		m_objects[2].SetTransform(W);
+
+		W = XMLoadFloat4x4(&m_objects[4].GetTransform());
+		W *= R;
+		m_objects[4].SetTransform(W);*/
 
 		totalTime += deltaSeconds;
 		XMMATRIX newW = backupWCrate * XMMatrixTranslation(0.0f, (sin(totalTime*10.0f) + 1.0f) * 4.f, 0.0f);
