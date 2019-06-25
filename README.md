@@ -3,7 +3,7 @@
 ![alt text](https://github.com/MasterGameDev-VR/graphic-programming/blob/teams-effects-merge/image.JPG)
 ![alt text](https://github.com/MasterGameDev-VR/graphic-programming/blob/teams-effects-merge/image2.JPG)
 
-<h1>Various effect with directX11</h1>
+<h1>Various effects with directX11</h1>
 </br>
 <b>F1</b> - BLUR toggle</br>
 <b>F2</b> - GLOW toggle</br>
