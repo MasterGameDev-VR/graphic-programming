@@ -515,12 +515,6 @@
     <FxCompile Include="demo\motion_blur_demo\motion_blur_demo_motionblurmap_PS.hlsl">
       <Filter>demo\motion_blur_demo</Filter>
     </FxCompile>
-    <FxCompile Include="demo\alpha_demo\combine_PS.hlsl">
-      <Filter>demo\alpha_demo</Filter>
-    </FxCompile>
-    <FxCompile Include="demo\alpha_demo\combine_VS.hlsl">
-      <Filter>demo\alpha_demo</Filter>
-    </FxCompile>
     <FxCompile Include="demo\alpha_demo\motion_blur_demo_motionblurmap_PS.hlsl">
       <Filter>demo\alpha_demo</Filter>
     </FxCompile>
