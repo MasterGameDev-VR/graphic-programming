@@ -817,6 +817,7 @@ void AlphaDemoApp::RenderScene()
 
 	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::bloom, nullptr); // explicit unbind bloom to suppress warning
 	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::texture_map, nullptr);
+	m_PostPass.GetPixelShader()->BindTexture(TextureUsage::motionblur, nullptr);
 	m_d3dAnnotation->EndEvent();
 	
 
