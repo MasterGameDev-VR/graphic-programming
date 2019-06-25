@@ -83,5 +83,5 @@ float main(VertexOutAmbientOcclusion pin) : SV_TARGET
 
 	occlusionSum /= SAMPLE_COUNT;
 	float access = 1.0f - occlusionSum;
-	return saturate(pow(access, SSOAMultiplier));
+	return saturate(pow(access, 28.0f));
 }
