@@ -9,12 +9,14 @@ struct VertexOut
 
 SamplerState motionSampler : register(s0);
 
-SamplerState TextureSampler
-{
-	Filter = MIN_MAG_MIP_LINEAR;
-	AddressU = Wrap;
-	AddressV = Wrap;
-};
+SamplerState TextureSampler : register(s13);
+
+//SamplerState TextureSampler
+//{
+//	Filter = MIN_MAG_MIP_LINEAR;
+//	AddressU = Wrap;
+//	AddressV = Wrap;
+//};
 
 struct DirectionalLight
 {

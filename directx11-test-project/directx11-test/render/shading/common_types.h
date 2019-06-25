@@ -52,6 +52,7 @@ namespace shading {
 		shadow_map = 10,
 		blur = 11,
 		light_occlusion_map = 12,
+		texture_map = 13,
 		unknown
 	};
 

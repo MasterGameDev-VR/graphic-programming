@@ -320,6 +320,7 @@ void AlphaDemoApp::InitRenderTechnique()
 
 		std::shared_ptr<PixelShader> pixelShader = std::make_shared<PixelShader>(loader->LoadBinaryFile(GetRootDir().append(L"\\alpha_demo_postprocessing_PS.cso")));
 		pixelShader->AddSampler(SamplerUsage::common_textures, std::make_shared<MotionBlurSampler>());
+		pixelShader->AddSampler(SamplerUsage::texture_map, std::make_shared<TextureSampler>());
 		pixelShader->AddConstantBuffer(CBufferFrequency::per_frame, std::make_unique<CBuffer<PerFrameData>>());
 		pixelShader->AddConstantBuffer(CBufferFrequency::rarely_changed, std::make_unique<CBuffer<RarelyChangedData>>());
 
@@ -502,7 +503,7 @@ void AlphaDemoApp::OnKeyStatusChange(input::Key key, const input::KeyStatus& sta
 	}
 	else if (key == input::Key::F1 && status.isDown)
 	{
-		m_rarelyChangedData.useShadowMap = !m_rarelyChangedData.useShadowMap;
+		m_rarelyChangedData.useMotionBlurMap = !m_rarelyChangedData.useMotionBlurMap;
 		m_isRarelyChangedDataDirty = true;
 	}
 	else if (key == input::Key::F2 && status.isDown)
@@ -512,12 +513,12 @@ void AlphaDemoApp::OnKeyStatusChange(input::Key key, const input::KeyStatus& sta
 	}
 	else if (key == input::Key::F3 && status.isDown)
 	{
-		m_rarelyChangedData.useMotionBlurMap = !m_rarelyChangedData.useMotionBlurMap;
+		m_rarelyChangedData.useLightScattering = !m_rarelyChangedData.useLightScattering;
 		m_isRarelyChangedDataDirty = true;
 	}
 	else if (key == input::Key::F4 && status.isDown)
 	{
-		m_rarelyChangedData.useLightScattering = !m_rarelyChangedData.useLightScattering;
+		m_rarelyChangedData.useShadowMap = !m_rarelyChangedData.useShadowMap;
 		m_isRarelyChangedDataDirty = true;
 	}
 	else if (key == input::Key::space_bar && status.isDown)
@@ -882,7 +883,7 @@ AlphaDemoApp::PerObjectGlowData AlphaDemoApp::ToPerObjectGlowData(const render::
 	return data;
 }
 
-AlphaDemoApp::PerObjectLightScatteringData AlphaDemoApp::ToPerObjectLightScatteringData(const render::Renderable& renderable, const std::string& meshName, boolean isLight)
+AlphaDemoApp::PerObjectLightScatteringData AlphaDemoApp::ToPerObjectLightScatteringData(const render::Renderable& renderable, const std::string& , boolean isLight)
 {
 	PerObjectLightScatteringData data;
 
