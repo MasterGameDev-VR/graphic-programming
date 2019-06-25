@@ -64,9 +64,7 @@ namespace shading {
 		}
 	};
 
-	class VertexInputAmbientOcclusion : public VertexInput
-	{
-	public:
+	
 	class PosTexVertexInput : public VertexInput
 	{
 	public:
@@ -90,6 +88,9 @@ namespace shading {
 			XTEST_D3D_CHECK(service::Locator::GetD3DDevice()->CreateInputLayout(vertexDesc, sizeof(vertexDesc) / sizeof(D3D11_INPUT_ELEMENT_DESC), m_vsByteCode->Data(), m_vsByteCode->ByteSize(), &m_d3dInputLayout));
 		}
 	};
+	class VertexInputAmbientOcclusion : public VertexInput
+	{
+	public:
 
 		virtual void Init() override
 		{
