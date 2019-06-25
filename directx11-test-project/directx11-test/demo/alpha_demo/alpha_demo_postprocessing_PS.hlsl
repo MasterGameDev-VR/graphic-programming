@@ -7,17 +7,6 @@ struct VertexOut
 	float2 uv : TEXCOORD;
 };
 
-SamplerState motionSampler : register(s0);
-
-SamplerState TextureSampler : register(s13);
-
-//SamplerState TextureSampler
-//{
-//	Filter = MIN_MAG_MIP_LINEAR;
-//	AddressU = Wrap;
-//	AddressV = Wrap;
-//};
-
 struct DirectionalLight
 {
 	float4 ambient;
@@ -41,10 +30,13 @@ cbuffer RarelyChangedCB : register(b2)
 	float shadowMapResolution;
 }
 
+
+Texture2D motionBlurTexture : register(t3);
 Texture2D texctureRenderMap : register(t20);
 Texture2D bloomTexture : register(t40);
 
-Texture2D motionBlurTexture : register(t3);
+SamplerState motionSampler : register(s0);
+SamplerState TextureSampler : register(s13);
 
 
 float4 main(VertexOut pin) : SV_TARGET
@@ -59,7 +51,7 @@ float4 main(VertexOut pin) : SV_TARGET
 	float4 finalColorBloom = saturate(textureColor + bloomColor);
 
 	// combine motion blur
-	float3 finalColorBlur = texctureRenderMap.Sample(TextureSampler, pin.uv.xy).rgb;
+	float3 finalColorBlur = textureColor.rgb;
 	[flatten]
 	if (useMotionBlurMap)
 	{
@@ -88,6 +80,5 @@ float4 main(VertexOut pin) : SV_TARGET
 
 	float4 finalColor = (finalColorBloom + float4(finalColorBlur, 1.0f));
 
-	//return float4(finalColorBlur, 1.0f);
 	return finalColor;
 }
