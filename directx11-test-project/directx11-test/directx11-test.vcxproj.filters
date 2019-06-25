@@ -85,6 +85,9 @@
     <Filter Include="demo\scattering_demo">
       <UniqueIdentifier>{0779ee11-d298-47a7-b978-a16c9591a400}</UniqueIdentifier>
     </Filter>
+    <Filter Include="demo\SSAO_demo">
+      <UniqueIdentifier>{4cbd0265-d176-4b7a-8cf8-6355c85b91bb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application\resources\Resource.h">
@@ -294,6 +297,21 @@
     <ClInclude Include="render\shading\light_occlusion_map.h">
       <Filter>render\shading</Filter>
     </ClInclude>
+    <ClInclude Include="demo\SSAO_demo\SSAO_demo_app.h">
+      <Filter>demo\SSAO_demo</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\ssao_map.h">
+      <Filter>render\shading</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\normal_depth_map.h">
+      <Filter>render\shading</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\random_vec_map.h">
+      <Filter>render\shading</Filter>
+    </ClInclude>
+    <ClInclude Include="render\shading\blur_map.h">
+      <Filter>render\shading</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp" />
@@ -428,6 +446,21 @@
     <ClCompile Include="render\shading\light_occlusion_map.cpp">
       <Filter>render\shading</Filter>
     </ClCompile>
+    <ClCompile Include="demo\SSAO_demo\SSAO_demo_app.cpp">
+      <Filter>demo\SSAO_demo</Filter>
+    </ClCompile>
+    <ClCompile Include="render\shading\ssao_map.cpp">
+      <Filter>render\shading</Filter>
+    </ClCompile>
+    <ClCompile Include="render\shading\normal_depth_map.cpp">
+      <Filter>render\shading</Filter>
+    </ClCompile>
+    <ClCompile Include="render\shading\random_vec_map.cpp">
+      <Filter>render\shading</Filter>
+    </ClCompile>
+    <ClCompile Include="render\shading\blur_map.cpp">
+      <Filter>render\shading</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="application\resources\small.ico">
@@ -541,6 +574,27 @@
     </FxCompile>
     <FxCompile Include="demo\scattering_demo\scattering_demo_VS.hlsl">
       <Filter>demo\scattering_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\SSAO_demo\ssao_normal_depth_PS.hlsl">
+      <Filter>demo\SSAO_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\SSAO_demo\ssao_normal_depth_VS.hlsl">
+      <Filter>demo\SSAO_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\SSAO_demo\SSAO_blur_PS.hlsl">
+      <Filter>demo\SSAO_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\SSAO_demo\SSAO_map_PS.hlsl">
+      <Filter>demo\SSAO_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\SSAO_demo\SSAO_map_VS.hlsl">
+      <Filter>demo\SSAO_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\SSAO_demo\SSAO_demo_VS.hlsl">
+      <Filter>demo\SSAO_demo</Filter>
+    </FxCompile>
+    <FxCompile Include="demo\SSAO_demo\SSAO_demo_PS.hlsl">
+      <Filter>demo\SSAO_demo</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

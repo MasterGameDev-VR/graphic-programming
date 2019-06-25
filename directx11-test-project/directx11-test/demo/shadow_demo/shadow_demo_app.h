@@ -62,6 +62,7 @@ namespace demo {
 
 		static const int k_pointLightCount = 4;
 		static const int k_dirLightCount = 2;
+
 		struct PerFrameData
 		{
 			DirectionalLight dirLights[k_dirLightCount];
@@ -75,6 +76,8 @@ namespace demo {
 			float shadowMapResolution;
 			float _explicit_pad_[2];
 		};
+
+		
 
 		
 		

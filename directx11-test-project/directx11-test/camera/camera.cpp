@@ -40,9 +40,26 @@ DirectX::XMFLOAT3 Camera::GetZAxis() const
 	return zAxis;
 }
 
+float Camera::GetYFov() const {
+	return m_fov_y;
+}
+
+float Camera::GetZFarPlane() const {
+	return m_far_z;
+}
+
+float xtest::camera::Camera::GetAspectRatio() const
+{
+	return m_aspect_ratio;
+}
+
 void Camera::SetPerspectiveProjection(float viewYAngleRadians, float aspectRatio, float nearPlaneZ, float farPlaneZ)
 {
-	XMStoreFloat4x4(&m_projMatrix, DirectX::XMMatrixPerspectiveFovLH(viewYAngleRadians, aspectRatio, nearPlaneZ, farPlaneZ));
+	m_fov_y = viewYAngleRadians;
+	m_far_z = farPlaneZ;
+	m_near_z = nearPlaneZ;
+	m_aspect_ratio = aspectRatio;
+	XMStoreFloat4x4(&m_projMatrix, DirectX::XMMatrixPerspectiveFovLH(m_fov_y, aspectRatio, nearPlaneZ, farPlaneZ));
 }
 
 void Camera::SetOrthographicProjection(float width, float height, float nearPlaneZ, float farPlaneZ)
