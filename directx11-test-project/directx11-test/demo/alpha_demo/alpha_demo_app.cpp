@@ -96,7 +96,6 @@ void AlphaDemoApp::InitRenderables()
 	backupWCrate = XMLoadFloat4x4(&crate.GetTransform());
 	m_objects.push_back(std::move(crate));
 
-
 	//SPHERE
 	{
 		mesh::MeshMaterial mat;
