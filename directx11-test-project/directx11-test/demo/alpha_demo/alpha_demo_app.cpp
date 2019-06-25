@@ -77,7 +77,7 @@ void AlphaDemoApp::Init()
 
 	service::Locator::GetMouse()->AddListener(this);
 	service::Locator::GetKeyboard()->AddListener(this, { 
-		input::Key::F, input::Key::F1, input::Key::F2, input::Key::F3, input::Key::F4, input::Key::space_bar 
+		input::Key::F, input::Key::F1, input::Key::F2, input::Key::F3, input::Key::F4, input::Key::F5, input::Key::space_bar
 	});
 }
 
@@ -661,6 +661,11 @@ void AlphaDemoApp::OnKeyStatusChange(input::Key key, const input::KeyStatus& sta
 	}
 	else if (key == input::Key::F4 && status.isDown)
 	{
+		m_rarelyChangedData.useSSAOMap = !m_rarelyChangedData.useSSAOMap;
+		m_isRarelyChangedDataDirty = true;
+	}
+	else if (key == input::Key::F5 && status.isDown)
+	{
 		m_rarelyChangedData.useShadowMap = !m_rarelyChangedData.useShadowMap;
 		m_isRarelyChangedDataDirty = true;
 	}
@@ -690,18 +695,6 @@ void AlphaDemoApp::UpdateScene(float deltaSeconds)
 			W *= R;
 			m_objects[i].SetTransform(W);
 		}
-
-		/*XMMATRIX R = XMMatrixRotationY(math::ToRadians(120.f) * deltaSeconds);
-		XMMATRIX W = XMLoadFloat4x4(&m_objects[1].GetTransform());
-		W *= R;
-		m_objects[1].SetTransform(W);
-		W = XMLoadFloat4x4(&m_objects[2].GetTransform());
-		W *= R;
-		m_objects[2].SetTransform(W);
-
-		W = XMLoadFloat4x4(&m_objects[4].GetTransform());
-		W *= R;
-		m_objects[4].SetTransform(W);*/
 
 		totalTime += deltaSeconds;
 		XMMATRIX newW = backupWCrate * XMMatrixTranslation(0.0f, (sin(totalTime*10.0f) + 1.0f) * 4.f, 0.0f);
@@ -739,6 +732,7 @@ void AlphaDemoApp::UpdateScene(float deltaSeconds)
 	if (m_isRarelyChangedDataDirty)
 	{
 		m_renderPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::rarely_changed)->UpdateBuffer(m_rarelyChangedData);
+		m_SSAOPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::rarely_changed)->UpdateBuffer(m_rarelyChangedData);
 		m_PostPass.GetPixelShader()->GetConstantBuffer(CBufferFrequency::rarely_changed)->UpdateBuffer(m_rarelyChangedData);
 		m_isRarelyChangedDataDirty = false;
 	}

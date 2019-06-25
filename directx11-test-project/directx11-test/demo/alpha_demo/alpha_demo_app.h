@@ -26,10 +26,11 @@ namespace xtest {
 	namespace demo {
 
 		/*
-			Use F1 switch on/off the shadow casting
+			Use F1 switch on/off the motion blur effect
 			Use F2 switch on/off the bloom effect
-			Use F3 switch on/off the motion blur effect
-			Use F4 switch on/off the light scattering effect
+			Use F3 switch on/off the light scattering effect
+			Use F4 switch on/off the ambient occlusion
+			Use F5 switch on/off the shadow map
 			Use space_bar to pause/resume
 			Use ALT+Enter to switch full screen on/off
 			Use F key to reframe the camera to the origin
