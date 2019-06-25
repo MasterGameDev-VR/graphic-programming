@@ -1,4 +1,5 @@
 #pragma once
+#pragma once
 #include <render/render_resource.h>
 
 namespace xtest {
@@ -57,7 +58,6 @@ namespace xtest {
 
 				void Bind();
 				void Draw();
-				void Release();
 
 				float m_occlusionRadius = 0.5f;
 				float m_occlusionFadeStart = 0.2f;

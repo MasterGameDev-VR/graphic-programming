@@ -260,8 +260,3 @@ void xtest::render::shading::SSAOMap::Draw()
 	Bind();
 	service::Locator::GetD3DContext()->DrawIndexed(UINT(m_vs_data.indices.size()), 0, 0);
 }
-
-void xtest::render::shading::SSAOMap::Release()
-{
-	//m_renderTargetView->Release();
-}
