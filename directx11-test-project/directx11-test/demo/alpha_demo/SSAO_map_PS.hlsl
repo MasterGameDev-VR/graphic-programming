@@ -12,7 +12,7 @@ cbuffer RarelyChangedCB : register(b2)
 	bool useShadowMap;
 	float shadowMapResolution;
 	bool useSSAOMap;
-	float SSOAMultiplier = 4;
+	float SSOAMultiplier = 28.0f;
 }
 
 struct VertexOutAmbientOcclusion
